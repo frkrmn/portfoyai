@@ -1,0 +1,904 @@
+import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties, ComponentType, ReactNode } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BarChart3,
+  Bell,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  FileText,
+  Globe,
+  Home,
+  LayoutDashboard,
+  MapPin,
+  Palette,
+  Phone,
+  Plus,
+  Search,
+  Send,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  Trash2,
+  Upload,
+  Users,
+  Waves,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { formatDateTR, formatTRY, generateThemeFromPrompt } from "./mock";
+import { usePortfoyAI } from "./store";
+import type { ListingDraft, ThemeConfig } from "./types";
+
+const getThemeStyles = (theme: ThemeConfig) =>
+  ({
+    "--theme-primary": theme.primary,
+    "--theme-accent": theme.accent,
+    fontFamily: theme.fontPairing.body,
+  }) as CSSProperties;
+
+const usePageMeta = (title: string, description: string) => {
+  useEffect(() => {
+    document.title = title;
+    const tag = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (!tag) {
+      const created = document.createElement("meta");
+      created.name = "description";
+      created.content = description;
+      document.head.appendChild(created);
+      return;
+    }
+    tag.content = description;
+  }, [title, description]);
+};
+
+const themeDisplay = {
+  "Modern Minimal": "Modern Minimal",
+  "Warm Classic": "Warm Classic",
+  "Bold Luxury": "Bold Luxury",
+  "Clean Corporate": "Clean Corporate",
+};
+
+function Shell({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
+  const { currentAgent } = usePortfoyAI();
+  return (
+    <div className="min-h-screen bg-[#f2efe8] text-[#17231e]">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col bg-[#173f32] px-5 py-6 text-white lg:flex">
+        <Link to="/" className="flex items-center gap-3 px-2">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-white text-[#173f32]"><Home className="h-[18px] w-[18px]" /></div>
+          <span className="text-lg font-bold tracking-[-0.03em]">PortföyAI</span>
+        </Link>
+        <div className="mt-10 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/35">Çalışma alanı</div>
+        <nav className="mt-3 space-y-1.5">
+          {[{ icon: LayoutDashboard, label: "Genel bakış" }, { icon: Home, label: "Portföyler" }, { icon: Users, label: "Talepler" }, { icon: Palette, label: "Site tasarımı" }].map(({ icon: Icon, label }, index) => (
+            <div key={label} className={cn("flex items-center gap-3 rounded-xl px-3 py-3 text-sm", index === 0 ? "bg-white text-[#173f32] shadow-sm" : "text-white/65 hover:bg-white/8 hover:text-white")}>
+              <Icon className="h-[18px] w-[18px]" /><span>{label}</span>{label === "Talepler" ? <span className="ml-auto rounded-full bg-[#d86f45] px-2 py-0.5 text-[10px] text-white">2</span> : null}
+            </div>
+          ))}
+        </nav>
+        <div className="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-[#dbe5d2] font-semibold text-[#173f32]">{currentAgent?.name?.split(" ").map((part) => part[0]).join("").slice(0, 2)}</div><div className="min-w-0"><div className="truncate text-sm font-semibold">{currentAgent?.name}</div><div className="truncate text-xs text-white/45">{currentAgent?.businessName}</div></div></div>
+        </div>
+      </aside>
+      <div className="lg:pl-[260px]">
+        <header className="sticky top-0 z-20 border-b border-[#173f32]/10 bg-[#f2efe8]/90 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
+            <Link to="/" className="flex items-center gap-3 lg:hidden"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#173f32] text-white"><Home className="h-4 w-4" /></div><span className="font-bold">PortföyAI</span></Link>
+            <div className="hidden lg:block"><div className="text-xs text-[#78827c]">{currentAgent?.businessName}</div><div className="mt-0.5 text-sm font-semibold">Yönetim paneli</div></div>
+            <div className="flex items-center gap-2"><Button variant="outline" size="icon" className="rounded-full border-[#173f32]/10 bg-white text-[#173f32]"><Bell className="h-4 w-4" /></Button>{actions}</div>
+          </div>
+        </header>
+        <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+  right,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  right?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="max-w-2xl">
+        {eyebrow ? <div className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">{eyebrow}</div> : null}
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">{title}</h1>
+        {description ? <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">{description}</p> : null}
+      </div>
+      {right}
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  icon: ComponentType<{ className?: string }>;
+  tone?: "neutral" | "emerald" | "amber" | "blue";
+}) {
+  const tones = {
+    neutral: "bg-slate-100 text-slate-800",
+    emerald: "bg-emerald-50 text-emerald-700",
+    amber: "bg-amber-50 text-amber-700",
+    blue: "bg-blue-50 text-blue-700",
+  };
+  return (
+    <Card className="rounded-[1.5rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none">
+      <CardContent className="flex items-center gap-4 p-5">
+        <div className={cn("grid h-11 w-11 place-items-center rounded-2xl", tones[tone])}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <div className="text-xs text-[#7a857e]">{label}</div>
+          <div className="mt-1 text-2xl font-semibold tracking-tight text-[#17231e]">{value}</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ThemeBadge({ theme }: { theme: ThemeConfig }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Badge className="rounded-full bg-slate-950 px-3 py-1 text-white hover:bg-slate-950">{themeDisplay[theme.variant]}</Badge>
+      <Badge variant="outline" className="rounded-full px-3 py-1">
+        {theme.layoutVariant}
+      </Badge>
+    </div>
+  );
+}
+
+function LeadForm({ siteId, listingId, source, compact }: { siteId: string; listingId: string; source: string; compact?: boolean }) {
+  const { addLead } = usePortfoyAI();
+  const [form, setForm] = useState({ name: "", phone: "", message: "" });
+
+  return (
+    <form
+      className={cn("space-y-3", compact && "space-y-2")}
+      onSubmit={(e) => {
+        e.preventDefault();
+        addLead({ site_id: siteId, listing_id: listingId, ...form, source });
+        toast.success("Talep kaydedildi. Bildirim kuyruğu stub olarak loglandı.");
+        setForm({ name: "", phone: "", message: "" });
+      }}
+    >
+      <div className="grid gap-3 md:grid-cols-2">
+        <Input
+          placeholder="Ad Soyad"
+          value={form.name}
+          onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))}
+          required
+        />
+        <Input
+          placeholder="Telefon"
+          value={form.phone}
+          onChange={(e) => setForm((current) => ({ ...current, phone: e.target.value }))}
+          required
+        />
+      </div>
+      <Textarea
+        placeholder="Mesajınız"
+        value={form.message}
+        onChange={(e) => setForm((current) => ({ ...current, message: e.target.value }))}
+        required
+      />
+      <Button type="submit" className="w-full gap-2 bg-[linear-gradient(135deg,var(--theme-primary),var(--theme-accent))] text-white hover:opacity-95">
+        <Send className="h-4 w-4" />
+        Mesaj gönder
+      </Button>
+    </form>
+  );
+}
+
+function ListingForm({
+  siteId,
+  draft,
+  onDraftChange,
+  onSave,
+  onGenerate,
+  onReset,
+  onDelete,
+}: {
+  siteId: string;
+  draft: ListingDraft & { id?: string };
+  onDraftChange: (patch: Partial<ListingDraft & { id?: string }>) => void;
+  onSave: () => void;
+  onGenerate: () => void;
+  onReset: () => void;
+  onDelete: () => void;
+}) {
+  const handleFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const next = await Promise.all(
+      Array.from(files).map(
+        (file) =>
+          new Promise<{ url: string; thumbUrl: string; alt: string; id: string }>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const url = String(reader.result);
+              resolve({ url, thumbUrl: url, alt: file.name, id: `media_${Math.random().toString(36).slice(2, 9)}` });
+            };
+            reader.readAsDataURL(file);
+          }),
+      ),
+    );
+    onDraftChange({ media: [...draft.media, ...next] });
+  };
+
+  return (
+    <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none">
+      <CardHeader>
+        <CardTitle className="text-2xl">{draft.id ? "Portföyü düzenle" : "Yeni portföy"}</CardTitle>
+        <CardDescription>İlan bilgilerini tamamlayın ve yayına hazırlayın.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2 md:col-span-2">
+            <Label>Başlık</Label>
+            <Input placeholder="Örn. Caddebostan deniz manzaralı 3+1" value={draft.title} onChange={(e) => onDraftChange({ title: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Fiyat</Label>
+            <Input type="number" value={draft.price} onChange={(e) => onDraftChange({ price: Number(e.target.value) })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Daire / Alan</Label>
+            <Input value={draft.m2} onChange={(e) => onDraftChange({ m2: Number(e.target.value) })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Oda</Label>
+            <Input value={draft.room_count} onChange={(e) => onDraftChange({ room_count: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Tür</Label>
+            <Select value={draft.listing_type} onValueChange={(value) => onDraftChange({ listing_type: value as "sale" | "rent" })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sale">Satılık</SelectItem>
+                <SelectItem value="rent">Kiralık</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>İlçe</Label>
+            <Input value={draft.district} onChange={(e) => onDraftChange({ district: e.target.value })} />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Özellikler</Label>
+            <Input
+              value={draft.features.join(", ")}
+              onChange={(e) => onDraftChange({ features: e.target.value.split(",").map((item) => item.trim()).filter(Boolean) })}
+              placeholder="Deniz manzarası, güvenlik, otopark"
+            />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Fotoğraf yükle</Label>
+            <Input type="file" accept="image/*" multiple onChange={(e) => void handleFiles(e.target.files)} />
+            <div className="flex flex-wrap gap-2">
+              {draft.media.map((item) => (
+                <img key={item.id} src={item.thumbUrl} alt={item.alt} className="h-16 w-24 rounded-xl object-cover ring-1 ring-slate-200" />
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Açıklama</Label>
+            <Textarea rows={6} value={draft.description} onChange={(e) => onDraftChange({ description: e.target.value })} />
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" onClick={onGenerate} variant="secondary" className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            AI ile açıklama üret
+          </Button>
+          <Button type="button" onClick={onSave} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Kaydet
+          </Button>
+          <Button type="button" variant="outline" onClick={onReset}>
+            Yeni ilan
+          </Button>
+          {draft.id ? (
+            <Button type="button" variant="destructive" onClick={onDelete} className="gap-2">
+              <Trash2 className="h-4 w-4" />
+              Sil
+            </Button>
+          ) : null}
+        </div>
+        <div className="text-xs text-slate-500">Supabase Storage + thumbnail akışı burada demo amaçlı veri URL ile temsil ediliyor.</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function LandingPage() {
+  const navigate = useNavigate();
+  const { state, setPrompt } = usePortfoyAI();
+  usePageMeta("PortföyAI — Emlak markanız için akıllı web sitesi", "Portföyünüzü seçkin bir web sitesine dönüştürün; ilanlarınızı yönetin ve talepleri tek yerde toplayın.");
+  const prompt = state.onboardingPrompt;
+  const { profile, theme } = useMemo(() => generateThemeFromPrompt(prompt), [prompt]);
+  const previewListings = state.listings.slice(0, 3);
+  const demoSubdomain = state.sites[0]?.subdomain || "kaya-gayrimenkul";
+
+  const continueWithDesign = () => navigate("/auth?prompt=" + encodeURIComponent(prompt));
+
+  return (
+    <div className="min-h-screen overflow-hidden bg-[#f4f1ea] text-[#17231e]">
+      <header className="relative z-30 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
+        <Link to="/" className="flex items-center gap-3" aria-label="PortföyAI ana sayfa">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-[#173f32] text-white shadow-[0_8px_20px_rgba(23,63,50,0.16)]">
+            <Home className="h-[18px] w-[18px]" />
+          </div>
+          <span className="text-lg font-bold tracking-[-0.03em]">PortföyAI</span>
+        </Link>
+        <nav className="hidden items-center gap-8 text-sm font-medium text-[#48564f] md:flex">
+          <a href="#nasil-calisir" className="transition-colors hover:text-[#173f32]">Nasıl çalışır?</a>
+          <a href="#ozellikler" className="transition-colors hover:text-[#173f32]">Özellikler</a>
+          <a href="#temalar" className="transition-colors hover:text-[#173f32]">Temalar</a>
+          <a href="#sss" className="transition-colors hover:text-[#173f32]">S.S.S.</a>
+        </nav>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="hidden rounded-full text-[#25372f] sm:inline-flex">
+            Giriş yap
+          </Button>
+          <Button onClick={() => document.getElementById("site-olustur")?.scrollIntoView()} className="rounded-full bg-[#173f32] px-5 text-white shadow-sm hover:bg-[#0f3025]">
+            Sitemi oluştur
+          </Button>
+        </div>
+      </header>
+
+      <main>
+        <section id="site-olustur" className="relative mx-auto max-w-7xl px-5 pb-20 pt-14 sm:px-8 sm:pt-20 lg:px-10 lg:pb-28">
+          <div className="absolute -right-64 -top-40 h-[620px] w-[620px] rounded-full bg-[#d8e4cf]/70 blur-3xl" />
+          <div className="relative grid items-center gap-14 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
+            <div>
+              <Badge className="mb-7 rounded-full border border-[#173f32]/10 bg-white/70 px-4 py-2 text-[#173f32] shadow-sm hover:bg-white/70">
+                <Sparkles className="mr-2 h-3.5 w-3.5" />
+                Emlak profesyonelleri için yapay zekâ destekli site kurucu
+              </Badge>
+              <h1 className="max-w-3xl text-[3.55rem] font-semibold leading-[0.96] tracking-[-0.055em] text-[#13231c] sm:text-[4.8rem] lg:text-[5.4rem]">
+                Portföyünüz kadar <span className="italic text-[#a35f3d]">seçkin</span> bir dijital vitrin.
+              </h1>
+              <p className="mt-7 max-w-xl text-lg leading-8 text-[#5b675f]">
+                İşinizi bir cümleyle anlatın. PortföyAI markanıza uygun renkleri, tipografiyi ve sayfa düzenini hazırlayıp sitenizi anında önizlemeye açsın.
+              </p>
+
+              <Card className="mt-9 max-w-xl rounded-[1.75rem] border-[#173f32]/10 bg-white/90 shadow-[0_24px_70px_rgba(47,58,51,0.10)] backdrop-blur">
+                <CardContent className="p-3">
+                  <Label htmlFor="business-prompt" className="sr-only">Emlak işinizi anlatın</Label>
+                  <Textarea
+                    id="business-prompt"
+                    value={prompt}
+                    onChange={(event) => setPrompt(event.target.value)}
+                    className="min-h-[108px] resize-none border-0 bg-transparent px-4 py-3 text-base leading-7 text-[#1d2f27] shadow-none placeholder:text-[#849087] focus-visible:ring-0"
+                    placeholder="Örn. Caddebostan ve Suadiye'de seçkin konut portföyleriyle çalışan, modern ve güven veren bir gayrimenkul danışmanıyım."
+                  />
+                  <div className="flex flex-col gap-3 border-t border-[#173f32]/10 px-1 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="px-3 text-xs leading-5 text-[#758078]">Canlı önizleme yazdıkça güncellenir.</div>
+                    <Button onClick={continueWithDesign} className="h-12 rounded-full bg-[#d86f45] px-5 text-white shadow-[0_10px_24px_rgba(216,111,69,0.24)] hover:bg-[#c55f38]">
+                      Tasarımımla devam et
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#647069]">
+                {["Kredi kartı gerekmez", "Kurulum bilgisi gerekmez", "Önce ücretsiz önizleme"].map((item) => (
+                  <span key={item} className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-[#3b725d]" />{item}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="relative mx-auto w-full max-w-[680px]">
+              <div className="absolute -inset-5 rotate-2 rounded-[2.5rem] bg-[#d7cbbd]" />
+              <div className="relative overflow-hidden rounded-[2.1rem] border border-white/80 bg-white shadow-[0_35px_100px_rgba(40,55,47,0.20)]">
+                <div className="flex items-center justify-between border-b border-[#19372d]/10 bg-[#fbfaf7] px-5 py-3">
+                  <div className="flex gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#e9a58b]" /><span className="h-2.5 w-2.5 rounded-full bg-[#e6cf86]" /><span className="h-2.5 w-2.5 rounded-full bg-[#9dc4a9]" /></div>
+                  <div className="rounded-full bg-[#eef0eb] px-4 py-1.5 text-[10px] font-medium text-[#69756e]">{profile.business_name.toLowerCase().replace(/\s+/g, "-")}.portfoyai.com</div>
+                  <Badge className="rounded-full bg-[#e4f0e9] px-2.5 text-[10px] text-[#326049] hover:bg-[#e4f0e9]">Canlı</Badge>
+                </div>
+                <div className="p-3 sm:p-4" style={getThemeStyles(theme)}>
+                  <div className="overflow-hidden rounded-[1.6rem] text-white" style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.accent})` }}>
+                    <div className="flex items-center justify-between px-5 py-4 text-[10px] sm:px-7">
+                      <span className="font-semibold tracking-[0.18em]">{profile.business_name.toUpperCase()}</span>
+                      <div className="hidden items-center gap-4 text-white/75 sm:flex"><span>Portföyler</span><span>Hakkımda</span><span>İletişim</span></div>
+                    </div>
+                    <div className="grid items-end gap-6 px-5 pb-6 pt-8 sm:grid-cols-[1fr_0.72fr] sm:px-7 sm:pb-8 sm:pt-12">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-[0.2em] text-white/65">{profile.region_focus}</div>
+                        <div className="mt-3 text-3xl font-semibold leading-[1.02] sm:text-4xl" style={{ fontFamily: theme.fontPairing.heading }}>Doğru ev, doğru hikâyeyle başlar.</div>
+                        <p className="mt-3 max-w-sm text-xs leading-5 text-white/75">Seçkin portföyler, yerel uzmanlık ve güvene dayalı gayrimenkul danışmanlığı.</p>
+                      </div>
+                      <div className="rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur">
+                        <div className="text-[9px] uppercase tracking-[0.16em] text-white/60">Öne çıkan portföy</div>
+                        <div className="mt-2 text-sm font-medium">{previewListings[0]?.title}</div>
+                        <div className="mt-1 text-xs text-white/70">{previewListings[0] && formatTRY(previewListings[0].price)}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-1 pb-2 pt-5">
+                    <div className="mb-3 flex items-end justify-between">
+                      <div><div className="text-[9px] uppercase tracking-[0.18em] text-[#78847d]">Güncel portföyler</div><div className="mt-1 text-lg font-semibold text-[#17231e]">Size uygun yaşam alanını keşfedin</div></div>
+                      <span className="text-[10px] font-medium text-[#5d6962]">Tümünü gör →</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {previewListings.map((listing) => (
+                        <div key={listing.id} className="overflow-hidden rounded-xl border border-[#17231e]/10 bg-white">
+                          <img src={listing.media[0]?.thumbUrl} alt={listing.title} className="aspect-[4/3] w-full object-cover" />
+                          <div className="p-2.5">
+                            <div className="truncate text-[10px] font-semibold text-[#18251f]">{listing.title}</div>
+                            <div className="mt-1 text-[9px] text-[#78837c]">{listing.district} · {listing.room_count}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -bottom-7 -left-5 hidden rounded-2xl border border-white bg-white/95 p-4 shadow-[0_18px_45px_rgba(39,55,47,0.18)] backdrop-blur sm:block">
+                <div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#e7efe8] text-[#315d4b]"><Sparkles className="h-4 w-4" /></div><div><div className="text-xs font-semibold">Tasarım hazır</div><div className="mt-0.5 text-[10px] text-[#758078]">{theme.variant} · {profile.region_focus}</div></div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-y border-[#173f32]/10 bg-white/60">
+          <div className="mx-auto grid max-w-7xl divide-y divide-[#173f32]/10 px-5 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-8 lg:px-10">
+            {[{ value: "01", title: "İşinizi anlatın", text: "Bölgenizi, uzmanlığınızı ve marka tonunuzu birkaç cümleyle paylaşın." }, { value: "02", title: "Tasarımınızı görün", text: "Markanıza özel renk, tipografi ve sayfa düzeni anında oluşsun." }, { value: "03", title: "Portföyünüzü yayınlayın", text: "İlanlarınızı ekleyin; talepleri tek panelden takip etmeye başlayın." }].map((item) => (
+              <div key={item.value} className="flex gap-5 py-8 sm:px-7 sm:first:pl-0 sm:last:pr-0">
+                <span className="font-serif text-2xl italic text-[#b46a48]">{item.value}</span><div><div className="font-semibold text-[#1b2a23]">{item.title}</div><p className="mt-1 text-sm leading-6 text-[#68746d]">{item.text}</p></div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="nasil-calisir" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10 lg:py-32">
+          <div className="grid gap-14 lg:grid-cols-[0.72fr_1.28fr] lg:gap-24">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a35f3d]">Bir web sitesinden fazlası</div>
+              <h2 className="mt-5 text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl">Dijital ofisiniz, tek bir yerde.</h2>
+              <p className="mt-6 text-base leading-7 text-[#66726b]">PortföyAI, emlak danışmanlarının her gün yaptığı işi daha düzenli ve daha iyi sunulan bir deneyime dönüştürür.</p>
+              <Button variant="outline" onClick={() => navigate(`/site/${demoSubdomain}`)} className="mt-8 rounded-full border-[#173f32]/20 bg-transparent px-5 text-[#173f32] hover:bg-white">
+                Örnek siteyi incele <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {[{ icon: Sparkles, title: "Markanıza göre tasarım", text: "Hazır şablon seçmekle uğraşmadan, işinizin karakterine uygun bir başlangıç tasarımı alın.", tone: "bg-[#e5eee6] text-[#315d4b]" }, { icon: Home, title: "Zengin ilan sayfaları", text: "Fotoğraf galerisi, konum, özellikler ve iletişim formuyla her portföyü güçlü biçimde sunun.", tone: "bg-[#f4e4dc] text-[#a35f3d]" }, { icon: FileText, title: "AI ile ilan açıklaması", text: "Temel bilgileri girin; düzenleyebileceğiniz etkili bir pazarlama metni saniyeler içinde hazır olsun.", tone: "bg-[#ece7d8] text-[#766328]" }, { icon: Users, title: "Tek ekranda talepler", text: "Web sitenizden gelen tüm alıcı ve kiracı taleplerini ilanlarıyla birlikte takip edin.", tone: "bg-[#e6e9ef] text-[#415477]" }].map(({ icon: Icon, title, text, tone }) => (
+                <Card key={title} className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none transition-transform duration-300 hover:-translate-y-1">
+                  <CardContent className="p-7 sm:p-8"><div className={cn("grid h-12 w-12 place-items-center rounded-2xl", tone)}><Icon className="h-5 w-5" /></div><h3 className="mt-8 text-2xl font-semibold leading-tight">{title}</h3><p className="mt-3 text-sm leading-6 text-[#68746d]">{text}</p></CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="ozellikler" className="bg-[#173f32] py-24 text-white lg:py-32">
+          <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+            <div className="mx-auto max-w-3xl text-center"><Badge className="rounded-full border-white/15 bg-white/10 px-4 py-2 text-white hover:bg-white/10">Portföy yönetimi</Badge><h2 className="mt-6 text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl">Siteniz güzel görünür. İşiniz de kolaylaşır.</h2><p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/65">Gösterişli ama işlevsiz bir vitrin değil; günlük portföy operasyonunu taşıyan sade bir çalışma alanı.</p></div>
+            <div className="mt-16 grid gap-6 lg:grid-cols-[1.18fr_0.82fr]">
+              <div className="overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#f7f4ee] p-3 text-[#17231e] shadow-[0_30px_90px_rgba(0,0,0,0.22)] sm:p-5">
+                <div className="rounded-[1.65rem] border border-[#173f32]/10 bg-white p-4 sm:p-6">
+                  <div className="flex items-center justify-between"><div><div className="text-xs text-[#7a857e]">Portföyler</div><div className="mt-1 text-xl font-semibold">Aktif ilanlar</div></div><Button size="sm" className="rounded-full bg-[#173f32] text-white hover:bg-[#173f32]"> <Plus className="mr-1 h-3.5 w-3.5" /> Yeni ilan</Button></div>
+                  <div className="mt-5 space-y-2.5">{previewListings.map((listing, index) => <div key={listing.id} className="grid grid-cols-[52px_1fr_auto] items-center gap-3 rounded-2xl border border-[#173f32]/8 bg-[#fbfaf7] p-2.5"><img src={listing.media[0]?.thumbUrl} alt="" className="h-12 w-12 rounded-xl object-cover" /><div className="min-w-0"><div className="truncate text-sm font-semibold">{listing.title}</div><div className="mt-1 text-[11px] text-[#7a857e]">{listing.district} · {listing.m2} m² · {listing.room_count}</div></div><div className="text-right"><div className="text-xs font-semibold">{formatTRY(listing.price)}</div><Badge className="mt-1 bg-[#e4f0e9] text-[9px] text-[#326049] hover:bg-[#e4f0e9]">Yayında</Badge></div></div>)}</div>
+                </div>
+              </div>
+              <div className="grid gap-6">
+                <Card className="rounded-[2.25rem] border-white/10 bg-white/10 text-white shadow-none"><CardContent className="p-8"><div className="flex items-start justify-between"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#d86f45]"><FileText className="h-5 w-5" /></div><Sparkles className="h-5 w-5 text-white/40" /></div><h3 className="mt-10 text-3xl font-semibold">İlan metniniz hazır.</h3><p className="mt-3 leading-7 text-white/65">Oda sayısı, konum ve öne çıkan özelliklerden etkili bir açıklama üretin; son dokunuşu siz yapın.</p></CardContent></Card>
+                <Card className="rounded-[2.25rem] border-white/10 bg-[#dbe5d2] text-[#173f32] shadow-none"><CardContent className="p-8"><div className="flex items-center justify-between"><div><div className="text-xs uppercase tracking-[0.18em] text-[#66786e]">Yeni talep</div><div className="mt-2 text-xl font-semibold">Selin Yılmaz</div></div><div className="grid h-11 w-11 place-items-center rounded-full bg-white"><Phone className="h-4 w-4" /></div></div><p className="mt-8 rounded-2xl bg-white/60 p-4 text-sm leading-6">“Caddebostan’daki 3+1 daire için hafta sonu görüşebilir miyiz?”</p></CardContent></Card>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="temalar" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10 lg:py-32">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between"><div className="max-w-2xl"><div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a35f3d]">Markanıza uyum sağlar</div><h2 className="mt-5 text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl">Dört güçlü yön. Size özel bir sonuç.</h2></div><p className="max-w-md text-sm leading-6 text-[#69756e]">PortföyAI, iş tanımınızdan en doğru tasarım yönünü seçer. Renkleri ve yazı karakterlerini daha sonra dilediğiniz zaman değiştirebilirsiniz.</p></div>
+          <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {[{ name: "Modern Minimal", color: "#397164", accent: "#cfddd2", label: "Sade ve çağdaş" }, { name: "Warm Classic", color: "#9d5b3d", accent: "#ead7c8", label: "Sıcak ve köklü" }, { name: "Bold Luxury", color: "#222622", accent: "#c0a17a", label: "Güçlü ve seçkin" }, { name: "Clean Corporate", color: "#435b75", accent: "#d6e0e8", label: "Net ve kurumsal" }].map((item, index) => (
+              <button key={item.name} onClick={() => setPrompt(`${profile.region_focus} bölgesinde çalışan ${item.name === "Bold Luxury" ? "lüks" : item.name === "Warm Classic" ? "klasik" : item.name === "Clean Corporate" ? "kurumsal" : "modern"} bir emlak danışmanıyım`)} className="group text-left">
+                <div className="aspect-[4/5] overflow-hidden rounded-[2rem] p-3 transition-transform duration-300 group-hover:-translate-y-2" style={{ backgroundColor: item.accent }}><div className="flex h-full flex-col rounded-[1.4rem] bg-[#fbfaf7] p-4 shadow-sm"><div className="flex items-center justify-between text-[8px] font-semibold" style={{ color: item.color }}><span>PORTFÖYAI</span><span>MENÜ</span></div><div className="mt-8 rounded-xl px-4 py-7 text-white" style={{ backgroundColor: item.color }}><div className="text-[8px] uppercase tracking-wider opacity-65">İstanbul</div><div className="mt-2 font-serif text-2xl leading-none">Yaşam alanınızı keşfedin.</div></div><div className="mt-4 grid flex-1 grid-cols-2 gap-2">{[0, 1].map((n) => <div key={n} className="rounded-xl bg-[#ecebe6] p-2"><div className="aspect-square rounded-lg" style={{ backgroundColor: `${item.color}22` }} /><div className="mt-2 h-1.5 w-4/5 rounded-full bg-[#d4d3cd]" /><div className="mt-1.5 h-1.5 w-1/2 rounded-full bg-[#e2e1dc]" /></div>)}</div><div className="mt-4 flex items-center justify-between text-[8px] text-[#8a928d]"><span>SEÇKİN PORTFÖYLER</span><span>0{index + 1}</span></div></div></div>
+                <div className="mt-5 flex items-center justify-between px-1"><div><div className="font-semibold">{item.name}</div><div className="mt-1 text-sm text-[#748078]">{item.label}</div></div><ChevronRight className="h-4 w-4 text-[#8b968f] transition-transform group-hover:translate-x-1" /></div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="px-5 pb-24 sm:px-8 lg:px-10 lg:pb-32">
+          <div className="mx-auto max-w-7xl overflow-hidden rounded-[2.75rem] bg-[#d86f45] px-6 py-16 text-center text-white shadow-[0_28px_80px_rgba(216,111,69,0.22)] sm:px-12 lg:py-20">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-white/15"><Sparkles className="h-5 w-5" /></div><h2 className="mx-auto mt-7 max-w-3xl text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl">İlk izleniminizi şansa bırakmayın.</h2><p className="mx-auto mt-5 max-w-xl text-base leading-7 text-white/80">Emlak işinizi anlatın, markanıza uygun sitenizi hemen görün. Yayınlamadan önce her detayı değiştirebilirsiniz.</p><Button onClick={() => document.getElementById("site-olustur")?.scrollIntoView()} className="mt-8 h-12 rounded-full bg-white px-6 text-[#9e4e30] hover:bg-[#fff8f4]">Ücretsiz tasarımımı oluştur <ArrowRight className="ml-2 h-4 w-4" /></Button>
+          </div>
+        </section>
+
+        <section id="sss" className="border-t border-[#173f32]/10 bg-[#ebe7de]">
+          <div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[0.7fr_1.3fr] lg:px-10 lg:py-24">
+            <div><div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a35f3d]">Sık sorulanlar</div><h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em]">Aklınıza takılanlar.</h2></div>
+            <div className="divide-y divide-[#173f32]/12 border-y border-[#173f32]/12">{[{ q: "Siteyi görmek için hesap açmam gerekiyor mu?", a: "Hayır. İşinizi anlattığınız anda tasarım önizlemesi oluşur. Kaydolma adımı yalnızca tasarımınızı kaydetmek ve yayınlamak istediğinizde gelir." }, { q: "Tasarımı daha sonra değiştirebilir miyim?", a: "Evet. Renkleri, yazı karakterlerini ve site metinlerini panelinizden dilediğiniz zaman güncelleyebilirsiniz." }, { q: "İlanlarımı nasıl eklerim?", a: "Paneldeki ilan formundan fotoğraf, fiyat, oda sayısı, konum ve diğer bilgileri ekleyebilirsiniz. İlan açıklamasını AI ile oluşturup yayınlamadan önce düzenleyebilirsiniz." }, { q: "Müşteri talepleri nereye gelir?", a: "Site ve ilan sayfalarındaki formlardan gelen tüm talepler, ilgili portföy bilgisiyle birlikte panelinizdeki Talepler alanında toplanır." }].map((item) => <details key={item.q} className="group py-6"><summary className="flex cursor-pointer list-none items-center justify-between gap-6 font-semibold"><span>{item.q}</span><Plus className="h-5 w-5 shrink-0 transition-transform group-open:rotate-45" /></summary><p className="max-w-2xl pt-4 text-sm leading-7 text-[#66726b]">{item.a}</p></details>)}</div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="bg-[#13271f] text-white">
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10"><div className="flex flex-col gap-10 border-b border-white/10 pb-10 md:flex-row md:items-start md:justify-between"><div><Link to="/" className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-white text-[#173f32]"><Home className="h-[18px] w-[18px]" /></div><span className="text-lg font-bold">PortföyAI</span></Link><p className="mt-4 max-w-sm text-sm leading-6 text-white/55">Gayrimenkul profesyonelleri için akıllı web sitesi ve portföy yönetimi.</p></div><div className="grid grid-cols-2 gap-x-16 gap-y-3 text-sm text-white/65"><a href="#nasil-calisir" className="hover:text-white">Nasıl çalışır?</a><a href="#ozellikler" className="hover:text-white">Özellikler</a><a href="#temalar" className="hover:text-white">Temalar</a><a href="#sss" className="hover:text-white">S.S.S.</a><button onClick={() => navigate("/dashboard")} className="text-left hover:text-white">Giriş yap</button><button onClick={() => navigate(`/site/${demoSubdomain}`)} className="text-left hover:text-white">Demo site</button></div></div><div className="flex flex-col gap-3 pt-8 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between"><span>© 2026 PortföyAI. Tüm hakları saklıdır.</span><span>Türkiye’de emlak profesyonelleri için tasarlandı.</span></div></div>
+      </footer>
+    </div>
+  );
+}
+
+export function AuthPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialPrompt = searchParams.get("prompt") || "Kadıköy'de lüks daire satan modern ve güvenilir bir emlakçıyım";
+  const { state, updateSite, updateTheme } = usePortfoyAI();
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const [name, setName] = useState("Demet Kaya");
+  const [email, setEmail] = useState("demet@portfoyai.com");
+  const [phone, setPhone] = useState("+90 532 555 00 10");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedConfig, setGeneratedConfig] = useState<{
+    business_name: string;
+    tone: string;
+    primary_color: string;
+    accent_color: string;
+    headline: string;
+  } | null>(null);
+
+  usePageMeta("PortföyAI - Onboarding", "Emlak işletmenizi anlatın, PortföyAI sitenizi oluştursun.");
+  const preview = useMemo(() => generateThemeFromPrompt(prompt), [prompt]);
+  const previewListings = state.listings.filter((listing) => listing.site_id === "site_demo").slice(0, 3);
+  const demoSite = state.sites.find((site) => site.id === "site_demo") || state.sites[0];
+  const displayConfig = generatedConfig || {
+    business_name: preview.profile.business_name,
+    tone: preview.profile.tone,
+    primary_color: preview.theme.primary,
+    accent_color: preview.theme.accent,
+    headline: "Doğru ev, doğru hikâyeyle başlar.",
+  };
+
+  const handleGenerateSite = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch("/api/generate-theme", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Site configuration could not be generated.");
+
+      setGeneratedConfig(payload.config);
+      if (demoSite) {
+        updateSite(demoSite.id, { heroTitle: payload.config.headline });
+        updateTheme(demoSite.id, {
+          primary: payload.config.primary_color,
+          accent: payload.config.accent_color,
+        });
+      }
+      toast.success("Codex marka yapılandırmanızı oluşturdu.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unexpected generation error";
+      console.error("[onboarding] generate-theme request failed", error);
+      toast.error(message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f4f1ea] text-[#17231e]">
+      <header className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
+        <Link to="/" className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-[#173f32] text-white"><Home className="h-[18px] w-[18px]" /></div><span className="text-lg font-bold tracking-[-0.03em]">PortföyAI</span></Link>
+        <Link to="/" className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-[#66726b] transition hover:bg-white"><ArrowLeft className="h-4 w-4" />Ana sayfaya dön</Link>
+      </header>
+
+      <main className="mx-auto grid max-w-[1440px] gap-10 px-5 pb-12 pt-6 sm:px-8 lg:min-h-[calc(100vh-90px)] lg:grid-cols-[0.78fr_1.22fr] lg:items-center lg:px-10 lg:pb-16">
+        <div className="mx-auto w-full max-w-xl">
+          <div className="mb-8 flex items-center gap-2">{[{ no: "01", label: "Tasarım", done: true }, { no: "02", label: "Bilgileriniz", done: false }, { no: "03", label: "Yayınla", done: false }].map((step, index) => <div key={step.no} className="flex items-center gap-2"><div className={cn("grid h-8 w-8 place-items-center rounded-full text-[10px] font-semibold", step.done || index === 1 ? "bg-[#173f32] text-white" : "border border-[#173f32]/15 bg-white/50 text-[#7b857f]")}>{step.done ? <Check className="h-3.5 w-3.5" /> : step.no}</div><span className={cn("hidden text-xs sm:block", index === 1 ? "font-semibold text-[#173f32]" : "text-[#8a948e]")}>{step.label}</span>{index < 2 ? <div className="mx-1 h-px w-5 bg-[#173f32]/15 sm:w-8" /> : null}</div>)}</div>
+
+          <Badge className="rounded-full border border-[#173f32]/10 bg-white/65 px-4 py-2 text-[#173f32] shadow-sm hover:bg-white/65"><Sparkles className="mr-2 h-3.5 w-3.5" />Tasarımınız hazır</Badge>
+          <h1 className="mt-6 text-5xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-6xl">Sitenizi kaydedelim.</h1>
+          <p className="mt-5 max-w-lg text-base leading-7 text-[#66726b]">Tasarıma dilediğiniz zaman geri dönebilirsiniz. Şimdilik yalnızca çalışma alanınızı oluşturmak için temel iletişim bilgilerinize ihtiyacımız var.</p>
+
+          <Card className="mt-8 rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-[0_22px_65px_rgba(39,52,45,0.10)]">
+            <CardContent className="space-y-5 p-6 sm:p-7">
+              <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="auth-name">Adınız ve soyadınız</Label><Input id="auth-name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className="h-12 rounded-xl border-[#173f32]/10 bg-white" /></div><div className="space-y-2"><Label htmlFor="auth-phone">Telefon</Label><Input id="auth-phone" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="h-12 rounded-xl border-[#173f32]/10 bg-white" /></div></div>
+              <div className="space-y-2"><Label htmlFor="auth-email">E-posta adresiniz</Label><Input id="auth-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl border-[#173f32]/10 bg-white" /></div>
+              <div className="space-y-2"><div className="flex items-center justify-between gap-3"><Label htmlFor="auth-prompt">İşletme tanımınız</Label><span className="text-[11px] text-[#8a948e]">Tasarımı günceller</span></div><Textarea id="auth-prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} className="min-h-24 resize-none rounded-xl border-[#173f32]/10 bg-white leading-6" /></div>
+              <Button className="h-12 w-full rounded-full bg-[#d86f45] text-white shadow-[0_10px_24px_rgba(216,111,69,0.22)] hover:bg-[#c76039]" onClick={handleGenerateSite} disabled={isGenerating || prompt.trim().length < 10}><Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />{isGenerating ? "Codex tasarımınızı oluşturuyor..." : "Sitemi yapay zekâ ile oluştur"}<ArrowRight className="ml-2 h-4 w-4" /></Button>
+              <div className="flex items-center justify-center gap-2 text-[11px] text-[#7d8781]"><Check className="h-3.5 w-3.5 text-[#3b725d]" />Kredi kartı gerekmez · Tasarımınızı sonra değiştirebilirsiniz</div>
+            </CardContent>
+          </Card>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mt-3 w-full rounded-full text-[#66726b]">Demo paneli hesap oluşturmadan incele</Button>
+        </div>
+
+        <div className="relative mx-auto w-full max-w-[760px] lg:pl-6">
+          <div className="absolute -inset-8 rounded-full bg-[#d9e4d1]/65 blur-3xl" />
+          <div className="relative overflow-hidden rounded-[2.35rem] border-[9px] border-[#222a26] bg-white shadow-[0_35px_100px_rgba(38,53,45,0.20)]">
+            <div className="flex items-center justify-between border-b border-[#173f32]/10 bg-[#f7f5f0] px-5 py-3"><div className="flex gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#e9a58b]"/><span className="h-2.5 w-2.5 rounded-full bg-[#e6cf86]"/><span className="h-2.5 w-2.5 rounded-full bg-[#9dc4a9]"/></div><div className="rounded-full bg-white px-4 py-1.5 text-[10px] text-[#748079]">Canlı site önizlemesi</div><Badge className="rounded-full bg-[#e0eee5] px-2.5 text-[9px] text-[#326049] hover:bg-[#e0eee5]">Hazır</Badge></div>
+            <div className="p-4 sm:p-5" style={getThemeStyles(preview.theme)}>
+              <div className="overflow-hidden rounded-[1.8rem] text-white" style={{ background: `linear-gradient(145deg, ${displayConfig.primary_color}, ${displayConfig.accent_color})` }}><div className="flex items-center justify-between px-6 py-4 text-[9px] font-semibold uppercase tracking-[0.18em]"><span>{displayConfig.business_name}</span><div className="hidden gap-4 font-normal tracking-normal text-white/70 sm:flex"><span>Portföyler</span><span>Hakkımda</span><span>İletişim</span></div></div><div className="grid items-end gap-6 px-6 pb-8 pt-12 sm:grid-cols-[1fr_0.7fr] sm:px-8 sm:pb-10 sm:pt-16"><div><div className="text-[9px] uppercase tracking-[0.2em] text-white/55">{preview.profile.region_focus}</div><h2 className="mt-3 text-4xl font-semibold leading-none" style={{ fontFamily: preview.theme.fontPairing.heading }}>{displayConfig.headline}</h2><p className="mt-3 text-xs leading-5 text-white/70">Seçkin portföyler ve güvene dayalı kişisel gayrimenkul danışmanlığı.</p></div><div className="hidden rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur sm:block"><div className="text-[8px] uppercase tracking-[0.16em] text-white/50">Marka tonu</div><div className="mt-2 text-sm font-semibold">{displayConfig.tone}</div><div className="mt-1 text-[10px] text-white/60">Codex tarafından üretildi</div></div></div></div>
+              <div className="px-1 pb-2 pt-6"><div className="mb-4 flex items-end justify-between"><div><div className="text-[9px] uppercase tracking-[0.18em] text-[#839087]">Güncel portföyler</div><div className="mt-1 text-xl font-semibold">Öne çıkan yaşam alanları</div></div><span className="text-[10px] text-[#748079]">Tümünü gör →</span></div><div className="grid grid-cols-3 gap-3">{previewListings.map((listing) => <div key={listing.id} className="overflow-hidden rounded-xl border border-[#173f32]/10 bg-white"><img src={listing.media[0]?.thumbUrl} alt={listing.title} className="aspect-[4/3] w-full object-cover"/><div className="p-2.5"><div className="truncate text-[10px] font-semibold">{listing.title}</div><div className="mt-1 text-[9px] text-[#7a857e]">{listing.district} · {listing.room_count}</div></div></div>)}</div></div>
+            </div>
+          </div>
+          <div className="relative mx-auto mt-5 flex max-w-lg items-center justify-center gap-5 text-xs text-[#6f7a73]"><span className="inline-flex items-center gap-2"><Palette className="h-3.5 w-3.5" />{preview.theme.variant}</span><span className="h-3 w-px bg-[#173f32]/15"/><span className="inline-flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{preview.profile.region_focus}</span></div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export function DashboardPage() {
+  const navigate = useNavigate();
+  const { currentAgent, currentSite, currentListings, currentLeads, state, updateTheme, updateSite, saveListing, deleteListing, generateCopy, setCurrentAgent } =
+    usePortfoyAI();
+  const blankDraft = (): ListingDraft & { id?: string } => ({
+    site_id: currentSite.id,
+    title: "",
+    description: "",
+    price: 0,
+    currency: "TRY",
+    m2: 0,
+    room_count: "3+1",
+    listing_type: "sale",
+    district: currentAgent.region,
+    lat: 41,
+    lng: 29,
+    media: [],
+    status: "active",
+    features: [],
+  });
+  const [draft, setDraft] = useState<ListingDraft & { id?: string }>(blankDraft);
+
+  usePageMeta("PortföyAI - Dashboard", "Tema ayarları, ilanlar ve lead inbox.");
+
+  useEffect(() => {
+    setDraft((current) => ({
+      ...current,
+      site_id: currentSite.id,
+    }));
+  }, [currentSite.id]);
+
+  const [activeTab, setActiveTab] = useState<"overview" | "site" | "listings" | "leads">("overview");
+  const activeListings = currentListings.filter((listing) => listing.status === "active");
+
+  return (
+    <Shell
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={currentAgent.id} onValueChange={(value) => setCurrentAgent(value)}>
+            <SelectTrigger className="hidden w-[190px] rounded-full border-[#173f32]/10 bg-white sm:flex">
+              <SelectValue placeholder="Hesap seçin" />
+            </SelectTrigger>
+            <SelectContent>
+              {state.agents.map((agent) => (
+                <SelectItem key={agent.id} value={agent.id}>
+                  {agent.businessName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" onClick={() => navigate(`/site/${currentSite.subdomain}`)} className="gap-2 rounded-full border-[#173f32]/10 bg-white text-[#173f32]">
+            <Globe className="h-4 w-4" />
+            <span className="hidden sm:inline">Siteyi görüntüle</span>
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-7">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm text-[#78827c]">20 Ağustos 2026, Perşembe</div><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Merhaba, {currentAgent.name.split(" ")[0]}.</h1><p className="mt-2 text-sm text-[#69756e]">Portföyünüzde bugün neler olduğuna birlikte bakalım.</p></div><Button onClick={() => { setDraft(blankDraft()); setActiveTab("listings"); }} className="rounded-full bg-[#d86f45] px-5 text-white hover:bg-[#c76039]"><Plus className="mr-2 h-4 w-4" />Yeni portföy ekle</Button></div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1">{(["overview", "listings", "leads", "site"] as const).map((tab) => <Button key={tab} variant="ghost" onClick={() => setActiveTab(tab)} className={cn("shrink-0 rounded-full px-5", activeTab === tab ? "bg-[#173f32] text-white hover:bg-[#173f32] hover:text-white" : "bg-white/60 text-[#5e6a63] hover:bg-white")}>{tab === "overview" ? "Genel bakış" : tab === "listings" ? "Portföyler" : tab === "leads" ? "Talepler" : "Site tasarımı"}</Button>)}</div>
+
+        {activeTab === "overview" && <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Aktif portföy" value={`${activeListings.length}`} icon={Home} tone="emerald" /><StatCard label="Yeni talep" value={`${currentLeads.length}`} icon={Users} tone="blue" /><StatCard label="Bu ay görüntülenme" value="1.284" icon={BarChart3} tone="amber" /><StatCard label="Site durumu" value="Yayında" icon={Globe} tone="neutral" /></div>
+          <div className="grid gap-6 xl:grid-cols-[1.45fr_0.75fr]">
+            <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle className="text-2xl">Portföyleriniz</CardTitle><CardDescription className="mt-1">En son güncellenen aktif ilanlar</CardDescription></div><Button variant="ghost" onClick={() => setActiveTab("listings")} className="rounded-full">Tümünü gör <ArrowRight className="ml-2 h-4 w-4" /></Button></CardHeader><CardContent className="grid gap-4 md:grid-cols-3">{activeListings.slice(0, 3).map((listing) => <button key={listing.id} onClick={() => { setDraft({ ...listing }); setActiveTab("listings"); }} className="group overflow-hidden rounded-[1.4rem] border border-[#173f32]/10 bg-white text-left"><div className="relative overflow-hidden"><img src={listing.media[0]?.thumbUrl} alt={listing.title} className="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-105" /><Badge className="absolute left-3 top-3 rounded-full bg-white/90 text-[#173f32] hover:bg-white">{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</Badge></div><div className="p-4"><div className="truncate font-semibold">{listing.title}</div><div className="mt-1 text-xs text-[#7b857f]">{listing.district} · {listing.room_count} · {listing.m2} m²</div><div className="mt-4 font-semibold">{formatTRY(listing.price)}</div></div></button>)}</CardContent></Card>
+            <div className="grid gap-6"><Card className="rounded-[2rem] border-0 bg-[#173f32] text-white shadow-none"><CardContent className="p-7"><div className="flex items-center justify-between"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10"><Globe className="h-5 w-5" /></div><Badge className="bg-[#dbe5d2] text-[#315d4b] hover:bg-[#dbe5d2]">Yayında</Badge></div><h3 className="mt-8 text-3xl font-semibold">Siteniz hazır.</h3><p className="mt-3 text-sm leading-6 text-white/60">{currentSite.subdomain}.portfoyai.com</p><Button onClick={() => navigate(`/site/${currentSite.subdomain}`)} className="mt-6 w-full rounded-full bg-white text-[#173f32] hover:bg-white/90">Siteyi aç <ArrowRight className="ml-2 h-4 w-4" /></Button></CardContent></Card>
+              <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#dbe5d2] shadow-none"><CardContent className="p-7"><div className="text-xs uppercase tracking-[0.18em] text-[#64766c]">Son talep</div>{currentLeads[0] ? <><div className="mt-4 text-xl font-semibold">{currentLeads[0].name}</div><p className="mt-2 line-clamp-2 text-sm leading-6 text-[#5b6b62]">“{currentLeads[0].message}”</p><Button variant="ghost" onClick={() => setActiveTab("leads")} className="mt-3 -ml-3 rounded-full text-[#173f32]">Talebi görüntüle <ChevronRight className="ml-1 h-4 w-4" /></Button></> : <p className="mt-3 text-sm">Henüz yeni talep yok.</p>}</CardContent></Card></div>
+          </div>
+        </>}
+
+        {activeTab === "listings" && <div className="grid gap-6 xl:grid-cols-[1fr_0.85fr]">
+          <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle className="text-2xl">Portföyler</CardTitle><CardDescription>{currentListings.length} ilan kayıtlı</CardDescription></div><Button onClick={() => setDraft(blankDraft())} className="rounded-full bg-[#173f32] text-white"><Plus className="mr-2 h-4 w-4" />Yeni ilan</Button></CardHeader><CardContent className="space-y-3">{currentListings.map((listing) => <button key={listing.id} onClick={() => setDraft({ ...listing })} className={cn("grid w-full grid-cols-[72px_1fr_auto] items-center gap-4 rounded-2xl border p-3 text-left transition", draft.id === listing.id ? "border-[#173f32] bg-[#edf1eb]" : "border-[#173f32]/10 bg-white hover:border-[#173f32]/25")}><img src={listing.media[0]?.thumbUrl} alt="" className="h-16 w-[72px] rounded-xl object-cover" /><div className="min-w-0"><div className="truncate font-semibold">{listing.title}</div><div className="mt-1 text-xs text-[#7a857e]">{listing.district} · {listing.room_count} · {listing.m2} m²</div><div className="mt-2 text-sm font-semibold">{formatTRY(listing.price)}</div></div><Badge className={listing.status === "active" ? "bg-[#e1eee6] text-[#336049] hover:bg-[#e1eee6]" : "bg-[#eceae5] text-[#6f7772] hover:bg-[#eceae5]"}>{listing.status === "active" ? "Yayında" : "Taslak"}</Badge></button>)}</CardContent></Card>
+          <ListingForm siteId={currentSite.id} draft={draft} onDraftChange={(patch) => setDraft((current) => ({ ...current, ...patch }))} onSave={() => { saveListing(draft, draft.id); toast.success("Portföy kaydedildi."); }} onGenerate={() => { setDraft((current) => ({ ...current, description: generateCopy(current) })); toast.success("İlan açıklaması hazır."); }} onReset={() => setDraft(blankDraft())} onDelete={() => { if (draft.id) { deleteListing(draft.id); setDraft(blankDraft()); toast.success("Portföy silindi."); } }} />
+        </div>}
+
+        {activeTab === "leads" && <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader><CardTitle className="text-2xl">Müşteri talepleri</CardTitle><CardDescription>Sitenizdeki iletişim formlarından gelen talepler</CardDescription></CardHeader><CardContent><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left"><thead className="border-y border-[#173f32]/10 text-[10px] uppercase tracking-[0.18em] text-[#7a857e]"><tr><th className="py-4">Müşteri</th><th>İlgilendiği portföy</th><th>Mesaj</th><th>Tarih</th><th /></tr></thead><tbody>{currentLeads.map((lead) => { const related = currentListings.find((listing) => listing.id === lead.listing_id); return <tr key={lead.id} className="border-b border-[#173f32]/8"><td className="py-5"><div className="font-semibold">{lead.name}</div><div className="mt-1 text-xs text-[#7a857e]">{lead.phone}</div></td><td className="max-w-[220px] text-sm">{related?.title || "Genel talep"}</td><td className="max-w-[320px] text-sm leading-6 text-[#627068]">{lead.message}</td><td className="text-xs text-[#7a857e]">{formatDateTR(lead.created_at)}</td><td><Button variant="outline" size="sm" className="rounded-full border-[#173f32]/10">Ara <Phone className="ml-2 h-3.5 w-3.5" /></Button></td></tr>; })}</tbody></table></div></CardContent></Card>}
+
+        {activeTab === "site" && <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
+          <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader><CardTitle className="text-2xl">Marka görünümü</CardTitle><CardDescription>Değişiklikler canlı sitenize anında uygulanır.</CardDescription></CardHeader><CardContent className="space-y-5"><div className="space-y-2"><Label>Karşılama başlığı</Label><Input value={currentSite.heroTitle} onChange={(e) => updateSite(currentSite.id, { heroTitle: e.target.value })} className="rounded-xl border-[#173f32]/10 bg-white" /></div><div className="space-y-2"><Label>Alt açıklama</Label><Textarea value={currentSite.heroSubtitle} onChange={(e) => updateSite(currentSite.id, { heroSubtitle: e.target.value })} className="min-h-24 rounded-xl border-[#173f32]/10 bg-white" /></div><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Ana renk</Label><Input type="color" value={currentSite.theme_config.primary} onChange={(e) => updateTheme(currentSite.id, { primary: e.target.value })} className="h-12 rounded-xl border-[#173f32]/10 bg-white p-1" /></div><div className="space-y-2"><Label>Vurgu rengi</Label><Input type="color" value={currentSite.theme_config.accent} onChange={(e) => updateTheme(currentSite.id, { accent: e.target.value })} className="h-12 rounded-xl border-[#173f32]/10 bg-white p-1" /></div></div><div className="space-y-2"><Label>Başlık yazı karakteri</Label><Select value={currentSite.theme_config.fontPairing.heading} onValueChange={(value) => updateTheme(currentSite.id, { fontPairing: { ...currentSite.theme_config.fontPairing, heading: value } })}><SelectTrigger className="rounded-xl border-[#173f32]/10 bg-white"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Cormorant Garamond, serif">Cormorant Garamond</SelectItem><SelectItem value="Libre Baskerville, serif">Libre Baskerville</SelectItem><SelectItem value="Manrope, sans-serif">Manrope</SelectItem><SelectItem value="Inter, sans-serif">Inter</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label>Alan adı</Label><Input value={currentSite.custom_domain || ""} onChange={(e) => updateSite(currentSite.id, { custom_domain: e.target.value || null })} placeholder={`${currentSite.subdomain}.com`} className="rounded-xl border-[#173f32]/10 bg-white" /></div></CardContent></Card>
+          <div className="overflow-hidden rounded-[2rem] border-[10px] border-[#252b28] bg-white shadow-[0_28px_80px_rgba(32,43,37,0.18)]"><div className="flex items-center justify-between border-b border-[#173f32]/10 bg-[#f5f3ee] px-4 py-2"><div className="flex gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#e9a58b]"/><span className="h-2.5 w-2.5 rounded-full bg-[#e6cf86]"/><span className="h-2.5 w-2.5 rounded-full bg-[#9dc4a9]"/></div><span className="rounded-full bg-white px-4 py-1 text-[10px] text-[#738078]">{currentSite.subdomain}.portfoyai.com</span><span /></div><div className="p-4" style={getThemeStyles(currentSite.theme_config)}><div className="rounded-[1.5rem] p-7 text-white" style={{ background: `linear-gradient(135deg, ${currentSite.theme_config.primary}, ${currentSite.theme_config.accent})` }}><div className="text-[9px] font-semibold uppercase tracking-[0.2em]">{currentAgent.businessName}</div><h3 className="mt-12 max-w-lg text-4xl font-semibold leading-none" style={{ fontFamily: currentSite.theme_config.fontPairing.heading }}>{currentSite.heroTitle}</h3><p className="mt-3 max-w-md text-xs leading-5 text-white/70">{currentSite.heroSubtitle}</p></div><div className="mt-4 grid grid-cols-3 gap-3">{activeListings.slice(0,3).map((listing) => <div key={listing.id} className="overflow-hidden rounded-xl border border-[#173f32]/10"><img src={listing.media[0]?.thumbUrl} alt="" className="aspect-[4/3] w-full object-cover"/><div className="p-2"><div className="truncate text-[10px] font-semibold">{listing.title}</div><div className="mt-1 text-[9px] text-[#7a857e]">{listing.district}</div></div></div>)}</div></div></div>
+        </div>}
+      </div>
+    </Shell>
+  );
+}
+
+export function PublicSitePage() {
+  const { subdomain } = useParams();
+  const { state } = usePortfoyAI();
+  const navigate = useNavigate();
+  const site = state.sites.find((item) => item.subdomain === subdomain);
+  const agent = state.agents.find((item) => item.id === site?.agent_id);
+  const listings = state.listings.filter((listing) => listing.site_id === site?.id && listing.status !== "passive");
+  const [filters, setFilters] = useState({ query: "", district: "", type: "all", maxPrice: "" });
+
+  usePageMeta(
+    site ? `${agent?.businessName || "PortföyAI"} - ${site.heroTitle}` : "PortföyAI - Site bulunamadı",
+    site?.heroSubtitle || "PortföyAI public site",
+  );
+
+  const filteredListings = useMemo(
+    () =>
+      listings.filter((listing) => {
+        if (filters.district && !listing.district.toLowerCase().includes(filters.district.toLowerCase())) return false;
+        if (filters.type !== "all" && listing.listing_type !== filters.type) return false;
+        if (filters.query && !`${listing.title} ${listing.description}`.toLowerCase().includes(filters.query.toLowerCase())) return false;
+        if (filters.maxPrice && listing.price > Number(filters.maxPrice)) return false;
+        return true;
+      }),
+    [filters, listings],
+  );
+
+  if (!site || !agent) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-slate-950 px-4 text-white">
+        <Card className="max-w-lg border-white/10 bg-white/5 text-white">
+          <CardContent className="space-y-4 p-6 text-center">
+            <div className="text-2xl font-semibold">Site bulunamadı</div>
+            <p className="text-white/70">Bu subdomain için tanımlı bir site yok.</p>
+            <Button onClick={() => navigate("/")} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Ana sayfaya dön
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const featured = listings[0];
+
+  return (
+    <div className="min-h-screen bg-[#f5f2ec] text-[#18251f]" style={getThemeStyles(site.theme_config)}>
+      <header className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10">
+        <Link to={`/site/${site.subdomain}`} className="text-sm font-bold uppercase tracking-[0.2em]" style={{ color: site.theme_config.primary }}>{agent.businessName}</Link>
+        <nav className="hidden items-center gap-8 text-sm text-[#66726b] md:flex"><a href="#portfoyler">Portföyler</a><a href="#hakkimda">Hakkımda</a><a href="#iletisim">İletişim</a></nav>
+        <Button asChild className="rounded-full px-5 text-white" style={{ backgroundColor: site.theme_config.primary }}><a href={`tel:${agent.phone}`}><Phone className="mr-2 h-4 w-4" />Beni arayın</a></Button>
+      </header>
+
+      <main>
+        <section className="mx-auto max-w-7xl px-5 pb-20 pt-8 sm:px-8 lg:px-10 lg:pb-28 lg:pt-14">
+          <div className="grid items-stretch gap-6 lg:grid-cols-[0.88fr_1.12fr]">
+            <div className="flex flex-col justify-between rounded-[2.5rem] p-8 text-white sm:p-12" style={{ background: `linear-gradient(145deg, ${site.theme_config.primary}, ${site.theme_config.accent})` }}>
+              <div><div className="text-xs uppercase tracking-[0.24em] text-white/60">{agent.region} · Gayrimenkul danışmanlığı</div><h1 className="mt-8 text-5xl font-semibold leading-[0.98] tracking-[-0.045em] sm:text-6xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{site.heroTitle}</h1><p className="mt-6 max-w-xl text-base leading-7 text-white/72">{site.heroSubtitle}</p></div>
+              <div className="mt-14 flex flex-wrap items-center gap-4"><Button asChild className="rounded-full bg-white px-6 text-[#173f32] hover:bg-white/90"><a href="#portfoyler">Portföyleri keşfedin <ArrowRight className="ml-2 h-4 w-4" /></a></Button><div className="text-xs text-white/55">Yerel uzmanlık · Kişisel danışmanlık</div></div>
+            </div>
+            {featured ? <Link to={`/site/${site.subdomain}/listings/${featured.id}`} className="group relative min-h-[480px] overflow-hidden rounded-[2.5rem] lg:min-h-[620px]"><img src={featured.media[0]?.url} alt={featured.title} className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]" /><div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" /><div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-9"><Badge className="rounded-full border-white/20 bg-white/15 text-white backdrop-blur hover:bg-white/15">Öne çıkan portföy</Badge><div className="mt-4 flex items-end justify-between gap-4"><div><h2 className="text-3xl font-semibold sm:text-4xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{featured.title}</h2><div className="mt-2 text-sm text-white/70">{featured.district} · {featured.room_count} · {featured.m2} m²</div></div><div className="shrink-0 text-xl font-semibold sm:text-2xl">{formatTRY(featured.price)}</div></div></div></Link> : null}
+          </div>
+        </section>
+
+        <section id="portfoyler" className="border-y border-[#173f32]/10 bg-[#eeebe4] py-20 lg:py-28">
+          <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between"><div><div className="text-xs font-semibold uppercase tracking-[0.22em]" style={{ color: site.theme_config.accent }}>Seçkin portföyler</div><h2 className="mt-4 text-5xl font-semibold tracking-[-0.045em] sm:text-6xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>Size uygun yaşam alanını bulun.</h2></div><p className="max-w-md text-sm leading-6 text-[#69756e]">Her portföyü yerinde inceliyor, doğru bilgi ve şeffaf iletişimle sunuyoruz.</p></div>
+
+            <div className="mt-10 grid gap-3 rounded-[1.6rem] border border-[#173f32]/10 bg-white p-3 shadow-sm md:grid-cols-[1.25fr_0.8fr_0.8fr_0.8fr_auto]">
+              <div className="relative"><Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a948e]" /><Input placeholder="Portföy ara" value={filters.query} onChange={(e) => setFilters((current) => ({ ...current, query: e.target.value }))} className="h-12 rounded-xl border-0 bg-[#f5f3ee] pl-11 shadow-none" /></div>
+              <Input placeholder="Bölge" value={filters.district} onChange={(e) => setFilters((current) => ({ ...current, district: e.target.value }))} className="h-12 rounded-xl border-0 bg-[#f5f3ee] shadow-none" />
+              <Select value={filters.type} onValueChange={(value) => setFilters((current) => ({ ...current, type: value }))}><SelectTrigger className="h-12 rounded-xl border-0 bg-[#f5f3ee] shadow-none"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Tüm ilanlar</SelectItem><SelectItem value="sale">Satılık</SelectItem><SelectItem value="rent">Kiralık</SelectItem></SelectContent></Select>
+              <Input placeholder="Maks. fiyat" type="number" value={filters.maxPrice} onChange={(e) => setFilters((current) => ({ ...current, maxPrice: e.target.value }))} className="h-12 rounded-xl border-0 bg-[#f5f3ee] shadow-none" />
+              <div className="grid h-12 place-items-center rounded-xl px-5 text-sm text-white" style={{ backgroundColor: site.theme_config.primary }}>{filteredListings.length} portföy</div>
+            </div>
+
+            <div className="mt-10 grid gap-x-5 gap-y-10 md:grid-cols-2 lg:grid-cols-3">{filteredListings.map((listing) => <Link to={`/site/${site.subdomain}/listings/${listing.id}`} key={listing.id} className="group"><div className="relative overflow-hidden rounded-[2rem]"><img src={listing.media[0]?.thumbUrl} alt={listing.title} className="aspect-[4/3] w-full object-cover transition duration-700 group-hover:scale-105" /><div className="absolute left-4 top-4 flex gap-2"><Badge className="rounded-full bg-white/90 text-[#173f32] backdrop-blur hover:bg-white">{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</Badge><Badge className="rounded-full bg-black/35 text-white backdrop-blur hover:bg-black/35">{listing.district}</Badge></div><div className="absolute bottom-4 right-4 grid h-11 w-11 place-items-center rounded-full bg-white text-[#173f32] transition-transform group-hover:translate-x-1"><ArrowRight className="h-4 w-4" /></div></div><div className="px-1 pt-5"><div className="flex items-start justify-between gap-4"><h3 className="text-2xl font-semibold leading-tight" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{listing.title}</h3><div className="shrink-0 font-semibold">{formatTRY(listing.price)}</div></div><div className="mt-3 flex items-center gap-4 text-xs text-[#738078]"><span>{listing.room_count} oda</span><span>{listing.m2} m²</span><span>{listing.features[0]}</span></div></div></Link>)}</div>
+          </div>
+        </section>
+
+        <section id="hakkimda" className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-24 sm:px-8 lg:grid-cols-[0.85fr_1.15fr] lg:px-10 lg:py-32">
+          <div className="relative mx-auto aspect-[4/5] w-full max-w-md overflow-hidden rounded-[2.5rem]" style={{ background: `linear-gradient(145deg, ${site.theme_config.primary}22, ${site.theme_config.accent}88)` }}><div className="absolute inset-8 flex flex-col justify-end rounded-[1.8rem] border border-white/40 bg-white/30 p-7 backdrop-blur-sm"><div className="grid h-20 w-20 place-items-center rounded-full bg-white text-2xl font-semibold" style={{ color: site.theme_config.primary }}>{agent.name.split(" ").map((part) => part[0]).join("")}</div><div className="mt-6 text-3xl font-semibold" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{agent.name}</div><div className="mt-2 text-sm text-[#5f7067]">Gayrimenkul danışmanı · {agent.region}</div></div></div>
+          <div><div className="text-xs font-semibold uppercase tracking-[0.22em]" style={{ color: site.theme_config.accent }}>Tanışalım</div><h2 className="mt-5 max-w-2xl text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>Doğru karar, güvenilir bir danışmanlıkla başlar.</h2><p className="mt-7 max-w-xl text-base leading-8 text-[#657169]">{agent.bio} Her portföyde ihtiyaçlarınızı dinleyen, bölge bilgisini veriye dayalı değerlendirmelerle birleştiren kişisel bir yaklaşım sunuyorum.</p><div className="mt-8 flex flex-wrap gap-3"><Button asChild className="rounded-full px-6 text-white" style={{ backgroundColor: site.theme_config.primary }}><a href={`tel:${agent.phone}`}><Phone className="mr-2 h-4 w-4" />{agent.phone}</a></Button><Button variant="outline" className="rounded-full border-[#173f32]/15 bg-transparent px-6"><MapPin className="mr-2 h-4 w-4" />{agent.region}</Button></div></div>
+        </section>
+
+        <section id="iletisim" className="px-5 pb-20 sm:px-8 lg:px-10"><div className="mx-auto grid max-w-7xl gap-8 overflow-hidden rounded-[2.75rem] p-8 text-white sm:p-12 lg:grid-cols-[0.9fr_1.1fr] lg:p-16" style={{ backgroundColor: site.theme_config.primary }}><div><div className="text-xs uppercase tracking-[0.22em] text-white/55">İletişim</div><h2 className="mt-5 text-4xl font-semibold leading-tight sm:text-5xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>Yeni evinizi birlikte bulalım.</h2><p className="mt-4 max-w-md text-sm leading-7 text-white/65">Aradığınız portföyü tarif edin; size en kısa sürede kişisel olarak dönüş yapayım.</p></div><Card className="rounded-[2rem] border-0 bg-white text-[#17231e] shadow-none"><CardContent className="p-6 sm:p-7"><LeadForm siteId={site.id} listingId={featured?.id || "general"} source="public-home" /></CardContent></Card></div></section>
+      </main>
+
+      <footer className="border-t border-[#173f32]/10 bg-[#ece8df]"><div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-10 text-sm text-[#69756e] sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10"><div><div className="font-bold uppercase tracking-[0.18em]" style={{ color: site.theme_config.primary }}>{agent.businessName}</div><div className="mt-2 text-xs">{agent.region} gayrimenkul danışmanlığı</div></div><div className="flex gap-6"><a href="#portfoyler">Portföyler</a><a href="#hakkimda">Hakkımda</a><a href="#iletisim">İletişim</a></div><div className="text-xs">PortföyAI ile hazırlandı</div></div></footer>
+    </div>
+  );
+}
+
+export function ListingDetailPage() {
+  const { subdomain, listingId } = useParams();
+  const { state } = usePortfoyAI();
+  const navigate = useNavigate();
+  const site = state.sites.find((item) => item.subdomain === subdomain);
+  const listing = state.listings.find((item) => item.id === listingId);
+  const agent = state.agents.find((item) => item.id === site?.agent_id);
+
+  usePageMeta(
+    listing ? `${listing.title} - PortföyAI` : "PortföyAI - İlan",
+    listing?.description || "İlan detay sayfası",
+  );
+
+  if (!site || !listing || !agent) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-slate-50 px-4">
+        <Card className="max-w-lg">
+          <CardContent className="space-y-4 p-6 text-center">
+            <div className="text-2xl font-semibold">İlan bulunamadı</div>
+            <Button onClick={() => navigate(`/site/${subdomain}`)} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Siteye dön
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f5f2ec] text-[#18251f]" style={getThemeStyles(site.theme_config)}>
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10"><Link to={`/site/${site.subdomain}`} className="text-sm font-bold uppercase tracking-[0.2em]" style={{ color: site.theme_config.primary }}>{agent.businessName}</Link><Button variant="ghost" onClick={() => navigate(`/site/${site.subdomain}`)} className="rounded-full text-[#536159]"><ArrowLeft className="mr-2 h-4 w-4" />Tüm portföyler</Button></header>
+
+      <main className="mx-auto max-w-7xl px-5 pb-24 sm:px-8 lg:px-10">
+        <div className="mb-10 mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"><div><div className="flex flex-wrap gap-2"><Badge className="rounded-full px-3 py-1 text-white" style={{ backgroundColor: site.theme_config.primary }}>{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</Badge><Badge variant="outline" className="rounded-full border-[#173f32]/15 bg-white/50">{listing.district}</Badge></div><h1 className="mt-5 max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{listing.title}</h1></div><div className="text-left lg:text-right"><div className="text-sm text-[#77827b]">Satış fiyatı</div><div className="mt-1 text-3xl font-semibold">{formatTRY(listing.price)}</div></div></div>
+
+        <div className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]"><img src={listing.media[0]?.url} alt={listing.title} className="aspect-[16/10] h-full w-full rounded-[2.5rem] object-cover" /><div className="grid grid-cols-2 gap-4 lg:grid-cols-1">{listing.media.slice(1,3).map((item) => <img key={item.id} src={item.url} alt={item.alt} className="h-full min-h-0 w-full rounded-[2rem] object-cover" />)}<div className="flex min-h-[150px] flex-col justify-end rounded-[2rem] p-6 text-white" style={{ background: `linear-gradient(145deg, ${site.theme_config.primary}, ${site.theme_config.accent})` }}><div className="text-xs uppercase tracking-[0.18em] text-white/55">Konum</div><div className="mt-2 flex items-center gap-2 text-xl font-semibold"><MapPin className="h-5 w-5" />{listing.district}, İstanbul</div></div></div></div>
+
+        <div className="mt-12 grid gap-10 lg:grid-cols-[1fr_380px] lg:items-start">
+          <div>
+            <div className="grid grid-cols-3 divide-x divide-[#173f32]/12 rounded-[1.8rem] border border-[#173f32]/10 bg-white/60 py-6 text-center"><div><div className="text-xs text-[#7b857f]">Oda sayısı</div><div className="mt-2 text-2xl font-semibold">{listing.room_count}</div></div><div><div className="text-xs text-[#7b857f]">Brüt alan</div><div className="mt-2 text-2xl font-semibold">{listing.m2} m²</div></div><div><div className="text-xs text-[#7b857f]">İlan tipi</div><div className="mt-2 text-2xl font-semibold">{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</div></div></div>
+            <section className="border-b border-[#173f32]/10 py-10"><div className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: site.theme_config.accent }}>Portföy hakkında</div><h2 className="mt-4 text-3xl font-semibold" style={{ fontFamily: site.theme_config.fontPairing.heading }}>Yaşam alanının detayları</h2><p className="mt-5 max-w-3xl text-base leading-8 text-[#606d65]">{listing.description}</p></section>
+            <section className="border-b border-[#173f32]/10 py-10"><h2 className="text-3xl font-semibold" style={{ fontFamily: site.theme_config.fontPairing.heading }}>Öne çıkan özellikler</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{listing.features.map((feature) => <div key={feature} className="flex items-center gap-3 rounded-2xl bg-[#ebece5] px-4 py-4 text-sm"><div className="grid h-7 w-7 place-items-center rounded-full bg-white"><Check className="h-3.5 w-3.5" style={{ color: site.theme_config.primary }} /></div>{feature}</div>)}</div></section>
+            <section className="py-10"><h2 className="text-3xl font-semibold" style={{ fontFamily: site.theme_config.fontPairing.heading }}>Konum</h2><div className="mt-6 grid aspect-[16/7] place-items-center overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,#dde6dc,#e8dfd4)]"><div className="text-center"><div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-white shadow-sm"><MapPin className="h-6 w-6" style={{ color: site.theme_config.primary }} /></div><div className="mt-4 font-semibold">{listing.district}, İstanbul</div><div className="mt-1 text-xs text-[#718077]">Harita görünümü yakında</div></div></div></section>
+          </div>
+
+          <Card className="sticky top-6 rounded-[2rem] border-[#173f32]/10 bg-white shadow-[0_24px_70px_rgba(36,50,43,0.10)]"><CardHeader><div className="flex items-center gap-3"><div className="grid h-12 w-12 place-items-center rounded-full bg-[#dbe5d2] font-semibold" style={{ color: site.theme_config.primary }}>{agent.name.split(" ").map((part) => part[0]).join("")}</div><div><CardTitle className="text-lg">{agent.name}</CardTitle><CardDescription>{agent.region} bölge uzmanı</CardDescription></div></div><div className="pt-3"><CardTitle className="text-2xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>Bu portföyle ilgileniyorum</CardTitle><CardDescription className="mt-2 leading-6">Bilgilerinizi bırakın, size kısa süre içinde dönüş yapalım.</CardDescription></div></CardHeader><CardContent><LeadForm siteId={site.id} listingId={listing.id} source="listing-detail" /><Button variant="outline" asChild className="mt-3 w-full rounded-xl border-[#173f32]/12"><a href={`tel:${agent.phone}`}><Phone className="mr-2 h-4 w-4" />{agent.phone}</a></Button></CardContent></Card>
+        </div>
+      </main>
+
+      <footer className="border-t border-[#173f32]/10 bg-[#ece8df]"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-8 text-xs text-[#6f7b73] sm:px-8 lg:px-10"><span>{agent.businessName}</span><span>PortföyAI ile hazırlandı</span></div></footer>
+    </div>
+  );
+}
+
+export function NotFoundPage() {
+  usePageMeta("PortföyAI - Sayfa bulunamadı", "İstediğiniz sayfa bulunamadı.");
+  return (
+    <div className="grid min-h-screen place-items-center bg-slate-950 px-4 text-white">
+      <Card className="max-w-lg border-white/10 bg-white/5 text-white">
+        <CardContent className="space-y-4 p-6 text-center">
+          <div className="text-2xl font-semibold">Sayfa bulunamadı</div>
+          <p className="text-white/70">Aradığınız rota mevcut değil.</p>
+          <Button asChild>
+            <Link to="/">Ana sayfaya dön</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

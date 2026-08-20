@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "business_name": {
+      "type": "string"
+    },
+    "tone": {
+      "type": "string"
+    },
+    "primary_color": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "accent_color": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "headline": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "business_name",
+    "tone",
+    "primary_color",
+    "accent_color",
+    "headline"
+  ]
+}
