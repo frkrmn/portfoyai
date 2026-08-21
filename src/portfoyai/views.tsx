@@ -13,6 +13,7 @@ import {
   Globe,
   Home,
   LayoutDashboard,
+  LogOut,
   MapPin,
   Palette,
   Phone,
@@ -36,10 +37,12 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { getSiteSessionId } from "@/lib/site-session";
 import { toast } from "sonner";
 import { formatDateTR, formatTRY, generateThemeFromPrompt } from "./mock";
 import { usePortfoyAI } from "./store";
-import type { ListingDraft, ThemeConfig } from "./types";
+import { useAuth } from "./auth";
+import type { GeneratedSiteConfig, ListingDraft, ThemeConfig } from "./types";
 
 const getThemeStyles = (theme: ThemeConfig) =>
   ({
@@ -72,6 +75,7 @@ const themeDisplay = {
 
 function Shell({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   const { currentAgent } = usePortfoyAI();
+  const { user, signOut } = useAuth();
   return (
     <div className="min-h-screen bg-[#f2efe8] text-[#17231e]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col bg-[#173f32] px-5 py-6 text-white lg:flex">
@@ -96,7 +100,7 @@ function Shell({ children, actions }: { children: ReactNode; actions?: ReactNode
           <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
             <Link to="/" className="flex items-center gap-3 lg:hidden"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#173f32] text-white"><Home className="h-4 w-4" /></div><span className="font-bold">PortföyAI</span></Link>
             <div className="hidden lg:block"><div className="text-xs text-[#78827c]">{currentAgent?.businessName}</div><div className="mt-0.5 text-sm font-semibold">Yönetim paneli</div></div>
-            <div className="flex items-center gap-2"><Button variant="outline" size="icon" className="rounded-full border-[#173f32]/10 bg-white text-[#173f32]"><Bell className="h-4 w-4" /></Button>{actions}</div>
+            <div className="flex items-center gap-2"><Button variant="outline" size="icon" className="rounded-full border-[#173f32]/10 bg-white text-[#173f32]"><Bell className="h-4 w-4" /></Button>{actions}{user ? <Button variant="outline" size="icon" title="Çıkış yap" onClick={() => void signOut().catch((error) => toast.error(error.message))} className="rounded-full border-[#173f32]/10 bg-white text-[#173f32]"><LogOut className="h-4 w-4" /></Button> : null}</div>
           </div>
         </header>
         <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
@@ -209,6 +213,50 @@ function LeadForm({ siteId, listingId, source, compact }: { siteId: string; list
         <Send className="h-4 w-4" />
         Mesaj gönder
       </Button>
+    </form>
+  );
+}
+
+function PublicContactForm({ siteId }: { siteId: string }) {
+  const [form, setForm] = useState({ name: "", phone: "", message: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  if (isSubmitted) {
+    return (
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900" role="status">
+        <div className="flex items-start gap-3"><div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-600 text-white"><Check className="h-4 w-4" /></div><div><div className="font-semibold">Talebiniz alındı</div><p className="mt-1 text-sm leading-6 text-emerald-800">En kısa sürede sizinle iletişime geçilecek.</p></div></div>
+        <Button type="button" variant="outline" onClick={() => setIsSubmitted(false)} className="mt-4 rounded-full border-emerald-300 bg-white text-emerald-900">Yeni mesaj gönder</Button>
+      </div>
+    );
+  }
+
+  return (
+    <form className="space-y-4" onSubmit={async (event) => {
+      event.preventDefault();
+      setIsSubmitting(true);
+      setSubmitError("");
+      try {
+        const response = await fetch("/api/leads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ site_id: siteId, ...form }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Talebiniz gönderilemedi.");
+        setForm({ name: "", phone: "", message: "" });
+        setIsSubmitted(true);
+      } catch (error) {
+        setSubmitError(error instanceof Error ? error.message : "Talebiniz gönderilemedi.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    }}>
+      <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="contact-name">Adınız</Label><Input id="contact-name" autoComplete="name" maxLength={120} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required /></div><div className="space-y-2"><Label htmlFor="contact-phone">Telefon</Label><Input id="contact-phone" type="tel" autoComplete="tel" minLength={5} maxLength={40} value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} required /></div></div>
+      <div className="space-y-2"><Label htmlFor="contact-message">Mesajınız <span className="font-normal text-slate-500">(isteğe bağlı)</span></Label><Textarea id="contact-message" maxLength={2000} value={form.message} onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))} placeholder="Aradığınız evi veya ilgilendiğiniz portföyü kısaca anlatabilirsiniz." /></div>
+      {submitError ? <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{submitError}</p> : null}
+      <Button type="submit" disabled={isSubmitting} className="w-full gap-2 rounded-full bg-[#173f32] text-white"><Send className="h-4 w-4" />{isSubmitting ? "Gönderiliyor..." : "Talebimi gönder"}</Button>
     </form>
   );
 }
@@ -362,7 +410,7 @@ export function LandingPage() {
           <a href="#sss" className="transition-colors hover:text-[#173f32]">S.S.S.</a>
         </nav>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="hidden rounded-full text-[#25372f] sm:inline-flex">
+          <Button variant="ghost" onClick={() => navigate("/login")} className="hidden rounded-full text-[#25372f] sm:inline-flex">
             Giriş yap
           </Button>
           <Button onClick={() => document.getElementById("site-olustur")?.scrollIntoView()} className="rounded-full bg-[#173f32] px-5 text-white shadow-sm hover:bg-[#0f3025]">
@@ -543,7 +591,7 @@ export function LandingPage() {
       </main>
 
       <footer className="bg-[#13271f] text-white">
-        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10"><div className="flex flex-col gap-10 border-b border-white/10 pb-10 md:flex-row md:items-start md:justify-between"><div><Link to="/" className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-white text-[#173f32]"><Home className="h-[18px] w-[18px]" /></div><span className="text-lg font-bold">PortföyAI</span></Link><p className="mt-4 max-w-sm text-sm leading-6 text-white/55">Gayrimenkul profesyonelleri için akıllı web sitesi ve portföy yönetimi.</p></div><div className="grid grid-cols-2 gap-x-16 gap-y-3 text-sm text-white/65"><a href="#nasil-calisir" className="hover:text-white">Nasıl çalışır?</a><a href="#ozellikler" className="hover:text-white">Özellikler</a><a href="#temalar" className="hover:text-white">Temalar</a><a href="#sss" className="hover:text-white">S.S.S.</a><button onClick={() => navigate("/dashboard")} className="text-left hover:text-white">Giriş yap</button><button onClick={() => navigate(`/site/${demoSubdomain}`)} className="text-left hover:text-white">Demo site</button></div></div><div className="flex flex-col gap-3 pt-8 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between"><span>© 2026 PortföyAI. Tüm hakları saklıdır.</span><span>Türkiye’de emlak profesyonelleri için tasarlandı.</span></div></div>
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10"><div className="flex flex-col gap-10 border-b border-white/10 pb-10 md:flex-row md:items-start md:justify-between"><div><Link to="/" className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-white text-[#173f32]"><Home className="h-[18px] w-[18px]" /></div><span className="text-lg font-bold">PortföyAI</span></Link><p className="mt-4 max-w-sm text-sm leading-6 text-white/55">Gayrimenkul profesyonelleri için akıllı web sitesi ve portföy yönetimi.</p></div><div className="grid grid-cols-2 gap-x-16 gap-y-3 text-sm text-white/65"><a href="#nasil-calisir" className="hover:text-white">Nasıl çalışır?</a><a href="#ozellikler" className="hover:text-white">Özellikler</a><a href="#temalar" className="hover:text-white">Temalar</a><a href="#sss" className="hover:text-white">S.S.S.</a><button onClick={() => navigate("/login")} className="text-left hover:text-white">Giriş yap</button><button onClick={() => navigate(`/site/${demoSubdomain}`)} className="text-left hover:text-white">Demo site</button></div></div><div className="flex flex-col gap-3 pt-8 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between"><span>© 2026 PortföyAI. Tüm hakları saklıdır.</span><span>Türkiye’de emlak profesyonelleri için tasarlandı.</span></div></div>
       </footer>
     </div>
   );
@@ -553,25 +601,18 @@ export function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialPrompt = searchParams.get("prompt") || "Kadıköy'de lüks daire satan modern ve güvenilir bir emlakçıyım";
-  const { state, updateSite, updateTheme } = usePortfoyAI();
+  const { state } = usePortfoyAI();
+  const { session } = useAuth();
   const [prompt, setPrompt] = useState(initialPrompt);
   const [name, setName] = useState("Demet Kaya");
   const [email, setEmail] = useState("demet@portfoyai.com");
   const [phone, setPhone] = useState("+90 532 555 00 10");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedConfig, setGeneratedConfig] = useState<{
-    business_name: string;
-    tone: string;
-    primary_color: string;
-    accent_color: string;
-    headline: string;
-  } | null>(null);
 
   usePageMeta("PortföyAI - Onboarding", "Emlak işletmenizi anlatın, PortföyAI sitenizi oluştursun.");
   const preview = useMemo(() => generateThemeFromPrompt(prompt), [prompt]);
   const previewListings = state.listings.filter((listing) => listing.site_id === "site_demo").slice(0, 3);
-  const demoSite = state.sites.find((site) => site.id === "site_demo") || state.sites[0];
-  const displayConfig = generatedConfig || {
+  const displayConfig = {
     business_name: preview.profile.business_name,
     tone: preview.profile.tone,
     primary_color: preview.theme.primary,
@@ -584,21 +625,20 @@ export function AuthPage() {
     try {
       const response = await fetch("/api/generate-theme", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Session-ID": getSiteSessionId(),
+          ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ prompt }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Site configuration could not be generated.");
+      if (!payload.site_id) throw new Error("The generated site was saved without an id.");
+      if (!payload.slug || !payload.public_path) throw new Error("The generated site was saved without a public URL.");
 
-      setGeneratedConfig(payload.config);
-      if (demoSite) {
-        updateSite(demoSite.id, { heroTitle: payload.config.headline });
-        updateTheme(demoSite.id, {
-          primary: payload.config.primary_color,
-          accent: payload.config.accent_color,
-        });
-      }
-      toast.success("Codex marka yapılandırmanızı oluşturdu.");
+      toast.success(`Siteniz hazır: ${payload.public_path}`);
+      navigate(`/preview/${payload.site_id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected generation error";
       console.error("[onboarding] generate-theme request failed", error);
@@ -628,11 +668,11 @@ export function AuthPage() {
               <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="auth-name">Adınız ve soyadınız</Label><Input id="auth-name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className="h-12 rounded-xl border-[#173f32]/10 bg-white" /></div><div className="space-y-2"><Label htmlFor="auth-phone">Telefon</Label><Input id="auth-phone" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="h-12 rounded-xl border-[#173f32]/10 bg-white" /></div></div>
               <div className="space-y-2"><Label htmlFor="auth-email">E-posta adresiniz</Label><Input id="auth-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl border-[#173f32]/10 bg-white" /></div>
               <div className="space-y-2"><div className="flex items-center justify-between gap-3"><Label htmlFor="auth-prompt">İşletme tanımınız</Label><span className="text-[11px] text-[#8a948e]">Tasarımı günceller</span></div><Textarea id="auth-prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} className="min-h-24 resize-none rounded-xl border-[#173f32]/10 bg-white leading-6" /></div>
-              <Button className="h-12 w-full rounded-full bg-[#d86f45] text-white shadow-[0_10px_24px_rgba(216,111,69,0.22)] hover:bg-[#c76039]" onClick={handleGenerateSite} disabled={isGenerating || prompt.trim().length < 10}><Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />{isGenerating ? "Codex tasarımınızı oluşturuyor..." : "Sitemi yapay zekâ ile oluştur"}<ArrowRight className="ml-2 h-4 w-4" /></Button>
+              <Button className="h-12 w-full rounded-full bg-[#d86f45] text-white shadow-[0_10px_24px_rgba(216,111,69,0.22)] hover:bg-[#c76039]" onClick={handleGenerateSite} disabled={isGenerating || prompt.trim().length < 10}><Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />{isGenerating ? "Gemini tasarımınızı oluşturuyor..." : "Sitemi yapay zekâ ile oluştur"}<ArrowRight className="ml-2 h-4 w-4" /></Button>
               <div className="flex items-center justify-center gap-2 text-[11px] text-[#7d8781]"><Check className="h-3.5 w-3.5 text-[#3b725d]" />Kredi kartı gerekmez · Tasarımınızı sonra değiştirebilirsiniz</div>
             </CardContent>
           </Card>
-          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mt-3 w-full rounded-full text-[#66726b]">Demo paneli hesap oluşturmadan incele</Button>
+          <Button variant="ghost" onClick={() => navigate("/login")} className="mt-3 w-full rounded-full text-[#66726b]">Zaten hesabınız var mı? Giriş yapın</Button>
         </div>
 
         <div className="relative mx-auto w-full max-w-[760px] lg:pl-6">
@@ -640,7 +680,7 @@ export function AuthPage() {
           <div className="relative overflow-hidden rounded-[2.35rem] border-[9px] border-[#222a26] bg-white shadow-[0_35px_100px_rgba(38,53,45,0.20)]">
             <div className="flex items-center justify-between border-b border-[#173f32]/10 bg-[#f7f5f0] px-5 py-3"><div className="flex gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#e9a58b]"/><span className="h-2.5 w-2.5 rounded-full bg-[#e6cf86]"/><span className="h-2.5 w-2.5 rounded-full bg-[#9dc4a9]"/></div><div className="rounded-full bg-white px-4 py-1.5 text-[10px] text-[#748079]">Canlı site önizlemesi</div><Badge className="rounded-full bg-[#e0eee5] px-2.5 text-[9px] text-[#326049] hover:bg-[#e0eee5]">Hazır</Badge></div>
             <div className="p-4 sm:p-5" style={getThemeStyles(preview.theme)}>
-              <div className="overflow-hidden rounded-[1.8rem] text-white" style={{ background: `linear-gradient(145deg, ${displayConfig.primary_color}, ${displayConfig.accent_color})` }}><div className="flex items-center justify-between px-6 py-4 text-[9px] font-semibold uppercase tracking-[0.18em]"><span>{displayConfig.business_name}</span><div className="hidden gap-4 font-normal tracking-normal text-white/70 sm:flex"><span>Portföyler</span><span>Hakkımda</span><span>İletişim</span></div></div><div className="grid items-end gap-6 px-6 pb-8 pt-12 sm:grid-cols-[1fr_0.7fr] sm:px-8 sm:pb-10 sm:pt-16"><div><div className="text-[9px] uppercase tracking-[0.2em] text-white/55">{preview.profile.region_focus}</div><h2 className="mt-3 text-4xl font-semibold leading-none" style={{ fontFamily: preview.theme.fontPairing.heading }}>{displayConfig.headline}</h2><p className="mt-3 text-xs leading-5 text-white/70">Seçkin portföyler ve güvene dayalı kişisel gayrimenkul danışmanlığı.</p></div><div className="hidden rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur sm:block"><div className="text-[8px] uppercase tracking-[0.16em] text-white/50">Marka tonu</div><div className="mt-2 text-sm font-semibold">{displayConfig.tone}</div><div className="mt-1 text-[10px] text-white/60">Codex tarafından üretildi</div></div></div></div>
+              <div className="overflow-hidden rounded-[1.8rem] text-white" style={{ background: `linear-gradient(145deg, ${displayConfig.primary_color}, ${displayConfig.accent_color})` }}><div className="flex items-center justify-between px-6 py-4 text-[9px] font-semibold uppercase tracking-[0.18em]"><span>{displayConfig.business_name}</span><div className="hidden gap-4 font-normal tracking-normal text-white/70 sm:flex"><span>Portföyler</span><span>Hakkımda</span><span>İletişim</span></div></div><div className="grid items-end gap-6 px-6 pb-8 pt-12 sm:grid-cols-[1fr_0.7fr] sm:px-8 sm:pb-10 sm:pt-16"><div><div className="text-[9px] uppercase tracking-[0.2em] text-white/55">{preview.profile.region_focus}</div><h2 className="mt-3 text-4xl font-semibold leading-none" style={{ fontFamily: preview.theme.fontPairing.heading }}>{displayConfig.headline}</h2><p className="mt-3 text-xs leading-5 text-white/70">Seçkin portföyler ve güvene dayalı kişisel gayrimenkul danışmanlığı.</p></div><div className="hidden rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur sm:block"><div className="text-[8px] uppercase tracking-[0.16em] text-white/50">Marka tonu</div><div className="mt-2 text-sm font-semibold">{displayConfig.tone}</div><div className="mt-1 text-[10px] text-white/60">Gemini tarafından üretildi</div></div></div></div>
               <div className="px-1 pb-2 pt-6"><div className="mb-4 flex items-end justify-between"><div><div className="text-[9px] uppercase tracking-[0.18em] text-[#839087]">Güncel portföyler</div><div className="mt-1 text-xl font-semibold">Öne çıkan yaşam alanları</div></div><span className="text-[10px] text-[#748079]">Tümünü gör →</span></div><div className="grid grid-cols-3 gap-3">{previewListings.map((listing) => <div key={listing.id} className="overflow-hidden rounded-xl border border-[#173f32]/10 bg-white"><img src={listing.media[0]?.thumbUrl} alt={listing.title} className="aspect-[4/3] w-full object-cover"/><div className="p-2.5"><div className="truncate text-[10px] font-semibold">{listing.title}</div><div className="mt-1 text-[9px] text-[#7a857e]">{listing.district} · {listing.room_count}</div></div></div>)}</div></div>
             </div>
           </div>
@@ -651,9 +691,98 @@ export function AuthPage() {
   );
 }
 
+export function GeneratedSitePreviewPage() {
+  const { siteId = "" } = useParams();
+  const { state } = usePortfoyAI();
+  const { session, user } = useAuth();
+  const [config, setConfig] = useState<GeneratedSiteConfig | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const previewListings = state.listings.filter((listing) => listing.site_id === "site_demo").slice(0, 3);
+
+  usePageMeta(
+    config ? `${config.business_name} - Site Önizlemesi` : "Site önizlemesi yükleniyor",
+    config?.headline || "Kaydedilmiş PortföyAI site önizlemesi.",
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadSite = async () => {
+      try {
+        setLoadError("");
+        const response = await fetch(`/api/sites/${encodeURIComponent(siteId)}`, {
+          headers: { "X-Session-ID": getSiteSessionId(), ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+          signal: controller.signal,
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Site configuration could not be loaded.");
+        setConfig(payload.config);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setLoadError(error instanceof Error ? error.message : "Unexpected site loading error");
+      }
+    };
+    void loadSite();
+    return () => controller.abort();
+  }, [siteId, session]);
+
+  if (loadError) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-[#f4f1ea] px-5 text-[#17231e]">
+        <Card className="w-full max-w-lg rounded-[2rem] border-[#173f32]/10 bg-white text-center shadow-sm">
+          <CardContent className="p-8">
+            <h1 className="text-2xl font-semibold">Site yüklenemedi</h1>
+            <p className="mt-3 text-sm leading-6 text-[#66726b]">{loadError}</p>
+            <Button asChild className="mt-6 rounded-full bg-[#173f32] text-white"><Link to="/">Ana sayfaya dön</Link></Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!config) {
+    return <div className="grid min-h-screen place-items-center bg-[#f4f1ea] text-sm text-[#66726b]">Kaydedilmiş site yükleniyor...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f5f2eb] text-[#17231e]">
+      <header className="border-b border-[#173f32]/10 bg-white/70 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
+          <Link to="/" className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full text-white" style={{ backgroundColor: config.primary_color }}><Home className="h-[18px] w-[18px]" /></div><span className="font-semibold">{config.business_name}</span></Link>
+          <div className="flex items-center gap-2"><Badge className="rounded-full bg-[#e0eee5] px-3 text-[#326049] hover:bg-[#e0eee5]">Kaydedilmiş taslak</Badge>{user ? <Button asChild className="rounded-full bg-[#173f32]"><Link to="/dashboard">Panele git</Link></Button> : <><Button asChild variant="outline" className="rounded-full"><Link to="/login">Giriş yap</Link></Button><Button asChild className="rounded-full bg-[#d86f45]"><Link to="/signup">Kaydol ve sahiplen</Link></Button></>}</div>
+        </div>
+      </header>
+
+      <main>
+        <section className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-16">
+          <div className="overflow-hidden rounded-[2.5rem] px-6 py-16 text-white shadow-[0_30px_90px_rgba(30,45,38,0.18)] sm:px-12 lg:px-16 lg:py-24" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})` }}>
+            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/65">{config.tone}</div>
+            <h1 className="mt-6 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] sm:text-6xl lg:text-7xl">{config.headline}</h1>
+            <p className="mt-6 max-w-xl text-base leading-7 text-white/75">Seçkin portföyler ve güvene dayalı kişisel gayrimenkul danışmanlığı.</p>
+            <Button className="mt-8 rounded-full bg-white px-6 text-[#173f32] hover:bg-white/90">Portföyleri keşfedin <ArrowRight className="ml-2 h-4 w-4" /></Button>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-5 pb-20 sm:px-8 lg:px-10">
+          <div className="mb-7 flex items-end justify-between"><div><div className="text-xs uppercase tracking-[0.2em] text-[#78847d]">Güncel portföyler</div><h2 className="mt-2 text-3xl font-semibold">Öne çıkan yaşam alanları</h2></div></div>
+          <div className="grid gap-5 sm:grid-cols-3">
+            {previewListings.map((listing) => (
+              <Card key={listing.id} className="overflow-hidden rounded-[1.5rem] border-[#173f32]/10 bg-white shadow-none">
+                <img src={listing.media[0]?.url} alt={listing.title} className="aspect-[4/3] w-full object-cover" />
+                <CardContent className="p-5"><h3 className="font-semibold">{listing.title}</h3><p className="mt-2 text-sm text-[#78837c]">{listing.district} · {listing.room_count}</p><div className="mt-4 font-semibold" style={{ color: config.primary_color }}>{formatTRY(listing.price)}</div></CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { currentAgent, currentSite, currentListings, currentLeads, state, updateTheme, updateSite, saveListing, deleteListing, generateCopy, setCurrentAgent } =
+  const [searchParams] = useSearchParams();
+  const { session, claimResult, claimError, isClaiming, retryClaim } = useAuth();
+  const { currentAgent, currentSite, currentListings, state, updateTheme, updateSite, saveListing, deleteListing, generateCopy, setCurrentAgent } =
     usePortfoyAI();
   const blankDraft = (): ListingDraft & { id?: string } => ({
     site_id: currentSite.id,
@@ -672,6 +801,12 @@ export function DashboardPage() {
     features: [],
   });
   const [draft, setDraft] = useState<ListingDraft & { id?: string }>(blankDraft);
+  const [ownedSites, setOwnedSites] = useState<Array<{ id: string; slug: string; business_name: string; headline: string; status: "draft" | "published"; created_at: string }>>([]);
+  const [ownedLeads, setOwnedLeads] = useState<Array<{ id: string; site_id: string; name: string; phone: string; message: string | null; created_at: string }>>([]);
+  const [isLoadingOwnedSites, setIsLoadingOwnedSites] = useState(true);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const requestedSiteId = searchParams.get("site");
+  const ownedSite = ownedSites.find((site) => site.id === requestedSiteId) ?? ownedSites[0] ?? null;
 
   usePageMeta("PortföyAI - Dashboard", "Tema ayarları, ilanlar ve lead inbox.");
 
@@ -682,6 +817,56 @@ export function DashboardPage() {
     }));
   }, [currentSite.id]);
 
+  useEffect(() => {
+    if (!session) return;
+    const controller = new AbortController();
+    const loadOwnedSites = async () => {
+      setIsLoadingOwnedSites(true);
+      try {
+        const response = await fetch("/api/sites", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          signal: controller.signal,
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Siteler yüklenemedi.");
+        setOwnedSites(payload.sites || []);
+        const leadsResponse = await fetch("/api/leads", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          signal: controller.signal,
+        });
+        const leadsPayload = await leadsResponse.json();
+        if (!leadsResponse.ok) throw new Error(leadsPayload.error || "Talepler yüklenemedi.");
+        setOwnedLeads(leadsPayload.leads || []);
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) toast.error(error instanceof Error ? error.message : "Siteler yüklenemedi.");
+      } finally {
+        if (!controller.signal.aborted) setIsLoadingOwnedSites(false);
+      }
+    };
+    void loadOwnedSites();
+    return () => controller.abort();
+  }, [session, claimResult]);
+
+  const publishOwnedSite = async () => {
+    if (!session || !ownedSite || ownedSite.status === "published") return;
+    setIsPublishing(true);
+    try {
+      const response = await fetch(`/api/sites/${ownedSite.id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "published" }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Site yayınlanamadı.");
+      setOwnedSites((sites) => sites.map((site) => site.id === payload.site.id ? payload.site : site));
+      toast.success("Site yayınlandı.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Site yayınlanamadı.");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<"overview" | "site" | "listings" | "leads">("overview");
   const activeListings = currentListings.filter((listing) => listing.status === "active");
 
@@ -689,6 +874,8 @@ export function DashboardPage() {
     <Shell
       actions={
         <div className="flex flex-wrap items-center gap-2">
+          {ownedSite ? <Button variant="outline" onClick={() => navigate(`/site/${ownedSite.slug}`)} className="gap-2 rounded-full border-[#173f32]/10 bg-white text-[#173f32]"><Globe className="h-4 w-4" /><span className="hidden sm:inline">Siteyi görüntüle</span></Button> : null}
+          {ownedSite ? <Button onClick={() => void publishOwnedSite()} disabled={isPublishing || ownedSite.status === "published"} className="rounded-full bg-[#d86f45] text-white hover:bg-[#c76039]">{ownedSite.status === "published" ? "Yayında" : isPublishing ? "Yayınlanıyor..." : "Yayınla"}</Button> : null}
           <Select value={currentAgent.id} onValueChange={(value) => setCurrentAgent(value)}>
             <SelectTrigger className="hidden w-[190px] rounded-full border-[#173f32]/10 bg-white sm:flex">
               <SelectValue placeholder="Hesap seçin" />
@@ -701,24 +888,22 @@ export function DashboardPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => navigate(`/site/${currentSite.subdomain}`)} className="gap-2 rounded-full border-[#173f32]/10 bg-white text-[#173f32]">
-            <Globe className="h-4 w-4" />
-            <span className="hidden sm:inline">Siteyi görüntüle</span>
-          </Button>
         </div>
       }
     >
       <div className="space-y-7">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm text-[#78827c]">20 Ağustos 2026, Perşembe</div><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Merhaba, {currentAgent.name.split(" ")[0]}.</h1><p className="mt-2 text-sm text-[#69756e]">Portföyünüzde bugün neler olduğuna birlikte bakalım.</p></div><Button onClick={() => { setDraft(blankDraft()); setActiveTab("listings"); }} className="rounded-full bg-[#d86f45] px-5 text-white hover:bg-[#c76039]"><Plus className="mr-2 h-4 w-4" />Yeni portföy ekle</Button></div>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm text-[#78827c]">{ownedSite ? `${ownedSite.business_name} · ${ownedSite.status === "published" ? "Yayında" : "Taslak"}` : isLoadingOwnedSites ? "Siteniz yükleniyor..." : "Henüz hesabınıza bağlı bir site yok"}</div><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Merhaba, {currentAgent.name.split(" ")[0]}.</h1><p className="mt-2 text-sm text-[#69756e]">Portföyünüzde bugün neler olduğuna birlikte bakalım.</p></div><Button onClick={() => { setDraft(blankDraft()); setActiveTab("listings"); }} className="rounded-full bg-[#d86f45] px-5 text-white hover:bg-[#c76039]"><Plus className="mr-2 h-4 w-4" />Yeni portföy ekle</Button></div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">{(["overview", "listings", "leads", "site"] as const).map((tab) => <Button key={tab} variant="ghost" onClick={() => setActiveTab(tab)} className={cn("shrink-0 rounded-full px-5", activeTab === tab ? "bg-[#173f32] text-white hover:bg-[#173f32] hover:text-white" : "bg-white/60 text-[#5e6a63] hover:bg-white")}>{tab === "overview" ? "Genel bakış" : tab === "listings" ? "Portföyler" : tab === "leads" ? "Talepler" : "Site tasarımı"}</Button>)}</div>
+        {claimError ? <Card className="border-red-200 bg-red-50 shadow-none"><CardContent className="flex flex-col gap-3 p-4 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between"><span>Misafir siteniz hesabınıza bağlanamadı: {claimError}</span><Button variant="outline" disabled={isClaiming} onClick={() => void retryClaim()} className="shrink-0 rounded-full border-red-300 bg-white text-red-800">{isClaiming ? "Tekrar deneniyor..." : "Tekrar dene"}</Button></CardContent></Card> : null}
+
+        <div className="flex gap-2 overflow-x-auto pb-1">{(["overview", "listings", "leads", "site"] as const).map((tab) => <Button key={tab} variant="ghost" onClick={() => setActiveTab(tab)} className={cn("shrink-0 rounded-full px-5", activeTab === tab ? "bg-[#173f32] text-white hover:bg-[#173f32] hover:text-white" : "bg-white/60 text-[#5e6a63] hover:bg-white")}>{tab === "overview" ? "Genel bakış" : tab === "listings" ? "Portföyler" : tab === "leads" ? "Gelen Talepler" : "Site tasarımı"}</Button>)}</div>
 
         {activeTab === "overview" && <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Aktif portföy" value={`${activeListings.length}`} icon={Home} tone="emerald" /><StatCard label="Yeni talep" value={`${currentLeads.length}`} icon={Users} tone="blue" /><StatCard label="Bu ay görüntülenme" value="1.284" icon={BarChart3} tone="amber" /><StatCard label="Site durumu" value="Yayında" icon={Globe} tone="neutral" /></div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Aktif portföy" value={`${activeListings.length}`} icon={Home} tone="emerald" /><StatCard label="Yeni talep" value={`${ownedLeads.length}`} icon={Users} tone="blue" /><StatCard label="Bu ay görüntülenme" value="1.284" icon={BarChart3} tone="amber" /><StatCard label="Site durumu" value={ownedSite?.status === "published" ? "Yayında" : "Taslak"} icon={Globe} tone="neutral" /></div>
           <div className="grid gap-6 xl:grid-cols-[1.45fr_0.75fr]">
             <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle className="text-2xl">Portföyleriniz</CardTitle><CardDescription className="mt-1">En son güncellenen aktif ilanlar</CardDescription></div><Button variant="ghost" onClick={() => setActiveTab("listings")} className="rounded-full">Tümünü gör <ArrowRight className="ml-2 h-4 w-4" /></Button></CardHeader><CardContent className="grid gap-4 md:grid-cols-3">{activeListings.slice(0, 3).map((listing) => <button key={listing.id} onClick={() => { setDraft({ ...listing }); setActiveTab("listings"); }} className="group overflow-hidden rounded-[1.4rem] border border-[#173f32]/10 bg-white text-left"><div className="relative overflow-hidden"><img src={listing.media[0]?.thumbUrl} alt={listing.title} className="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-105" /><Badge className="absolute left-3 top-3 rounded-full bg-white/90 text-[#173f32] hover:bg-white">{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</Badge></div><div className="p-4"><div className="truncate font-semibold">{listing.title}</div><div className="mt-1 text-xs text-[#7b857f]">{listing.district} · {listing.room_count} · {listing.m2} m²</div><div className="mt-4 font-semibold">{formatTRY(listing.price)}</div></div></button>)}</CardContent></Card>
-            <div className="grid gap-6"><Card className="rounded-[2rem] border-0 bg-[#173f32] text-white shadow-none"><CardContent className="p-7"><div className="flex items-center justify-between"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10"><Globe className="h-5 w-5" /></div><Badge className="bg-[#dbe5d2] text-[#315d4b] hover:bg-[#dbe5d2]">Yayında</Badge></div><h3 className="mt-8 text-3xl font-semibold">Siteniz hazır.</h3><p className="mt-3 text-sm leading-6 text-white/60">{currentSite.subdomain}.portfoyai.com</p><Button onClick={() => navigate(`/site/${currentSite.subdomain}`)} className="mt-6 w-full rounded-full bg-white text-[#173f32] hover:bg-white/90">Siteyi aç <ArrowRight className="ml-2 h-4 w-4" /></Button></CardContent></Card>
-              <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#dbe5d2] shadow-none"><CardContent className="p-7"><div className="text-xs uppercase tracking-[0.18em] text-[#64766c]">Son talep</div>{currentLeads[0] ? <><div className="mt-4 text-xl font-semibold">{currentLeads[0].name}</div><p className="mt-2 line-clamp-2 text-sm leading-6 text-[#5b6b62]">“{currentLeads[0].message}”</p><Button variant="ghost" onClick={() => setActiveTab("leads")} className="mt-3 -ml-3 rounded-full text-[#173f32]">Talebi görüntüle <ChevronRight className="ml-1 h-4 w-4" /></Button></> : <p className="mt-3 text-sm">Henüz yeni talep yok.</p>}</CardContent></Card></div>
+            <div className="grid gap-6"><Card className="rounded-[2rem] border-0 bg-[#173f32] text-white shadow-none"><CardContent className="p-7"><div className="flex items-center justify-between"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10"><Globe className="h-5 w-5" /></div><Badge className="bg-[#dbe5d2] text-[#315d4b] hover:bg-[#dbe5d2]">{ownedSite?.status === "published" ? "Yayında" : "Taslak"}</Badge></div><h3 className="mt-8 text-3xl font-semibold">{ownedSite?.business_name || "Siteniz hazır."}</h3><p className="mt-3 text-sm leading-6 text-white/60">{ownedSite?.slug ? `/site/${ownedSite.slug}` : "Hesabınıza bağlı site bulunamadı."}</p>{ownedSite ? <Button onClick={ownedSite.status === "draft" ? () => void publishOwnedSite() : () => navigate(`/site/${ownedSite.slug}`)} className="mt-6 w-full rounded-full bg-white text-[#173f32] hover:bg-white/90">{ownedSite.status === "draft" ? "Yayınla" : "Siteyi aç"} <ArrowRight className="ml-2 h-4 w-4" /></Button> : null}</CardContent></Card>
+              <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#dbe5d2] shadow-none"><CardContent className="p-7"><div className="text-xs uppercase tracking-[0.18em] text-[#64766c]">Son talep</div>{ownedLeads[0] ? <><div className="mt-4 text-xl font-semibold">{ownedLeads[0].name}</div><p className="mt-2 line-clamp-2 text-sm leading-6 text-[#5b6b62]">{ownedLeads[0].message || "Mesaj bırakılmadı."}</p><Button variant="ghost" onClick={() => setActiveTab("leads")} className="mt-3 -ml-3 rounded-full text-[#173f32]">Talebi görüntüle <ChevronRight className="ml-1 h-4 w-4" /></Button></> : <p className="mt-3 text-sm">Henüz yeni talep yok.</p>}</CardContent></Card></div>
           </div>
         </>}
 
@@ -727,7 +912,7 @@ export function DashboardPage() {
           <ListingForm siteId={currentSite.id} draft={draft} onDraftChange={(patch) => setDraft((current) => ({ ...current, ...patch }))} onSave={() => { saveListing(draft, draft.id); toast.success("Portföy kaydedildi."); }} onGenerate={() => { setDraft((current) => ({ ...current, description: generateCopy(current) })); toast.success("İlan açıklaması hazır."); }} onReset={() => setDraft(blankDraft())} onDelete={() => { if (draft.id) { deleteListing(draft.id); setDraft(blankDraft()); toast.success("Portföy silindi."); } }} />
         </div>}
 
-        {activeTab === "leads" && <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader><CardTitle className="text-2xl">Müşteri talepleri</CardTitle><CardDescription>Sitenizdeki iletişim formlarından gelen talepler</CardDescription></CardHeader><CardContent><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left"><thead className="border-y border-[#173f32]/10 text-[10px] uppercase tracking-[0.18em] text-[#7a857e]"><tr><th className="py-4">Müşteri</th><th>İlgilendiği portföy</th><th>Mesaj</th><th>Tarih</th><th /></tr></thead><tbody>{currentLeads.map((lead) => { const related = currentListings.find((listing) => listing.id === lead.listing_id); return <tr key={lead.id} className="border-b border-[#173f32]/8"><td className="py-5"><div className="font-semibold">{lead.name}</div><div className="mt-1 text-xs text-[#7a857e]">{lead.phone}</div></td><td className="max-w-[220px] text-sm">{related?.title || "Genel talep"}</td><td className="max-w-[320px] text-sm leading-6 text-[#627068]">{lead.message}</td><td className="text-xs text-[#7a857e]">{formatDateTR(lead.created_at)}</td><td><Button variant="outline" size="sm" className="rounded-full border-[#173f32]/10">Ara <Phone className="ml-2 h-3.5 w-3.5" /></Button></td></tr>; })}</tbody></table></div></CardContent></Card>}
+        {activeTab === "leads" && <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader><CardTitle className="text-2xl">Gelen Talepler</CardTitle><CardDescription>Size ait sitelerin iletişim formlarından gelen özel talepler, en yeniden eskiye sıralanır.</CardDescription></CardHeader><CardContent>{ownedLeads.length === 0 ? <p className="rounded-2xl bg-white p-5 text-sm text-[#69756e]">Henüz gelen bir talep yok.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left"><thead className="border-y border-[#173f32]/10 text-[10px] uppercase tracking-[0.18em] text-[#7a857e]"><tr><th className="py-4">Ad</th><th>Telefon</th><th>Site</th><th>Mesaj</th><th>Tarih</th></tr></thead><tbody>{ownedLeads.map((lead) => { const leadSite = ownedSites.find((site) => site.id === lead.site_id); return <tr key={lead.id} className="border-b border-[#173f32]/8"><td className="py-5 font-semibold">{lead.name}</td><td><a href={`tel:${lead.phone}`} className="text-sm underline decoration-[#173f32]/20 underline-offset-4">{lead.phone}</a></td><td className="max-w-[180px] text-sm">{leadSite?.business_name || "Site"}</td><td className="max-w-[320px] text-sm leading-6 text-[#627068]">{lead.message || "—"}</td><td className="text-xs text-[#7a857e]">{formatDateTR(lead.created_at)}</td></tr>; })}</tbody></table></div>}</CardContent></Card>}
 
         {activeTab === "site" && <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
           <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader><CardTitle className="text-2xl">Marka görünümü</CardTitle><CardDescription>Değişiklikler canlı sitenize anında uygulanır.</CardDescription></CardHeader><CardContent className="space-y-5"><div className="space-y-2"><Label>Karşılama başlığı</Label><Input value={currentSite.heroTitle} onChange={(e) => updateSite(currentSite.id, { heroTitle: e.target.value })} className="rounded-xl border-[#173f32]/10 bg-white" /></div><div className="space-y-2"><Label>Alt açıklama</Label><Textarea value={currentSite.heroSubtitle} onChange={(e) => updateSite(currentSite.id, { heroSubtitle: e.target.value })} className="min-h-24 rounded-xl border-[#173f32]/10 bg-white" /></div><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Ana renk</Label><Input type="color" value={currentSite.theme_config.primary} onChange={(e) => updateTheme(currentSite.id, { primary: e.target.value })} className="h-12 rounded-xl border-[#173f32]/10 bg-white p-1" /></div><div className="space-y-2"><Label>Vurgu rengi</Label><Input type="color" value={currentSite.theme_config.accent} onChange={(e) => updateTheme(currentSite.id, { accent: e.target.value })} className="h-12 rounded-xl border-[#173f32]/10 bg-white p-1" /></div></div><div className="space-y-2"><Label>Başlık yazı karakteri</Label><Select value={currentSite.theme_config.fontPairing.heading} onValueChange={(value) => updateTheme(currentSite.id, { fontPairing: { ...currentSite.theme_config.fontPairing, heading: value } })}><SelectTrigger className="rounded-xl border-[#173f32]/10 bg-white"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Cormorant Garamond, serif">Cormorant Garamond</SelectItem><SelectItem value="Libre Baskerville, serif">Libre Baskerville</SelectItem><SelectItem value="Manrope, sans-serif">Manrope</SelectItem><SelectItem value="Inter, sans-serif">Inter</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label>Alan adı</Label><Input value={currentSite.custom_domain || ""} onChange={(e) => updateSite(currentSite.id, { custom_domain: e.target.value || null })} placeholder={`${currentSite.subdomain}.com`} className="rounded-xl border-[#173f32]/10 bg-white" /></div></CardContent></Card>
@@ -739,13 +924,61 @@ export function DashboardPage() {
 }
 
 export function PublicSitePage() {
-  const { subdomain } = useParams();
+  const { slug = "" } = useParams();
   const { state } = usePortfoyAI();
   const navigate = useNavigate();
-  const site = state.sites.find((item) => item.subdomain === subdomain);
-  const agent = state.agents.find((item) => item.id === site?.agent_id);
-  const listings = state.listings.filter((listing) => listing.site_id === site?.id && listing.status !== "passive");
+  const [publicSite, setPublicSite] = useState<{
+    id: string;
+    slug: string;
+    config: GeneratedSiteConfig;
+  } | null>(null);
+  const [isLoadingSite, setIsLoadingSite] = useState(true);
+  const [siteLoadError, setSiteLoadError] = useState("");
   const [filters, setFilters] = useState({ query: "", district: "", type: "all", maxPrice: "" });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadSite = async () => {
+      try {
+        setIsLoadingSite(true);
+        setSiteLoadError("");
+        const response = await fetch(`/api/public-sites/${encodeURIComponent(slug)}`, { signal: controller.signal });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Site could not be loaded.");
+        setPublicSite(payload);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setPublicSite(null);
+        setSiteLoadError(error instanceof Error ? error.message : "Unexpected site loading error");
+      } finally {
+        if (!controller.signal.aborted) setIsLoadingSite(false);
+      }
+    };
+    void loadSite();
+    return () => controller.abort();
+  }, [slug]);
+
+  const site = publicSite ? {
+    id: publicSite.id,
+    subdomain: publicSite.slug,
+    heroTitle: publicSite.config.headline,
+    heroSubtitle: "Seçkin portföyler ve güvene dayalı kişisel gayrimenkul danışmanlığı.",
+    theme_config: {
+      variant: "Modern Minimal" as const,
+      primary: publicSite.config.primary_color,
+      accent: publicSite.config.accent_color,
+      fontPairing: { heading: "Cormorant Garamond, serif", body: "Inter, sans-serif" },
+      layoutVariant: "heroSplit" as const,
+    },
+  } : null;
+  const agent = publicSite ? {
+    businessName: publicSite.config.business_name,
+    name: publicSite.config.business_name,
+    region: "Türkiye",
+    phone: "",
+    bio: `${publicSite.config.tone} marka yaklaşımıyla çalışan bir gayrimenkul danışmanlığı markası.`,
+  } : null;
+  const listings = state.listings.filter((listing) => listing.site_id === "site_demo" && listing.status !== "passive");
 
   usePageMeta(
     site ? `${agent?.businessName || "PortföyAI"} - ${site.heroTitle}` : "PortföyAI - Site bulunamadı",
@@ -764,13 +997,17 @@ export function PublicSitePage() {
     [filters, listings],
   );
 
+  if (isLoadingSite) {
+    return <div className="grid min-h-screen place-items-center bg-[#f5f2ec] text-sm text-[#66726b]">Site yükleniyor...</div>;
+  }
+
   if (!site || !agent) {
     return (
       <div className="grid min-h-screen place-items-center bg-slate-950 px-4 text-white">
         <Card className="max-w-lg border-white/10 bg-white/5 text-white">
           <CardContent className="space-y-4 p-6 text-center">
             <div className="text-2xl font-semibold">Site bulunamadı</div>
-            <p className="text-white/70">Bu subdomain için tanımlı bir site yok.</p>
+            <p className="text-white/70">{siteLoadError || "Bu adres için tanımlı bir site yok."}</p>
             <Button onClick={() => navigate("/")} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Ana sayfaya dön
@@ -788,7 +1025,7 @@ export function PublicSitePage() {
       <header className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10">
         <Link to={`/site/${site.subdomain}`} className="text-sm font-bold uppercase tracking-[0.2em]" style={{ color: site.theme_config.primary }}>{agent.businessName}</Link>
         <nav className="hidden items-center gap-8 text-sm text-[#66726b] md:flex"><a href="#portfoyler">Portföyler</a><a href="#hakkimda">Hakkımda</a><a href="#iletisim">İletişim</a></nav>
-        <Button asChild className="rounded-full px-5 text-white" style={{ backgroundColor: site.theme_config.primary }}><a href={`tel:${agent.phone}`}><Phone className="mr-2 h-4 w-4" />Beni arayın</a></Button>
+        <div className="flex items-center gap-3"><Badge variant="outline" className="hidden rounded-full border-[#173f32]/10 bg-white/70 text-[#66726b] sm:inline-flex">/site/{site.subdomain}</Badge><Button asChild className="rounded-full px-5 text-white" style={{ backgroundColor: site.theme_config.primary }}><a href="#iletisim"><Phone className="mr-2 h-4 w-4" />İletişim</a></Button></div>
       </header>
 
       <main>
@@ -823,7 +1060,7 @@ export function PublicSitePage() {
           <div><div className="text-xs font-semibold uppercase tracking-[0.22em]" style={{ color: site.theme_config.accent }}>Tanışalım</div><h2 className="mt-5 max-w-2xl text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>Doğru karar, güvenilir bir danışmanlıkla başlar.</h2><p className="mt-7 max-w-xl text-base leading-8 text-[#657169]">{agent.bio} Her portföyde ihtiyaçlarınızı dinleyen, bölge bilgisini veriye dayalı değerlendirmelerle birleştiren kişisel bir yaklaşım sunuyorum.</p><div className="mt-8 flex flex-wrap gap-3"><Button asChild className="rounded-full px-6 text-white" style={{ backgroundColor: site.theme_config.primary }}><a href={`tel:${agent.phone}`}><Phone className="mr-2 h-4 w-4" />{agent.phone}</a></Button><Button variant="outline" className="rounded-full border-[#173f32]/15 bg-transparent px-6"><MapPin className="mr-2 h-4 w-4" />{agent.region}</Button></div></div>
         </section>
 
-        <section id="iletisim" className="px-5 pb-20 sm:px-8 lg:px-10"><div className="mx-auto grid max-w-7xl gap-8 overflow-hidden rounded-[2.75rem] p-8 text-white sm:p-12 lg:grid-cols-[0.9fr_1.1fr] lg:p-16" style={{ backgroundColor: site.theme_config.primary }}><div><div className="text-xs uppercase tracking-[0.22em] text-white/55">İletişim</div><h2 className="mt-5 text-4xl font-semibold leading-tight sm:text-5xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>Yeni evinizi birlikte bulalım.</h2><p className="mt-4 max-w-md text-sm leading-7 text-white/65">Aradığınız portföyü tarif edin; size en kısa sürede kişisel olarak dönüş yapayım.</p></div><Card className="rounded-[2rem] border-0 bg-white text-[#17231e] shadow-none"><CardContent className="p-6 sm:p-7"><LeadForm siteId={site.id} listingId={featured?.id || "general"} source="public-home" /></CardContent></Card></div></section>
+        <section id="iletisim" className="px-5 pb-20 sm:px-8 lg:px-10"><div className="mx-auto grid max-w-7xl gap-8 overflow-hidden rounded-[2.75rem] p-8 text-white sm:p-12 lg:grid-cols-[0.9fr_1.1fr] lg:p-16" style={{ backgroundColor: site.theme_config.primary }}><div><div className="text-xs uppercase tracking-[0.22em] text-white/55">İletişim</div><h2 className="mt-5 text-4xl font-semibold leading-tight sm:text-5xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>Yeni evinizi birlikte bulalım.</h2><p className="mt-4 max-w-md text-sm leading-7 text-white/65">Aradığınız portföyü tarif edin; size en kısa sürede kişisel olarak dönüş yapayım.</p></div><Card className="rounded-[2rem] border-0 bg-white text-[#17231e] shadow-none"><CardContent className="p-6 sm:p-7"><PublicContactForm siteId={site.id} /></CardContent></Card></div></section>
       </main>
 
       <footer className="border-t border-[#173f32]/10 bg-[#ece8df]"><div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-10 text-sm text-[#69756e] sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10"><div><div className="font-bold uppercase tracking-[0.18em]" style={{ color: site.theme_config.primary }}>{agent.businessName}</div><div className="mt-2 text-xs">{agent.region} gayrimenkul danışmanlığı</div></div><div className="flex gap-6"><a href="#portfoyler">Portföyler</a><a href="#hakkimda">Hakkımda</a><a href="#iletisim">İletişim</a></div><div className="text-xs">PortföyAI ile hazırlandı</div></div></footer>

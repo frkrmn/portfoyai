@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useReducer } from "react";
 import { createAgentFromPrompt, generateDescriptionFromFacts, loadState, saveState } from "./mock";
-import type { AppState, Lead, Listing, ListingDraft, Site, ThemeConfig } from "./types";
+import type { AppState, GeneratedSiteConfig, Lead, Listing, ListingDraft, Site, ThemeConfig } from "./types";
 
 type Action =
   | { type: "set-prompt"; prompt: string }
   | { type: "set-current-agent"; agentId: string }
-  | { type: "create-agent"; prompt: string; name: string; email: string; phone: string }
+  | { type: "create-agent"; result: ReturnType<typeof createAgentFromPrompt> }
   | { type: "update-site"; siteId: string; patch: Partial<Site> }
   | { type: "update-theme"; siteId: string; patch: Partial<ThemeConfig> }
   | { type: "save-listing"; listing: ListingDraft; listingId?: string }
@@ -20,7 +20,7 @@ type PortfoyAIContextValue = {
   currentLeads: Lead[];
   setPrompt: (prompt: string) => void;
   setCurrentAgent: (agentId: string) => void;
-  createAgent: (payload: { prompt: string; name: string; email: string; phone: string }) => void;
+  createAgent: (payload: { prompt: string; name: string; email: string; phone: string; config?: GeneratedSiteConfig }) => Site;
   updateSite: (siteId: string, patch: Partial<Site>) => void;
   updateTheme: (siteId: string, patch: Partial<ThemeConfig>) => void;
   saveListing: (listing: ListingDraft, listingId?: string) => void;
@@ -46,7 +46,7 @@ function reducer(state: AppState, action: Action): AppState {
     case "set-current-agent":
       return { ...state, currentAgentId: action.agentId };
     case "create-agent": {
-      const { agent, site, listings, prompt } = createAgentFromPrompt(action.prompt, action.name, action.email, action.phone);
+      const { agent, site, listings, prompt } = action.result;
       return {
         ...state,
         agents: [agent, ...state.agents],
@@ -120,7 +120,11 @@ export function PortfoyAIProvider({ children }: { children: React.ReactNode }) {
       currentLeads,
       setPrompt: (prompt) => dispatch({ type: "set-prompt", prompt }),
       setCurrentAgent: (agentId) => dispatch({ type: "set-current-agent", agentId }),
-      createAgent: (payload) => dispatch({ type: "create-agent", ...payload }),
+      createAgent: (payload) => {
+        const result = createAgentFromPrompt(payload.prompt, payload.name, payload.email, payload.phone, payload.config);
+        dispatch({ type: "create-agent", result });
+        return result.site;
+      },
       updateSite: (siteId, patch) => dispatch({ type: "update-site", siteId, patch }),
       updateTheme: (siteId, patch) => dispatch({ type: "update-theme", siteId, patch }),
       saveListing: (listing, listingId) => dispatch({ type: "save-listing", listing, listingId }),

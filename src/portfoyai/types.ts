@@ -13,6 +13,14 @@ export type ThemeConfig = {
   layoutVariant: "editorial" | "gallery" | "heroSplit" | "corporate";
 };
 
+export type GeneratedSiteConfig = {
+  business_name: string;
+  tone: string;
+  primary_color: string;
+  accent_color: string;
+  headline: string;
+};
+
 export type Agent = {
   id: string;
   name: string;

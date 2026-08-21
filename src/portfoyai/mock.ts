@@ -1,4 +1,4 @@
-import type { Agent, AppState, Listing, MediaItem, PromptProfile, Site, ThemeConfig } from "./types";
+import type { Agent, AppState, GeneratedSiteConfig, Listing, MediaItem, PromptProfile, Site, ThemeConfig } from "./types";
 
 const now = () => new Date().toISOString();
 
@@ -313,8 +313,14 @@ export const createSeedState = (): AppState => ({
   onboardingPrompt: "Kadıköy'de lüks daire satan modern ve güvenilir bir emlakçıyım",
 });
 
-export const createAgentFromPrompt = (prompt: string, name: string, email: string, phone: string) => {
-  const { profile, theme } = generateThemeFromPrompt(prompt);
+export const createAgentFromPrompt = (prompt: string, name: string, email: string, phone: string, generatedConfig?: GeneratedSiteConfig) => {
+  const generatedTheme = generateThemeFromPrompt(prompt);
+  const profile: PromptProfile = generatedConfig
+    ? { ...generatedTheme.profile, business_name: generatedConfig.business_name, tone: generatedConfig.tone }
+    : generatedTheme.profile;
+  const theme: ThemeConfig = generatedConfig
+    ? { ...generatedTheme.theme, primary: generatedConfig.primary_color, accent: generatedConfig.accent_color }
+    : generatedTheme.theme;
   const agentId = uid("agent");
   const siteId = uid("site");
   const subdomain = `${profile.business_name
@@ -346,7 +352,7 @@ export const createAgentFromPrompt = (prompt: string, name: string, email: strin
     theme_config: theme,
     status: "published",
     created_at: now(),
-    heroTitle: `${profile.region_focus} için özel olarak hazırlanmış marka sitesi`,
+    heroTitle: generatedConfig?.headline || `${profile.region_focus} için özel olarak hazırlanmış marka sitesi`,
     heroSubtitle: `PortföyAI, ${profile.listing_types.join(" ve ")} ilanlarınızı temiz ve güvenilir bir vitrinle sunar.`,
   };
 
