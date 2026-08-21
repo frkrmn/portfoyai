@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 import { createServer as createViteServer, loadEnv } from "vite";
+import { insertGeneratedSite } from "./server/site-persistence.mjs";
 
 const fileEnv = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
 for (const [key, value] of Object.entries(fileEnv)) {
@@ -75,56 +76,6 @@ const getAuthenticatedUser = async (request, required = true) => {
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const slugifyBusinessName = (businessName) => {
-  const transliterated = businessName
-    .replace(/[Çç]/g, "c")
-    .replace(/[Ğğ]/g, "g")
-    .replace(/[İIı]/g, "i")
-    .replace(/[Öö]/g, "o")
-    .replace(/[Şş]/g, "s")
-    .replace(/[Üü]/g, "u");
-
-  return transliterated
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64)
-    .replace(/-+$/g, "") || "site";
-};
-
-const insertGeneratedSite = async (config, sessionId, userId = null) => {
-  const supabase = getSupabaseClient();
-  const baseSlug = slugifyBusinessName(config.business_name);
-
-  for (let attempt = 0; attempt < 25; attempt += 1) {
-    const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
-    const { data: site, error } = await supabase
-      .from("sites")
-      .insert({
-        session_id: sessionId,
-        user_id: userId,
-        slug,
-        business_name: config.business_name,
-        tone: config.tone,
-        primary_color: config.primary_color,
-        accent_color: config.accent_color,
-        headline: config.headline,
-        status: "draft",
-      })
-      .select("id, slug")
-      .single();
-
-    if (!error) return site;
-    if (error.code !== "23505") {
-      throw new Error(`Failed to save generated site: ${error.message}`);
-    }
-  }
-
-  throw new Error("Failed to create a unique site slug after 25 attempts.");
-};
-
 const siteConfigSchema = JSON.parse(
   readFileSync(new URL("./server/site-config.schema.json", import.meta.url), "utf8"),
 );
@@ -175,7 +126,7 @@ const handleGenerateTheme = async (request, response) => {
     console.info(`[generate-theme] Gemini structured response received in ${Date.now() - startedAt}ms; model=${model}`);
 
     const user = await getAuthenticatedUser(request, false);
-    const site = await insertGeneratedSite(config, sessionId, user?.id ?? null);
+    const site = await insertGeneratedSite(getSupabaseClient(), config, sessionId, user?.id ?? null);
 
     return sendJson(response, 200, {
       config,
