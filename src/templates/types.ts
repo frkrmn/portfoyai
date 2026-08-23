@@ -94,6 +94,20 @@ export type TemplateContent = {
   daysOnlineLabel: string;
   originalPriceLabel: string;
   opportunityLabel: string;
+  matchEyebrow: string;
+  matchTitle: string;
+  matchDescription: string;
+  feelingLabel: string;
+  budgetMinLabel: string;
+  budgetMaxLabel: string;
+  timingLabel: string;
+  matchSubmitLabel: string;
+  matchResultsTitle: string;
+  matchResultsDescription: string;
+  feelings: string[];
+  timings: string[];
+  guideTitle: string;
+  guideQuote: string;
 };
 
 export type TemplateConfig = {
@@ -249,6 +263,20 @@ export const warmEditorialFallbacks: TemplateContent = {
   daysOnlineLabel: "gündür yayında",
   originalPriceLabel: "Önceki fiyat",
   opportunityLabel: "Fırsat",
+  matchEyebrow: "Kişisel ev eşleştirme",
+  matchTitle: "Ne arıyorsun?",
+  matchDescription: "Tercihlerini birkaç cümleyle paylaş; sana gerçekten uyan evleri birlikte daraltalım.",
+  feelingLabel: "Nasıl bir his?",
+  budgetMinLabel: "En düşük bütçe",
+  budgetMaxLabel: "En yüksek bütçe",
+  timingLabel: "Ne zaman taşınmak istiyorsun?",
+  matchSubmitLabel: "Bana uygun evleri bul",
+  matchResultsTitle: "Sana uygun eşleşmeler",
+  matchResultsDescription: "Paylaştığın tercihlere göre öne çıkan portföyler.",
+  feelings: ["Sakin", "Enerjik", "Aile dostu", "Şehirli"],
+  timings: ["Hemen", "1–3 ay içinde", "3–6 ay içinde", "Henüz araştırıyorum"],
+  guideTitle: "Evinizi birlikte bulalım",
+  guideQuote: "Önce sizi dinliyorum; sonra yalnızca gerçekten uyan evleri gösteriyorum.",
 };
 
 export const boldLuxuryFallbacks: TemplateContent = {
@@ -373,6 +401,31 @@ export const urgentDealsFallbacks: TemplateContent = {
   opportunityLabel: "Fırsat",
 };
 
+export const guidedMatchFallbacks: TemplateContent = {
+  ...warmEditorialFallbacks,
+  eyebrow: "Sizi dinleyen kişisel gayrimenkul danışmanlığı",
+  headline: "Doğru ev, doğru sorularla",
+  headlineAccent: "birlikte bulunur.",
+  bio: "Standart filtrelerden önce nasıl yaşamak istediğinizi konuşuyor, seçenekleri size göre özenle daraltıyorum.",
+  tagline: "Tercihlerinizi anlayan, doğru eve sakince yönlendiren kişisel rehberlik.",
+  ctaText: "Eşleşmeni başlat",
+  featuredEyebrow: "Sizin için seçtiklerimiz",
+  featuredTitle: "Sevdiğimiz birkaç yer",
+  listingsTitle: "Size Uygun Portföyler",
+  listingsDescription: "Tercihlerinizi paylaşarak ya da tüm güncel portföyleri doğrudan inceleyerek başlayın.",
+  tourTitle: "Bu evi birlikte değerlendirelim",
+  tourDescription: "Sorularınızı ve beklentilerinizi paylaşın; size kişisel olarak dönüş yapayım.",
+  navAbout: "Rehberiniz",
+  guideTitle: "Evinizi birlikte bulalım",
+  guideQuote: "Önce sizi dinliyorum; sonra yalnızca gerçekten uyan evleri gösteriyorum.",
+  matchEyebrow: "Kişisel eşleştirme",
+  matchTitle: "Ne arıyorsun?",
+  matchDescription: "Mahalle tercihini, bütçeni ve aradığın hissi paylaş; sana en yakın eşleşmeleri gösterelim.",
+  matchSubmitLabel: "Bana uygun evleri bul",
+  matchResultsTitle: "Sana uygun eşleşmeler",
+  matchResultsDescription: "Paylaştığın tercihlere göre öne çıkan güncel portföyler.",
+};
+
 /**
  * Keeps the existing flat ThemeConfig contract as the source of truth while
  * presenting every template with one stable, renderer-friendly config prop.
@@ -393,12 +446,15 @@ export function createTemplateConfig(
           ? investmentFocusedFallbacks
           : payload.config.template_id === "urgent-deals"
             ? urgentDealsFallbacks
+            : payload.config.template_id === "guided-match"
+              ? guidedMatchFallbacks
       : warmEditorialFallbacks;
   const isBoldLuxury = payload.config.template_id === "bold-luxury";
   const isCleanModern = payload.config.template_id === "clean-modern";
   const isNeighborhoodFriendly = payload.config.template_id === "neighborhood-friendly";
   const isInvestmentFocused = payload.config.template_id === "investment-focused";
   const isUrgentDeals = payload.config.template_id === "urgent-deals";
+  const isGuidedMatch = payload.config.template_id === "guided-match";
   const legacyTheme: Pick<ThemeConfig, "primary" | "accent" | "fontPairing"> = {
     primary: payload.config.primary_color,
     accent: payload.config.accent_color,
@@ -415,10 +471,10 @@ export function createTemplateConfig(
     siteId: payload.id,
     slug: payload.slug,
     colors: {
-      background: raw.colors?.background || (isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#FFFFFF" : isNeighborhoodFriendly ? "#FFF8F1" : "#F1EADF"),
+      background: raw.colors?.background || (isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#FFFFFF" : isNeighborhoodFriendly || isGuidedMatch ? "#FFF8F1" : "#F1EADF"),
       primary: raw.colors?.primary || legacyTheme.primary,
       accent: raw.colors?.accent || legacyTheme.accent,
-      text: raw.colors?.text || (isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#17211C" : isNeighborhoodFriendly ? "#352B25" : "#25231F"),
+      text: raw.colors?.text || (isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#17211C" : isNeighborhoodFriendly || isGuidedMatch ? "#352B25" : "#25231F"),
     },
     fonts: legacyTheme.fontPairing,
     content: {
@@ -428,6 +484,8 @@ export function createTemplateConfig(
       headline: content.headline || payload.config.headline || defaults.headline,
       bio: content.bio || payload.config.tone || defaults.bio,
       neighborhoods: content.neighborhoods?.length ? content.neighborhoods : defaults.neighborhoods,
+      feelings: content.feelings?.length ? content.feelings : defaults.feelings,
+      timings: content.timings?.length ? content.timings : defaults.timings,
     },
     layout: {
       showCategories: raw.layout?.show_categories !== false,

@@ -10,6 +10,7 @@ import { CleanModernDetail, CleanModernHome, CleanModernListings } from "./clean
 import { NeighborhoodFriendlyDetail, NeighborhoodFriendlyHome, NeighborhoodFriendlyListings } from "./neighborhood-friendly/NeighborhoodFriendlyTemplate";
 import { InvestmentFocusedDetail, InvestmentFocusedHome, InvestmentFocusedListings } from "./investment-focused/InvestmentFocusedTemplate";
 import { UrgentDealsDetail, UrgentDealsHome, UrgentDealsListings } from "./urgent-deals/UrgentDealsTemplate";
+import { GuidedMatchDetail, GuidedMatchHome, GuidedMatchListings } from "./guided-match/GuidedMatchTemplate";
 
 export const defaultTemplateId = "tm_01";
 
@@ -55,6 +56,12 @@ const urgentDealsFamily: TemplateFamily = {
   Detail: UrgentDealsDetail,
 };
 
+const guidedMatchFamily: TemplateFamily = {
+  Home: GuidedMatchHome,
+  Listings: GuidedMatchListings,
+  Detail: GuidedMatchDetail,
+};
+
 export const templates: Record<string, TemplateFamily> = {
   "warm-editorial": warmEditorialFamily,
   "bold-luxury": boldLuxuryFamily,
@@ -62,6 +69,7 @@ export const templates: Record<string, TemplateFamily> = {
   "neighborhood-friendly": neighborhoodFriendlyFamily,
   "investment-focused": investmentFocusedFamily,
   "urgent-deals": urgentDealsFamily,
+  "guided-match": guidedMatchFamily,
   tm_01: legacyFamily,
   tm_02: legacyFamily,
   tm_03: legacyFamily,

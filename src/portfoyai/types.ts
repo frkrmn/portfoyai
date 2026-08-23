@@ -15,8 +15,12 @@ export type ThemeConfig = {
 
 export type GeneratedSiteConfig = {
   /** Opaque internal choice returned by generation; never render this in product UI. */
-  template_id?: "tm_01" | "tm_02" | "tm_03" | "tm_04" | "warm-editorial" | "bold-luxury" | "clean-modern" | "neighborhood-friendly" | "investment-focused" | "urgent-deals";
-  content?: { neighborhoods?: Array<{ name: string; description: string }> };
+  template_id?: "tm_01" | "tm_02" | "tm_03" | "tm_04" | "warm-editorial" | "bold-luxury" | "clean-modern" | "neighborhood-friendly" | "investment-focused" | "urgent-deals" | "guided-match";
+  content?: {
+    neighborhoods?: Array<{ name: string; description: string }>;
+    feelings?: string[];
+    timings?: string[];
+  };
   business_name: string;
   tone: string;
   primary_color: string;

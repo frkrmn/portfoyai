@@ -6,6 +6,7 @@ const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
 if (!env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is required.");
 
 const prompts = {
+  "guided-match": "Müşterilerime aceleye getirmeden, ne aradıklarını gerçekten anlayarak yardımcı olan kişisel bir emlak danışmanıyım, standart filtreler yerine onları doğru eve yönlendiren bir deneyim istiyorum.",
   "urgent-deals": "Acil satılık ve fiyatı düşürülmüş fırsat ilanlarına odaklanan bir emlakçıyım, müşterilerim hızlı karar veren fırsat avcıları, enerjik ve aciliyet hissi veren bir site istiyorum.",
   "warm-editorial": "Sıcak, editoryal, butik bir emlak danışmanlığıyım, İstanbul'da butik konut portföyü sunuyorum.",
   "bold-luxury": "İstanbul'da üst segment, prestijli konut portföyüne odaklanan bir emlak danışmanıyım, güçlü ve lüks bir marka izlenimi istiyorum.",
@@ -31,4 +32,3 @@ const results = await Promise.all(Object.entries(prompts).map(async ([expected, 
 
 console.info(JSON.stringify(results, null, 2));
 if (results.some((result) => !result.match)) process.exitCode = 1;
-

@@ -23,13 +23,14 @@ const buildThemeConfig = (config) => {
   const isNeighborhoodFriendly = config.template_id === "neighborhood-friendly";
   const isInvestmentFocused = config.template_id === "investment-focused";
   const isUrgentDeals = config.template_id === "urgent-deals";
+  const isGuidedMatch = config.template_id === "guided-match";
   return {
     template_id: config.template_id,
     colors: {
-      background: isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#FFFFFF" : isNeighborhoodFriendly ? "#FFF8F1" : "#F1EADF",
+      background: isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#FFFFFF" : isNeighborhoodFriendly || isGuidedMatch ? "#FFF8F1" : "#F1EADF",
       primary: config.primary_color,
       accent: config.accent_color,
-      text: isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#17211C" : isNeighborhoodFriendly ? "#352B25" : "#25231F",
+      text: isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#17211C" : isNeighborhoodFriendly || isGuidedMatch ? "#352B25" : "#25231F",
     },
     fonts: {
       heading: isCleanModern || isNeighborhoodFriendly || isInvestmentFocused || isUrgentDeals ? "Manrope, Inter, Arial, sans-serif" : "Cormorant Garamond, Georgia, serif",
@@ -41,6 +42,8 @@ const buildThemeConfig = (config) => {
       bio: config.tone,
       regionFocus: config.region_focus,
       neighborhoods: config.content?.neighborhoods,
+      feelings: config.content?.feelings,
+      timings: config.content?.timings,
       tagline: isBoldLuxury
         ? "Ayrıcalıklı yaşamlar için seçkin bir gayrimenkul deneyimi."
         : isInvestmentFocused
@@ -51,10 +54,12 @@ const buildThemeConfig = (config) => {
           ? "Doğru evi hızlı, şeffaf ve kolay bir deneyimle bulun."
           : isUrgentDeals
             ? "Güncel fiyat avantajlarını net bilgi ve hızlı iletişimle yakalayın."
+          : isGuidedMatch
+            ? "Sizi dinleyen, tercihlerinizi anlayan ve doğru eve yönlendiren kişisel danışmanlık."
           : "Yaşam alanlarını kişisel bir seçkiyle buluşturuyoruz.",
     },
     layout: {
-      show_categories: !isBoldLuxury && !isCleanModern && !isNeighborhoodFriendly && !isInvestmentFocused && !isUrgentDeals,
+      show_categories: !isBoldLuxury && !isCleanModern && !isNeighborhoodFriendly && !isInvestmentFocused && !isUrgentDeals && !isGuidedMatch,
       show_testimonial: isBoldLuxury || isCleanModern,
     },
   };
