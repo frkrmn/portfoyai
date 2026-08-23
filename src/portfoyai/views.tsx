@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CalendarDays,
   Check,
+  Download,
   FileText,
   Home,
   LayoutDashboard,
@@ -192,6 +193,7 @@ export function ListingForm({
   onDraftChange,
   onSave,
   onGenerate,
+  onLoadSocialKit,
   onReset,
   onDelete,
   isSaving = false,
@@ -201,6 +203,7 @@ export function ListingForm({
   onDraftChange: (patch: Partial<ListingDraft & { id?: string }>) => void;
   onSave: () => void;
   onGenerate: () => Promise<{ platform_style: string; seo_style: string }>;
+  onLoadSocialKit: (format: "post" | "story") => Promise<Blob>;
   onReset: () => void;
   onDelete: () => void;
   isSaving?: boolean;
@@ -208,12 +211,29 @@ export function ListingForm({
   const [generatedCopy, setGeneratedCopy] = useState<{ platform_style: string; seo_style: string } | null>(null);
   const [isGeneratingCopy, setIsGeneratingCopy] = useState(false);
   const [copyError, setCopyError] = useState("");
+  const [socialKitOpen, setSocialKitOpen] = useState(false);
+  const [socialKitLoading, setSocialKitLoading] = useState(false);
+  const [socialKitError, setSocialKitError] = useState("");
+  const [socialKitUrls, setSocialKitUrls] = useState<{ post: string; story: string } | null>(null);
   const copyFactsSignature = JSON.stringify([draft.id, draft.title, draft.price, draft.m2, draft.room_count, draft.listing_type, draft.district, draft.features, draft.address, draft.category, draft.bedroom_count, draft.bathroom_count, draft.rental_yield_percent, draft.roi_notes, draft.urgent_sale, draft.price_reduced_from]);
 
   useEffect(() => {
     setGeneratedCopy(null);
     setCopyError("");
   }, [copyFactsSignature]);
+
+  useEffect(() => {
+    setSocialKitOpen(false);
+    setSocialKitError("");
+    setSocialKitUrls((current) => {
+      if (current) { URL.revokeObjectURL(current.post); URL.revokeObjectURL(current.story); }
+      return null;
+    });
+  }, [draft.id]);
+
+  useEffect(() => () => {
+    if (socialKitUrls) { URL.revokeObjectURL(socialKitUrls.post); URL.revokeObjectURL(socialKitUrls.story); }
+  }, [socialKitUrls]);
 
   const handleGenerateCopy = async () => {
     setIsGeneratingCopy(true);
@@ -226,6 +246,29 @@ export function ListingForm({
       toast.error(message);
     } finally {
       setIsGeneratingCopy(false);
+    }
+  };
+
+  const handleSocialKit = async () => {
+    if (socialKitOpen) { setSocialKitOpen(false); return; }
+    setSocialKitOpen(true);
+    if (!draft.id) return;
+    if (socialKitUrls) {
+      URL.revokeObjectURL(socialKitUrls.post);
+      URL.revokeObjectURL(socialKitUrls.story);
+      setSocialKitUrls(null);
+    }
+    setSocialKitLoading(true);
+    setSocialKitError("");
+    try {
+      const [post, story] = await Promise.all([onLoadSocialKit("post"), onLoadSocialKit("story")]);
+      setSocialKitUrls({ post: URL.createObjectURL(post), story: URL.createObjectURL(story) });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Sosyal medya kiti oluşturulamadı.";
+      setSocialKitError(message);
+      toast.error(message);
+    } finally {
+      setSocialKitLoading(false);
     }
   };
 
@@ -316,6 +359,7 @@ export function ListingForm({
           </div>
         </div>
         {generatedCopy ? <div className="grid gap-4 md:grid-cols-2" aria-label="Oluşturulan açıklama seçenekleri"><div className="flex flex-col rounded-2xl border border-[#173f32]/10 bg-white p-4"><div className="text-sm font-semibold">Platform stili</div><p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#5f6c65]">{generatedCopy.platform_style}</p><Button type="button" variant="outline" onClick={() => onDraftChange({ description: generatedCopy.platform_style })} className="mt-4 self-start">Kullan</Button></div><div className="flex flex-col rounded-2xl border border-[#173f32]/10 bg-white p-4"><div className="text-sm font-semibold">SEO stili</div><p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#5f6c65]">{generatedCopy.seo_style}</p><Button type="button" variant="outline" onClick={() => onDraftChange({ description: generatedCopy.seo_style })} className="mt-4 self-start">Kullan</Button></div></div> : null}
+        {socialKitOpen ? <div className="rounded-2xl border border-[#173f32]/10 bg-white p-4"><div className="flex items-center justify-between"><div><div className="font-semibold">Sosyal Medya Kiti</div><p className="mt-1 text-xs text-slate-500">Görseller kaydedilmeden, güncel ilan ve site renklerinden üretilir.</p></div>{socialKitLoading ? <span className="text-xs text-slate-500">Oluşturuluyor...</span> : null}</div>{socialKitError ? <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{socialKitError}</p> : null}{socialKitUrls ? <div className="mt-4 grid gap-5 md:grid-cols-2"><div><div className="text-sm font-medium">Post · 1080×1080</div><img src={socialKitUrls.post} alt="Kare sosyal medya gönderisi önizlemesi" className="mt-2 aspect-square w-full rounded-xl bg-slate-100 object-contain" /><Button asChild variant="outline" className="mt-3 w-full gap-2"><a href={socialKitUrls.post} download={`${draft.id}-post.png`}><Download className="h-4 w-4" />İndir</a></Button></div><div><div className="text-sm font-medium">Story · 1080×1920</div><div className="mt-2 flex justify-center rounded-xl bg-slate-100 p-3"><img src={socialKitUrls.story} alt="Dikey sosyal medya hikayesi önizlemesi" className="aspect-[9/16] max-h-[430px] w-auto rounded-lg object-contain" /></div><Button asChild variant="outline" className="mt-3 w-full gap-2"><a href={socialKitUrls.story} download={`${draft.id}-story.png`}><Download className="h-4 w-4" />İndir</a></Button></div></div> : null}</div> : null}
         <div className="flex flex-wrap gap-2">
           <Button type="button" onClick={onSave} disabled={isSaving} className="gap-2">
             <Save className="h-4 w-4" />
@@ -324,6 +368,7 @@ export function ListingForm({
           <Button type="button" variant="outline" onClick={onReset}>
             Yeni ilan
           </Button>
+          {draft.id ? <Button type="button" variant="outline" onClick={() => void handleSocialKit()} disabled={socialKitLoading} className="gap-2"><Sparkles className="h-4 w-4" />Sosyal Medya Kiti</Button> : null}
           {draft.id ? (
             <Button type="button" variant="destructive" onClick={onDelete} className="gap-2">
               <Trash2 className="h-4 w-4" />

@@ -7,6 +7,7 @@ import siteById from "./api/sites/[id].js";
 import siteListings from "./api/sites/[id]/listings.js";
 import listingById from "./api/listings/[id].js";
 import generateListingCopy from "./api/listings/generate-copy.js";
+import socialKit from "./api/listings/[id]/social-kit.js";
 import leads from "./api/leads.js";
 import publicSiteBySlug from "./api/public-sites/[slug].js";
 import experiment from "./api/experiment.js";
@@ -51,6 +52,12 @@ const server = createHttpServer(async (request, response) => {
   if (listingMatch) {
     request.query.id = listingMatch[1];
     return listingById(request, response);
+  }
+
+  const socialKitMatch = pathname.match(/^\/api\/listings\/([0-9a-f-]{36})\/social-kit$/i);
+  if (socialKitMatch) {
+    request.query.id = socialKitMatch[1];
+    return socialKit(request, response);
   }
 
   const siteMatch = pathname.match(/^\/api\/sites\/([0-9a-f-]{36})$/i);
