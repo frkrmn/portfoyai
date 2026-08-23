@@ -14,11 +14,15 @@ export type ThemeConfig = {
 };
 
 export type GeneratedSiteConfig = {
+  /** Opaque internal choice returned by generation; never render this in product UI. */
+  template_id?: "tm_01" | "tm_02" | "tm_03" | "tm_04" | "warm-editorial" | "bold-luxury" | "clean-modern" | "neighborhood-friendly" | "investment-focused";
+  content?: { neighborhoods?: Array<{ name: string; description: string }> };
   business_name: string;
   tone: string;
   primary_color: string;
   accent_color: string;
   headline: string;
+  region_focus?: string;
 };
 
 export type Agent = {
@@ -71,6 +75,12 @@ export type Listing = {
   status: "active" | "passive" | "sold";
   created_at: string;
   features: string[];
+  address?: string | null;
+  category?: "apartment" | "house" | "duplex" | null;
+  bedroom_count?: number | null;
+  bathroom_count?: number | null;
+  rental_yield_percent?: number | null;
+  roi_notes?: string | null;
 };
 
 export type Lead = {

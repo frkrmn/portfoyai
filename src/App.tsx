@@ -10,13 +10,12 @@ import { useAuth } from "./portfoyai/auth";
 import { LoginPage, SignupPage } from "./portfoyai/auth-pages";
 import {
   AuthPage,
-  DashboardPage,
   GeneratedSitePreviewPage,
   LandingPage,
-  ListingDetailPage,
   NotFoundPage,
-  PublicSitePage,
 } from "./portfoyai/views";
+import { DashboardPage } from "./portfoyai/dashboard";
+import { SiteRenderer } from "./templates/SiteRenderer";
 
 const queryClient = new QueryClient();
 
@@ -44,8 +43,9 @@ export default function App() {
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
               <Route path="/preview/:siteId" element={<GeneratedSitePreviewPage />} />
-              <Route path="/site/:slug" element={<PublicSitePage />} />
-              <Route path="/site/:subdomain/listings/:listingId" element={<ListingDetailPage />} />
+              <Route path="/site/:slug" element={<SiteRenderer view="home" />} />
+              <Route path="/site/:slug/listings" element={<SiteRenderer view="listings" />} />
+              <Route path="/site/:slug/listings/:listingId" element={<SiteRenderer view="detail" />} />
               <Route path="/home" element={<Navigate to="/" replace />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { Session, User } from "@supabase/supabase-js";
 import { getSiteSessionId } from "@/lib/site-session";
 import { isSupabaseAuthConfigured, supabase } from "@/lib/supabase";
+import { readApiJson } from "@/lib/api";
 
 type ClaimResult = { claimedSiteIds: string[] };
 
@@ -27,7 +28,7 @@ const claimGuestSites = async (accessToken: string): Promise<ClaimResult> => {
       "X-Session-ID": getSiteSessionId(),
     },
   });
-  const payload = await response.json();
+  const payload = await readApiJson<ClaimResult & { error?: string }>(response);
   if (!response.ok) throw new Error(payload.error || "Guest site could not be linked to the account.");
   return payload;
 };

@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import type { CSSProperties, ComponentType, ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
-  BarChart3,
-  Bell,
   CalendarDays,
   Check,
-  ChevronRight,
   FileText,
-  Globe,
   Home,
   LayoutDashboard,
   LogOut,
@@ -18,15 +14,16 @@ import {
   Palette,
   Phone,
   Plus,
+  Save,
   Search,
   Send,
   SlidersHorizontal,
   Sparkles,
   Star,
   Trash2,
-  Upload,
   Users,
   Waves,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,9 +39,10 @@ import { toast } from "sonner";
 import { formatDateTR, formatTRY, generateThemeFromPrompt } from "./mock";
 import { usePortfoyAI } from "./store";
 import { useAuth } from "./auth";
-import type { GeneratedSiteConfig, ListingDraft, ThemeConfig } from "./types";
+import type { GeneratedSiteConfig, Listing, ListingDraft, ThemeConfig } from "./types";
+import { getListingImage } from "@/templates/mediaFallbacks";
 
-const getThemeStyles = (theme: ThemeConfig) =>
+const getThemeStyles = (theme: Pick<ThemeConfig, "primary" | "accent" | "fontPairing">) =>
   ({
     "--theme-primary": theme.primary,
     "--theme-accent": theme.accent,
@@ -66,16 +64,9 @@ const usePageMeta = (title: string, description: string) => {
   }, [title, description]);
 };
 
-const themeDisplay = {
-  "Modern Minimal": "Modern Minimal",
-  "Warm Classic": "Warm Classic",
-  "Bold Luxury": "Bold Luxury",
-  "Clean Corporate": "Clean Corporate",
-};
-
-function Shell({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
-  const { currentAgent } = usePortfoyAI();
+export function Shell({ children, actions, businessName, activeSection, onSectionChange, leadCount }: { children: ReactNode; actions?: ReactNode; businessName: string; activeSection: "overview" | "site" | "listings" | "leads"; onSectionChange: (section: "overview" | "site" | "listings" | "leads") => void; leadCount: number }) {
   const { user, signOut } = useAuth();
+  const identity = businessName || user?.email || "PortföyAI";
   return (
     <div className="min-h-screen bg-[#f2efe8] text-[#17231e]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col bg-[#173f32] px-5 py-6 text-white lg:flex">
@@ -85,92 +76,26 @@ function Shell({ children, actions }: { children: ReactNode; actions?: ReactNode
         </Link>
         <div className="mt-10 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/35">Çalışma alanı</div>
         <nav className="mt-3 space-y-1.5">
-          {[{ icon: LayoutDashboard, label: "Genel bakış" }, { icon: Home, label: "Portföyler" }, { icon: Users, label: "Talepler" }, { icon: Palette, label: "Site tasarımı" }].map(({ icon: Icon, label }, index) => (
-            <div key={label} className={cn("flex items-center gap-3 rounded-xl px-3 py-3 text-sm", index === 0 ? "bg-white text-[#173f32] shadow-sm" : "text-white/65 hover:bg-white/8 hover:text-white")}>
-              <Icon className="h-[18px] w-[18px]" /><span>{label}</span>{label === "Talepler" ? <span className="ml-auto rounded-full bg-[#d86f45] px-2 py-0.5 text-[10px] text-white">2</span> : null}
-            </div>
+          {[{ id: "overview" as const, icon: LayoutDashboard, label: "Genel bakış" }, { id: "listings" as const, icon: Home, label: "Portföyler" }, { id: "leads" as const, icon: Users, label: "Talepler" }, { id: "site" as const, icon: Palette, label: "Site ayarları" }].map(({ id, icon: Icon, label }) => (
+            <button type="button" key={label} onClick={() => onSectionChange(id)} className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm", activeSection === id ? "bg-white text-[#173f32] shadow-sm" : "text-white/65 hover:bg-white/8 hover:text-white")}>
+              <Icon className="h-[18px] w-[18px]" /><span>{label}</span>{id === "leads" && leadCount > 0 ? <span className="ml-auto rounded-full bg-[#d86f45] px-2 py-0.5 text-[10px] text-white">{leadCount}</span> : null}
+            </button>
           ))}
         </nav>
         <div className="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-[#dbe5d2] font-semibold text-[#173f32]">{currentAgent?.name?.split(" ").map((part) => part[0]).join("").slice(0, 2)}</div><div className="min-w-0"><div className="truncate text-sm font-semibold">{currentAgent?.name}</div><div className="truncate text-xs text-white/45">{currentAgent?.businessName}</div></div></div>
+          <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-[#dbe5d2] font-semibold text-[#173f32]">{identity.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</div><div className="min-w-0"><div className="truncate text-sm font-semibold">{identity}</div><div className="truncate text-xs text-white/45">{user?.email}</div></div></div>
         </div>
       </aside>
       <div className="lg:pl-[260px]">
         <header className="sticky top-0 z-20 border-b border-[#173f32]/10 bg-[#f2efe8]/90 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
           <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
             <Link to="/" className="flex items-center gap-3 lg:hidden"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#173f32] text-white"><Home className="h-4 w-4" /></div><span className="font-bold">PortföyAI</span></Link>
-            <div className="hidden lg:block"><div className="text-xs text-[#78827c]">{currentAgent?.businessName}</div><div className="mt-0.5 text-sm font-semibold">Yönetim paneli</div></div>
-            <div className="flex items-center gap-2"><Button variant="outline" size="icon" className="rounded-full border-[#173f32]/10 bg-white text-[#173f32]"><Bell className="h-4 w-4" /></Button>{actions}{user ? <Button variant="outline" size="icon" title="Çıkış yap" onClick={() => void signOut().catch((error) => toast.error(error.message))} className="rounded-full border-[#173f32]/10 bg-white text-[#173f32]"><LogOut className="h-4 w-4" /></Button> : null}</div>
+            <div className="hidden lg:block"><div className="text-xs text-[#78827c]">{businessName || "Site seçilmedi"}</div><div className="mt-0.5 text-sm font-semibold">Yönetim paneli</div></div>
+            <div className="flex items-center gap-2">{actions}{user ? <Button variant="outline" size="icon" title="Çıkış yap" onClick={() => void signOut().catch((error) => toast.error(error.message))} className="rounded-full border-[#173f32]/10 bg-white text-[#173f32]"><LogOut className="h-4 w-4" /></Button> : null}</div>
           </div>
         </header>
         <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
       </div>
-    </div>
-  );
-}
-
-function SectionHeader({
-  eyebrow,
-  title,
-  description,
-  right,
-}: {
-  eyebrow?: string;
-  title: string;
-  description?: string;
-  right?: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-      <div className="max-w-2xl">
-        {eyebrow ? <div className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">{eyebrow}</div> : null}
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">{title}</h1>
-        {description ? <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">{description}</p> : null}
-      </div>
-      {right}
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string;
-  icon: ComponentType<{ className?: string }>;
-  tone?: "neutral" | "emerald" | "amber" | "blue";
-}) {
-  const tones = {
-    neutral: "bg-slate-100 text-slate-800",
-    emerald: "bg-emerald-50 text-emerald-700",
-    amber: "bg-amber-50 text-amber-700",
-    blue: "bg-blue-50 text-blue-700",
-  };
-  return (
-    <Card className="rounded-[1.5rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none">
-      <CardContent className="flex items-center gap-4 p-5">
-        <div className={cn("grid h-11 w-11 place-items-center rounded-2xl", tones[tone])}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <div className="text-xs text-[#7a857e]">{label}</div>
-          <div className="mt-1 text-2xl font-semibold tracking-tight text-[#17231e]">{value}</div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ThemeBadge({ theme }: { theme: ThemeConfig }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      <Badge className="rounded-full bg-slate-950 px-3 py-1 text-white hover:bg-slate-950">{themeDisplay[theme.variant]}</Badge>
-      <Badge variant="outline" className="rounded-full px-3 py-1">
-        {theme.layoutVariant}
-      </Badge>
     </div>
   );
 }
@@ -261,7 +186,7 @@ function PublicContactForm({ siteId }: { siteId: string }) {
   );
 }
 
-function ListingForm({
+export function ListingForm({
   siteId,
   draft,
   onDraftChange,
@@ -269,6 +194,7 @@ function ListingForm({
   onGenerate,
   onReset,
   onDelete,
+  isSaving = false,
 }: {
   siteId: string;
   draft: ListingDraft & { id?: string };
@@ -277,11 +203,17 @@ function ListingForm({
   onGenerate: () => void;
   onReset: () => void;
   onDelete: () => void;
+  isSaving?: boolean;
 }) {
   const handleFiles = async (files: FileList | null) => {
     if (!files?.length) return;
+    const selected = Array.from(files).slice(0, Math.max(0, 10 - draft.media.length));
+    if (selected.some((file) => file.size > 1_500_000)) {
+      toast.error("Her fotoğraf en fazla 1,5 MB olabilir.");
+      return;
+    }
     const next = await Promise.all(
-      Array.from(files).map(
+      selected.map(
         (file) =>
           new Promise<{ url: string; thumbUrl: string; alt: string; id: string }>((resolve) => {
             const reader = new FileReader();
@@ -349,7 +281,7 @@ function ListingForm({
             <Input type="file" accept="image/*" multiple onChange={(e) => void handleFiles(e.target.files)} />
             <div className="flex flex-wrap gap-2">
               {draft.media.map((item) => (
-                <img key={item.id} src={item.thumbUrl} alt={item.alt} className="h-16 w-24 rounded-xl object-cover ring-1 ring-slate-200" />
+                <div key={item.id} className="relative"><img src={item.thumbUrl} alt={item.alt} className="h-16 w-24 rounded-xl object-cover ring-1 ring-slate-200" /><button type="button" aria-label="Fotoğrafı kaldır" onClick={() => onDraftChange({ media: draft.media.filter((media) => media.id !== item.id) })} className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-[#173f32] text-white"><X className="h-3 w-3" /></button></div>
               ))}
             </div>
           </div>
@@ -363,9 +295,9 @@ function ListingForm({
             <Sparkles className="h-4 w-4" />
             AI ile açıklama üret
           </Button>
-          <Button type="button" onClick={onSave} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Kaydet
+          <Button type="button" onClick={onSave} disabled={isSaving} className="gap-2">
+            <Save className="h-4 w-4" />
+            {isSaving ? "Kaydediliyor..." : "Kaydet"}
           </Button>
           <Button type="button" variant="outline" onClick={onReset}>
             Yeni ilan
@@ -377,7 +309,7 @@ function ListingForm({
             </Button>
           ) : null}
         </div>
-        <div className="text-xs text-slate-500">Supabase Storage + thumbnail akışı burada demo amaçlı veri URL ile temsil ediliyor.</div>
+        <div className="text-xs text-slate-500">Fotoğraflar ilan kaydıyla birlikte Supabase listings tablosundaki media alanına kaydedilir.</div>
       </CardContent>
     </Card>
   );
@@ -406,7 +338,7 @@ export function LandingPage() {
         <nav className="hidden items-center gap-8 text-sm font-medium text-[#48564f] md:flex">
           <a href="#nasil-calisir" className="transition-colors hover:text-[#173f32]">Nasıl çalışır?</a>
           <a href="#ozellikler" className="transition-colors hover:text-[#173f32]">Özellikler</a>
-          <a href="#temalar" className="transition-colors hover:text-[#173f32]">Temalar</a>
+          <a href="#size-ozel" className="transition-colors hover:text-[#173f32]">Size özel</a>
           <a href="#sss" className="transition-colors hover:text-[#173f32]">S.S.S.</a>
         </nav>
         <div className="flex items-center gap-2">
@@ -510,7 +442,7 @@ export function LandingPage() {
                 </div>
               </div>
               <div className="absolute -bottom-7 -left-5 hidden rounded-2xl border border-white bg-white/95 p-4 shadow-[0_18px_45px_rgba(39,55,47,0.18)] backdrop-blur sm:block">
-                <div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#e7efe8] text-[#315d4b]"><Sparkles className="h-4 w-4" /></div><div><div className="text-xs font-semibold">Tasarım hazır</div><div className="mt-0.5 text-[10px] text-[#758078]">{theme.variant} · {profile.region_focus}</div></div></div>
+                <div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#e7efe8] text-[#315d4b]"><Sparkles className="h-4 w-4" /></div><div><div className="text-xs font-semibold">Tasarım hazır</div><div className="mt-0.5 text-[10px] text-[#758078]">Markanıza özel · {profile.region_focus}</div></div></div>
               </div>
             </div>
           </div>
@@ -537,7 +469,7 @@ export function LandingPage() {
               </Button>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
-              {[{ icon: Sparkles, title: "Markanıza göre tasarım", text: "Hazır şablon seçmekle uğraşmadan, işinizin karakterine uygun bir başlangıç tasarımı alın.", tone: "bg-[#e5eee6] text-[#315d4b]" }, { icon: Home, title: "Zengin ilan sayfaları", text: "Fotoğraf galerisi, konum, özellikler ve iletişim formuyla her portföyü güçlü biçimde sunun.", tone: "bg-[#f4e4dc] text-[#a35f3d]" }, { icon: FileText, title: "AI ile ilan açıklaması", text: "Temel bilgileri girin; düzenleyebileceğiniz etkili bir pazarlama metni saniyeler içinde hazır olsun.", tone: "bg-[#ece7d8] text-[#766328]" }, { icon: Users, title: "Tek ekranda talepler", text: "Web sitenizden gelen tüm alıcı ve kiracı taleplerini ilanlarıyla birlikte takip edin.", tone: "bg-[#e6e9ef] text-[#415477]" }].map(({ icon: Icon, title, text, tone }) => (
+              {[{ icon: Sparkles, title: "Markanıza göre tasarım", text: "İşinizi kendi sözlerinizle anlatın; sistem bölgenize, uzmanlığınıza ve marka tonunuza uygun görünümü sizin için oluştursun.", tone: "bg-[#e5eee6] text-[#315d4b]" }, { icon: Home, title: "Zengin ilan sayfaları", text: "Fotoğraf galerisi, konum, özellikler ve iletişim formuyla her portföyü güçlü biçimde sunun.", tone: "bg-[#f4e4dc] text-[#a35f3d]" }, { icon: FileText, title: "AI ile ilan açıklaması", text: "Temel bilgileri girin; düzenleyebileceğiniz etkili bir pazarlama metni saniyeler içinde hazır olsun.", tone: "bg-[#ece7d8] text-[#766328]" }, { icon: Users, title: "Tek ekranda talepler", text: "Web sitenizden gelen tüm alıcı ve kiracı taleplerini ilanlarıyla birlikte takip edin.", tone: "bg-[#e6e9ef] text-[#415477]" }].map(({ icon: Icon, title, text, tone }) => (
                 <Card key={title} className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none transition-transform duration-300 hover:-translate-y-1">
                   <CardContent className="p-7 sm:p-8"><div className={cn("grid h-12 w-12 place-items-center rounded-2xl", tone)}><Icon className="h-5 w-5" /></div><h3 className="mt-8 text-2xl font-semibold leading-tight">{title}</h3><p className="mt-3 text-sm leading-6 text-[#68746d]">{text}</p></CardContent>
                 </Card>
@@ -564,15 +496,14 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="temalar" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10 lg:py-32">
-          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between"><div className="max-w-2xl"><div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a35f3d]">Markanıza uyum sağlar</div><h2 className="mt-5 text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl">Dört güçlü yön. Size özel bir sonuç.</h2></div><p className="max-w-md text-sm leading-6 text-[#69756e]">PortföyAI, iş tanımınızdan en doğru tasarım yönünü seçer. Renkleri ve yazı karakterlerini daha sonra dilediğiniz zaman değiştirebilirsiniz.</p></div>
-          <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {[{ name: "Modern Minimal", color: "#397164", accent: "#cfddd2", label: "Sade ve çağdaş" }, { name: "Warm Classic", color: "#9d5b3d", accent: "#ead7c8", label: "Sıcak ve köklü" }, { name: "Bold Luxury", color: "#222622", accent: "#c0a17a", label: "Güçlü ve seçkin" }, { name: "Clean Corporate", color: "#435b75", accent: "#d6e0e8", label: "Net ve kurumsal" }].map((item, index) => (
-              <button key={item.name} onClick={() => setPrompt(`${profile.region_focus} bölgesinde çalışan ${item.name === "Bold Luxury" ? "lüks" : item.name === "Warm Classic" ? "klasik" : item.name === "Clean Corporate" ? "kurumsal" : "modern"} bir emlak danışmanıyım`)} className="group text-left">
-                <div className="aspect-[4/5] overflow-hidden rounded-[2rem] p-3 transition-transform duration-300 group-hover:-translate-y-2" style={{ backgroundColor: item.accent }}><div className="flex h-full flex-col rounded-[1.4rem] bg-[#fbfaf7] p-4 shadow-sm"><div className="flex items-center justify-between text-[8px] font-semibold" style={{ color: item.color }}><span>PORTFÖYAI</span><span>MENÜ</span></div><div className="mt-8 rounded-xl px-4 py-7 text-white" style={{ backgroundColor: item.color }}><div className="text-[8px] uppercase tracking-wider opacity-65">İstanbul</div><div className="mt-2 font-serif text-2xl leading-none">Yaşam alanınızı keşfedin.</div></div><div className="mt-4 grid flex-1 grid-cols-2 gap-2">{[0, 1].map((n) => <div key={n} className="rounded-xl bg-[#ecebe6] p-2"><div className="aspect-square rounded-lg" style={{ backgroundColor: `${item.color}22` }} /><div className="mt-2 h-1.5 w-4/5 rounded-full bg-[#d4d3cd]" /><div className="mt-1.5 h-1.5 w-1/2 rounded-full bg-[#e2e1dc]" /></div>)}</div><div className="mt-4 flex items-center justify-between text-[8px] text-[#8a928d]"><span>SEÇKİN PORTFÖYLER</span><span>0{index + 1}</span></div></div></div>
-                <div className="mt-5 flex items-center justify-between px-1"><div><div className="font-semibold">{item.name}</div><div className="mt-1 text-sm text-[#748078]">{item.label}</div></div><ChevronRight className="h-4 w-4 text-[#8b968f] transition-transform group-hover:translate-x-1" /></div>
-              </button>
-            ))}
+        <section id="size-ozel" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10 lg:py-32">
+          <div className="overflow-hidden rounded-[2.75rem] border border-[#173f32]/10 bg-[#ebe7de] p-7 sm:p-10 lg:p-14">
+            <div className="grid items-center gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+              <div><div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a35f3d]">Anlattığınız kadar size özel</div><h2 className="mt-5 text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl">İşinizi anlatın. Dijital kimliğiniz ortaya çıksın.</h2><p className="mt-6 max-w-xl text-base leading-7 text-[#66726b]">PortföyAI; çalıştığınız bölgeyi, portföy türlerinizi ve vermek istediğiniz hissi birlikte yorumlar. Sonuç, seçtiğiniz hazır bir görünüm değil, paylaştığınız ayrıntılardan oluşan size ait bir başlangıçtır.</p><Button onClick={() => document.getElementById("site-olustur")?.scrollIntoView({ behavior: "smooth" })} className="mt-8 h-12 rounded-full bg-[#173f32] px-6 text-white hover:bg-[#0f3025]">İşimi anlatmaya başla <ArrowRight className="ml-2 h-4 w-4" /></Button></div>
+              <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+                {[{ icon: MapPin, title: "Bölgenizi anlar", text: "Hizmet verdiğiniz lokasyonları ve yerel uzmanlığınızı merkeze alır." }, { icon: Sparkles, title: "Marka tonunuzu yorumlar", text: "Güven veren, seçkin, samimi veya kurumsal anlatımınızı tasarıma taşır." }, { icon: FileText, title: "İçeriğinizi şekillendirir", text: "Başlıkları, renkleri ve sunum dilini verdiğiniz bilgilerden üretir." }].map(({ icon: Icon, title, text }) => <Card key={title} className="rounded-[1.5rem] border-[#173f32]/10 bg-white/70 shadow-none"><CardContent className="flex gap-4 p-5"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#dbe5d2] text-[#315d4b]"><Icon className="h-5 w-5" /></div><div><h3 className="font-semibold">{title}</h3><p className="mt-1 text-sm leading-6 text-[#68746d]">{text}</p></div></CardContent></Card>)}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -591,7 +522,7 @@ export function LandingPage() {
       </main>
 
       <footer className="bg-[#13271f] text-white">
-        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10"><div className="flex flex-col gap-10 border-b border-white/10 pb-10 md:flex-row md:items-start md:justify-between"><div><Link to="/" className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-white text-[#173f32]"><Home className="h-[18px] w-[18px]" /></div><span className="text-lg font-bold">PortföyAI</span></Link><p className="mt-4 max-w-sm text-sm leading-6 text-white/55">Gayrimenkul profesyonelleri için akıllı web sitesi ve portföy yönetimi.</p></div><div className="grid grid-cols-2 gap-x-16 gap-y-3 text-sm text-white/65"><a href="#nasil-calisir" className="hover:text-white">Nasıl çalışır?</a><a href="#ozellikler" className="hover:text-white">Özellikler</a><a href="#temalar" className="hover:text-white">Temalar</a><a href="#sss" className="hover:text-white">S.S.S.</a><button onClick={() => navigate("/login")} className="text-left hover:text-white">Giriş yap</button><button onClick={() => navigate(`/site/${demoSubdomain}`)} className="text-left hover:text-white">Demo site</button></div></div><div className="flex flex-col gap-3 pt-8 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between"><span>© 2026 PortföyAI. Tüm hakları saklıdır.</span><span>Türkiye’de emlak profesyonelleri için tasarlandı.</span></div></div>
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10"><div className="flex flex-col gap-10 border-b border-white/10 pb-10 md:flex-row md:items-start md:justify-between"><div><Link to="/" className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-white text-[#173f32]"><Home className="h-[18px] w-[18px]" /></div><span className="text-lg font-bold">PortföyAI</span></Link><p className="mt-4 max-w-sm text-sm leading-6 text-white/55">Gayrimenkul profesyonelleri için akıllı web sitesi ve portföy yönetimi.</p></div><div className="grid grid-cols-2 gap-x-16 gap-y-3 text-sm text-white/65"><a href="#nasil-calisir" className="hover:text-white">Nasıl çalışır?</a><a href="#ozellikler" className="hover:text-white">Özellikler</a><a href="#size-ozel" className="hover:text-white">Size özel</a><a href="#sss" className="hover:text-white">S.S.S.</a><button onClick={() => navigate("/login")} className="text-left hover:text-white">Giriş yap</button><button onClick={() => navigate(`/site/${demoSubdomain}`)} className="text-left hover:text-white">Demo site</button></div></div><div className="flex flex-col gap-3 pt-8 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between"><span>© 2026 PortföyAI. Tüm hakları saklıdır.</span><span>Türkiye’de emlak profesyonelleri için tasarlandı.</span></div></div>
       </footer>
     </div>
   );
@@ -638,7 +569,7 @@ export function AuthPage() {
       if (!payload.slug || !payload.public_path) throw new Error("The generated site was saved without a public URL.");
 
       toast.success(`Siteniz hazır: ${payload.public_path}`);
-      navigate(`/preview/${payload.site_id}`);
+      navigate(payload.public_path);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected generation error";
       console.error("[onboarding] generate-theme request failed", error);
@@ -684,7 +615,7 @@ export function AuthPage() {
               <div className="px-1 pb-2 pt-6"><div className="mb-4 flex items-end justify-between"><div><div className="text-[9px] uppercase tracking-[0.18em] text-[#839087]">Güncel portföyler</div><div className="mt-1 text-xl font-semibold">Öne çıkan yaşam alanları</div></div><span className="text-[10px] text-[#748079]">Tümünü gör →</span></div><div className="grid grid-cols-3 gap-3">{previewListings.map((listing) => <div key={listing.id} className="overflow-hidden rounded-xl border border-[#173f32]/10 bg-white"><img src={listing.media[0]?.thumbUrl} alt={listing.title} className="aspect-[4/3] w-full object-cover"/><div className="p-2.5"><div className="truncate text-[10px] font-semibold">{listing.title}</div><div className="mt-1 text-[9px] text-[#7a857e]">{listing.district} · {listing.room_count}</div></div></div>)}</div></div>
             </div>
           </div>
-          <div className="relative mx-auto mt-5 flex max-w-lg items-center justify-center gap-5 text-xs text-[#6f7a73]"><span className="inline-flex items-center gap-2"><Palette className="h-3.5 w-3.5" />{preview.theme.variant}</span><span className="h-3 w-px bg-[#173f32]/15"/><span className="inline-flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{preview.profile.region_focus}</span></div>
+          <div className="relative mx-auto mt-5 flex max-w-lg items-center justify-center gap-5 text-xs text-[#6f7a73]"><span className="inline-flex items-center gap-2"><Sparkles className="h-3.5 w-3.5" />İşletmenize özel tasarım</span><span className="h-3 w-px bg-[#173f32]/15"/><span className="inline-flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{preview.profile.region_focus}</span></div>
         </div>
       </main>
     </div>
@@ -778,151 +709,6 @@ export function GeneratedSitePreviewPage() {
   );
 }
 
-export function DashboardPage() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { session, claimResult, claimError, isClaiming, retryClaim } = useAuth();
-  const { currentAgent, currentSite, currentListings, state, updateTheme, updateSite, saveListing, deleteListing, generateCopy, setCurrentAgent } =
-    usePortfoyAI();
-  const blankDraft = (): ListingDraft & { id?: string } => ({
-    site_id: currentSite.id,
-    title: "",
-    description: "",
-    price: 0,
-    currency: "TRY",
-    m2: 0,
-    room_count: "3+1",
-    listing_type: "sale",
-    district: currentAgent.region,
-    lat: 41,
-    lng: 29,
-    media: [],
-    status: "active",
-    features: [],
-  });
-  const [draft, setDraft] = useState<ListingDraft & { id?: string }>(blankDraft);
-  const [ownedSites, setOwnedSites] = useState<Array<{ id: string; slug: string; business_name: string; headline: string; status: "draft" | "published"; created_at: string }>>([]);
-  const [ownedLeads, setOwnedLeads] = useState<Array<{ id: string; site_id: string; name: string; phone: string; message: string | null; created_at: string }>>([]);
-  const [isLoadingOwnedSites, setIsLoadingOwnedSites] = useState(true);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const requestedSiteId = searchParams.get("site");
-  const ownedSite = ownedSites.find((site) => site.id === requestedSiteId) ?? ownedSites[0] ?? null;
-
-  usePageMeta("PortföyAI - Dashboard", "Tema ayarları, ilanlar ve lead inbox.");
-
-  useEffect(() => {
-    setDraft((current) => ({
-      ...current,
-      site_id: currentSite.id,
-    }));
-  }, [currentSite.id]);
-
-  useEffect(() => {
-    if (!session) return;
-    const controller = new AbortController();
-    const loadOwnedSites = async () => {
-      setIsLoadingOwnedSites(true);
-      try {
-        const response = await fetch("/api/sites", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          signal: controller.signal,
-        });
-        const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || "Siteler yüklenemedi.");
-        setOwnedSites(payload.sites || []);
-        const leadsResponse = await fetch("/api/leads", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          signal: controller.signal,
-        });
-        const leadsPayload = await leadsResponse.json();
-        if (!leadsResponse.ok) throw new Error(leadsPayload.error || "Talepler yüklenemedi.");
-        setOwnedLeads(leadsPayload.leads || []);
-      } catch (error) {
-        if (!(error instanceof DOMException && error.name === "AbortError")) toast.error(error instanceof Error ? error.message : "Siteler yüklenemedi.");
-      } finally {
-        if (!controller.signal.aborted) setIsLoadingOwnedSites(false);
-      }
-    };
-    void loadOwnedSites();
-    return () => controller.abort();
-  }, [session, claimResult]);
-
-  const publishOwnedSite = async () => {
-    if (!session || !ownedSite || ownedSite.status === "published") return;
-    setIsPublishing(true);
-    try {
-      const response = await fetch(`/api/sites/${ownedSite.id}`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "published" }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Site yayınlanamadı.");
-      setOwnedSites((sites) => sites.map((site) => site.id === payload.site.id ? payload.site : site));
-      toast.success("Site yayınlandı.");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Site yayınlanamadı.");
-    } finally {
-      setIsPublishing(false);
-    }
-  };
-
-  const [activeTab, setActiveTab] = useState<"overview" | "site" | "listings" | "leads">("overview");
-  const activeListings = currentListings.filter((listing) => listing.status === "active");
-
-  return (
-    <Shell
-      actions={
-        <div className="flex flex-wrap items-center gap-2">
-          {ownedSite ? <Button variant="outline" onClick={() => navigate(`/site/${ownedSite.slug}`)} className="gap-2 rounded-full border-[#173f32]/10 bg-white text-[#173f32]"><Globe className="h-4 w-4" /><span className="hidden sm:inline">Siteyi görüntüle</span></Button> : null}
-          {ownedSite ? <Button onClick={() => void publishOwnedSite()} disabled={isPublishing || ownedSite.status === "published"} className="rounded-full bg-[#d86f45] text-white hover:bg-[#c76039]">{ownedSite.status === "published" ? "Yayında" : isPublishing ? "Yayınlanıyor..." : "Yayınla"}</Button> : null}
-          <Select value={currentAgent.id} onValueChange={(value) => setCurrentAgent(value)}>
-            <SelectTrigger className="hidden w-[190px] rounded-full border-[#173f32]/10 bg-white sm:flex">
-              <SelectValue placeholder="Hesap seçin" />
-            </SelectTrigger>
-            <SelectContent>
-              {state.agents.map((agent) => (
-                <SelectItem key={agent.id} value={agent.id}>
-                  {agent.businessName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      }
-    >
-      <div className="space-y-7">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm text-[#78827c]">{ownedSite ? `${ownedSite.business_name} · ${ownedSite.status === "published" ? "Yayında" : "Taslak"}` : isLoadingOwnedSites ? "Siteniz yükleniyor..." : "Henüz hesabınıza bağlı bir site yok"}</div><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Merhaba, {currentAgent.name.split(" ")[0]}.</h1><p className="mt-2 text-sm text-[#69756e]">Portföyünüzde bugün neler olduğuna birlikte bakalım.</p></div><Button onClick={() => { setDraft(blankDraft()); setActiveTab("listings"); }} className="rounded-full bg-[#d86f45] px-5 text-white hover:bg-[#c76039]"><Plus className="mr-2 h-4 w-4" />Yeni portföy ekle</Button></div>
-
-        {claimError ? <Card className="border-red-200 bg-red-50 shadow-none"><CardContent className="flex flex-col gap-3 p-4 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between"><span>Misafir siteniz hesabınıza bağlanamadı: {claimError}</span><Button variant="outline" disabled={isClaiming} onClick={() => void retryClaim()} className="shrink-0 rounded-full border-red-300 bg-white text-red-800">{isClaiming ? "Tekrar deneniyor..." : "Tekrar dene"}</Button></CardContent></Card> : null}
-
-        <div className="flex gap-2 overflow-x-auto pb-1">{(["overview", "listings", "leads", "site"] as const).map((tab) => <Button key={tab} variant="ghost" onClick={() => setActiveTab(tab)} className={cn("shrink-0 rounded-full px-5", activeTab === tab ? "bg-[#173f32] text-white hover:bg-[#173f32] hover:text-white" : "bg-white/60 text-[#5e6a63] hover:bg-white")}>{tab === "overview" ? "Genel bakış" : tab === "listings" ? "Portföyler" : tab === "leads" ? "Gelen Talepler" : "Site tasarımı"}</Button>)}</div>
-
-        {activeTab === "overview" && <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Aktif portföy" value={`${activeListings.length}`} icon={Home} tone="emerald" /><StatCard label="Yeni talep" value={`${ownedLeads.length}`} icon={Users} tone="blue" /><StatCard label="Bu ay görüntülenme" value="1.284" icon={BarChart3} tone="amber" /><StatCard label="Site durumu" value={ownedSite?.status === "published" ? "Yayında" : "Taslak"} icon={Globe} tone="neutral" /></div>
-          <div className="grid gap-6 xl:grid-cols-[1.45fr_0.75fr]">
-            <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle className="text-2xl">Portföyleriniz</CardTitle><CardDescription className="mt-1">En son güncellenen aktif ilanlar</CardDescription></div><Button variant="ghost" onClick={() => setActiveTab("listings")} className="rounded-full">Tümünü gör <ArrowRight className="ml-2 h-4 w-4" /></Button></CardHeader><CardContent className="grid gap-4 md:grid-cols-3">{activeListings.slice(0, 3).map((listing) => <button key={listing.id} onClick={() => { setDraft({ ...listing }); setActiveTab("listings"); }} className="group overflow-hidden rounded-[1.4rem] border border-[#173f32]/10 bg-white text-left"><div className="relative overflow-hidden"><img src={listing.media[0]?.thumbUrl} alt={listing.title} className="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-105" /><Badge className="absolute left-3 top-3 rounded-full bg-white/90 text-[#173f32] hover:bg-white">{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</Badge></div><div className="p-4"><div className="truncate font-semibold">{listing.title}</div><div className="mt-1 text-xs text-[#7b857f]">{listing.district} · {listing.room_count} · {listing.m2} m²</div><div className="mt-4 font-semibold">{formatTRY(listing.price)}</div></div></button>)}</CardContent></Card>
-            <div className="grid gap-6"><Card className="rounded-[2rem] border-0 bg-[#173f32] text-white shadow-none"><CardContent className="p-7"><div className="flex items-center justify-between"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10"><Globe className="h-5 w-5" /></div><Badge className="bg-[#dbe5d2] text-[#315d4b] hover:bg-[#dbe5d2]">{ownedSite?.status === "published" ? "Yayında" : "Taslak"}</Badge></div><h3 className="mt-8 text-3xl font-semibold">{ownedSite?.business_name || "Siteniz hazır."}</h3><p className="mt-3 text-sm leading-6 text-white/60">{ownedSite?.slug ? `/site/${ownedSite.slug}` : "Hesabınıza bağlı site bulunamadı."}</p>{ownedSite ? <Button onClick={ownedSite.status === "draft" ? () => void publishOwnedSite() : () => navigate(`/site/${ownedSite.slug}`)} className="mt-6 w-full rounded-full bg-white text-[#173f32] hover:bg-white/90">{ownedSite.status === "draft" ? "Yayınla" : "Siteyi aç"} <ArrowRight className="ml-2 h-4 w-4" /></Button> : null}</CardContent></Card>
-              <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#dbe5d2] shadow-none"><CardContent className="p-7"><div className="text-xs uppercase tracking-[0.18em] text-[#64766c]">Son talep</div>{ownedLeads[0] ? <><div className="mt-4 text-xl font-semibold">{ownedLeads[0].name}</div><p className="mt-2 line-clamp-2 text-sm leading-6 text-[#5b6b62]">{ownedLeads[0].message || "Mesaj bırakılmadı."}</p><Button variant="ghost" onClick={() => setActiveTab("leads")} className="mt-3 -ml-3 rounded-full text-[#173f32]">Talebi görüntüle <ChevronRight className="ml-1 h-4 w-4" /></Button></> : <p className="mt-3 text-sm">Henüz yeni talep yok.</p>}</CardContent></Card></div>
-          </div>
-        </>}
-
-        {activeTab === "listings" && <div className="grid gap-6 xl:grid-cols-[1fr_0.85fr]">
-          <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle className="text-2xl">Portföyler</CardTitle><CardDescription>{currentListings.length} ilan kayıtlı</CardDescription></div><Button onClick={() => setDraft(blankDraft())} className="rounded-full bg-[#173f32] text-white"><Plus className="mr-2 h-4 w-4" />Yeni ilan</Button></CardHeader><CardContent className="space-y-3">{currentListings.map((listing) => <button key={listing.id} onClick={() => setDraft({ ...listing })} className={cn("grid w-full grid-cols-[72px_1fr_auto] items-center gap-4 rounded-2xl border p-3 text-left transition", draft.id === listing.id ? "border-[#173f32] bg-[#edf1eb]" : "border-[#173f32]/10 bg-white hover:border-[#173f32]/25")}><img src={listing.media[0]?.thumbUrl} alt="" className="h-16 w-[72px] rounded-xl object-cover" /><div className="min-w-0"><div className="truncate font-semibold">{listing.title}</div><div className="mt-1 text-xs text-[#7a857e]">{listing.district} · {listing.room_count} · {listing.m2} m²</div><div className="mt-2 text-sm font-semibold">{formatTRY(listing.price)}</div></div><Badge className={listing.status === "active" ? "bg-[#e1eee6] text-[#336049] hover:bg-[#e1eee6]" : "bg-[#eceae5] text-[#6f7772] hover:bg-[#eceae5]"}>{listing.status === "active" ? "Yayında" : "Taslak"}</Badge></button>)}</CardContent></Card>
-          <ListingForm siteId={currentSite.id} draft={draft} onDraftChange={(patch) => setDraft((current) => ({ ...current, ...patch }))} onSave={() => { saveListing(draft, draft.id); toast.success("Portföy kaydedildi."); }} onGenerate={() => { setDraft((current) => ({ ...current, description: generateCopy(current) })); toast.success("İlan açıklaması hazır."); }} onReset={() => setDraft(blankDraft())} onDelete={() => { if (draft.id) { deleteListing(draft.id); setDraft(blankDraft()); toast.success("Portföy silindi."); } }} />
-        </div>}
-
-        {activeTab === "leads" && <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader><CardTitle className="text-2xl">Gelen Talepler</CardTitle><CardDescription>Size ait sitelerin iletişim formlarından gelen özel talepler, en yeniden eskiye sıralanır.</CardDescription></CardHeader><CardContent>{ownedLeads.length === 0 ? <p className="rounded-2xl bg-white p-5 text-sm text-[#69756e]">Henüz gelen bir talep yok.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left"><thead className="border-y border-[#173f32]/10 text-[10px] uppercase tracking-[0.18em] text-[#7a857e]"><tr><th className="py-4">Ad</th><th>Telefon</th><th>Site</th><th>Mesaj</th><th>Tarih</th></tr></thead><tbody>{ownedLeads.map((lead) => { const leadSite = ownedSites.find((site) => site.id === lead.site_id); return <tr key={lead.id} className="border-b border-[#173f32]/8"><td className="py-5 font-semibold">{lead.name}</td><td><a href={`tel:${lead.phone}`} className="text-sm underline decoration-[#173f32]/20 underline-offset-4">{lead.phone}</a></td><td className="max-w-[180px] text-sm">{leadSite?.business_name || "Site"}</td><td className="max-w-[320px] text-sm leading-6 text-[#627068]">{lead.message || "—"}</td><td className="text-xs text-[#7a857e]">{formatDateTR(lead.created_at)}</td></tr>; })}</tbody></table></div>}</CardContent></Card>}
-
-        {activeTab === "site" && <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
-          <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader><CardTitle className="text-2xl">Marka görünümü</CardTitle><CardDescription>Değişiklikler canlı sitenize anında uygulanır.</CardDescription></CardHeader><CardContent className="space-y-5"><div className="space-y-2"><Label>Karşılama başlığı</Label><Input value={currentSite.heroTitle} onChange={(e) => updateSite(currentSite.id, { heroTitle: e.target.value })} className="rounded-xl border-[#173f32]/10 bg-white" /></div><div className="space-y-2"><Label>Alt açıklama</Label><Textarea value={currentSite.heroSubtitle} onChange={(e) => updateSite(currentSite.id, { heroSubtitle: e.target.value })} className="min-h-24 rounded-xl border-[#173f32]/10 bg-white" /></div><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Ana renk</Label><Input type="color" value={currentSite.theme_config.primary} onChange={(e) => updateTheme(currentSite.id, { primary: e.target.value })} className="h-12 rounded-xl border-[#173f32]/10 bg-white p-1" /></div><div className="space-y-2"><Label>Vurgu rengi</Label><Input type="color" value={currentSite.theme_config.accent} onChange={(e) => updateTheme(currentSite.id, { accent: e.target.value })} className="h-12 rounded-xl border-[#173f32]/10 bg-white p-1" /></div></div><div className="space-y-2"><Label>Başlık yazı karakteri</Label><Select value={currentSite.theme_config.fontPairing.heading} onValueChange={(value) => updateTheme(currentSite.id, { fontPairing: { ...currentSite.theme_config.fontPairing, heading: value } })}><SelectTrigger className="rounded-xl border-[#173f32]/10 bg-white"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Cormorant Garamond, serif">Cormorant Garamond</SelectItem><SelectItem value="Libre Baskerville, serif">Libre Baskerville</SelectItem><SelectItem value="Manrope, sans-serif">Manrope</SelectItem><SelectItem value="Inter, sans-serif">Inter</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label>Alan adı</Label><Input value={currentSite.custom_domain || ""} onChange={(e) => updateSite(currentSite.id, { custom_domain: e.target.value || null })} placeholder={`${currentSite.subdomain}.com`} className="rounded-xl border-[#173f32]/10 bg-white" /></div></CardContent></Card>
-          <div className="overflow-hidden rounded-[2rem] border-[10px] border-[#252b28] bg-white shadow-[0_28px_80px_rgba(32,43,37,0.18)]"><div className="flex items-center justify-between border-b border-[#173f32]/10 bg-[#f5f3ee] px-4 py-2"><div className="flex gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#e9a58b]"/><span className="h-2.5 w-2.5 rounded-full bg-[#e6cf86]"/><span className="h-2.5 w-2.5 rounded-full bg-[#9dc4a9]"/></div><span className="rounded-full bg-white px-4 py-1 text-[10px] text-[#738078]">{currentSite.subdomain}.portfoyai.com</span><span /></div><div className="p-4" style={getThemeStyles(currentSite.theme_config)}><div className="rounded-[1.5rem] p-7 text-white" style={{ background: `linear-gradient(135deg, ${currentSite.theme_config.primary}, ${currentSite.theme_config.accent})` }}><div className="text-[9px] font-semibold uppercase tracking-[0.2em]">{currentAgent.businessName}</div><h3 className="mt-12 max-w-lg text-4xl font-semibold leading-none" style={{ fontFamily: currentSite.theme_config.fontPairing.heading }}>{currentSite.heroTitle}</h3><p className="mt-3 max-w-md text-xs leading-5 text-white/70">{currentSite.heroSubtitle}</p></div><div className="mt-4 grid grid-cols-3 gap-3">{activeListings.slice(0,3).map((listing) => <div key={listing.id} className="overflow-hidden rounded-xl border border-[#173f32]/10"><img src={listing.media[0]?.thumbUrl} alt="" className="aspect-[4/3] w-full object-cover"/><div className="p-2"><div className="truncate text-[10px] font-semibold">{listing.title}</div><div className="mt-1 text-[9px] text-[#7a857e]">{listing.district}</div></div></div>)}</div></div></div>
-        </div>}
-      </div>
-    </Shell>
-  );
-}
-
 export function PublicSitePage() {
   const { slug = "" } = useParams();
   const { state } = usePortfoyAI();
@@ -964,11 +750,9 @@ export function PublicSitePage() {
     heroTitle: publicSite.config.headline,
     heroSubtitle: "Seçkin portföyler ve güvene dayalı kişisel gayrimenkul danışmanlığı.",
     theme_config: {
-      variant: "Modern Minimal" as const,
       primary: publicSite.config.primary_color,
       accent: publicSite.config.accent_color,
       fontPairing: { heading: "Cormorant Garamond, serif", body: "Inter, sans-serif" },
-      layoutVariant: "heroSplit" as const,
     },
   } : null;
   const agent = publicSite ? {

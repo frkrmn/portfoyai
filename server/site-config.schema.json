@@ -3,6 +3,10 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "template_id": {
+      "type": "string",
+      "enum": ["tm_01", "tm_02", "tm_03", "tm_04", "warm-editorial", "bold-luxury", "clean-modern", "neighborhood-friendly", "investment-focused"]
+    },
     "business_name": {
       "type": "string"
     },
@@ -19,9 +23,33 @@
     },
     "headline": {
       "type": "string"
+    },
+    "region_focus": {
+      "type": "string"
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "neighborhoods": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "required": ["name", "description"]
+          }
+        }
+      }
     }
   },
   "required": [
+    "template_id",
     "business_name",
     "tone",
     "primary_color",

@@ -19,6 +19,22 @@ The onboarding generator uses Gemini and persists generated drafts in Supabase.
 npm run build
 ```
 
+## Vercel deployment
+
+Vercel builds the Vite frontend into `dist` and deploys each file under `api/`
+as a Node.js serverless function. `server.mjs` is only the local development
+adapter and is not used as the production backend.
+
+Configure these Vercel environment variables for Production and Preview:
+
+- `GEMINI_API_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+Do not expose `SUPABASE_SERVICE_ROLE_KEY` through a `VITE_` variable.
+
 ## Main routes
 
 - `/` — marketing landing page
