@@ -54,6 +54,7 @@ const address = fakeSupabase.address();
 process.env.SUPABASE_URL = `http://127.0.0.1:${address.port}`;
 process.env.SUPABASE_SERVICE_ROLE_KEY = "fake-service-role-key";
 const { default: experimentHandler } = await import("../api/experiment.js");
+const { getUserPlan } = await import("./api-utils.mjs");
 
 const invoke = async ({ sessionId, cookie = "", accessToken = "", eventType = "pricing_view", context = "manual_pricing_page_visit" }) => {
   const headers = { "x-session-id": sessionId, cookie, host: "localhost", ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}) };
@@ -70,6 +71,7 @@ const invoke = async ({ sessionId, cookie = "", accessToken = "", eventType = "p
 };
 
 try {
+  assert.equal(await getUserPlan(testUserId), "free", "a missing subscription row must resolve to the free plan");
   const sessionId = "pricing-stability-session-0001";
   const first = await invoke({ sessionId });
   const cookie = String(first.headers["set-cookie"] || "").split(";")[0];
@@ -95,6 +97,7 @@ try {
     same_session_first_variant: first.payload.variant,
     same_session_second_variant: second.payload.variant,
     stable: first.payload.variant === second.payload.variant,
+    missing_row_plan: "free",
     same_variant_after_login: loggedIn.payload.variant,
     same_variant_on_other_device: otherDevice.payload.variant,
     subscription_rows: subscriptions.length,
