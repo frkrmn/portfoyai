@@ -87,6 +87,13 @@ export type TemplateContent = {
   cardViewLabel: string;
   comparisonViewLabel: string;
   investmentWhyTitle: string;
+  dealsSectionTitle: string;
+  dealsSectionDescription: string;
+  priceDroppedLabel: string;
+  urgentSaleLabel: string;
+  daysOnlineLabel: string;
+  originalPriceLabel: string;
+  opportunityLabel: string;
 };
 
 export type TemplateConfig = {
@@ -235,6 +242,13 @@ export const warmEditorialFallbacks: TemplateContent = {
   cardViewLabel: "Kart Görünümü",
   comparisonViewLabel: "Karşılaştırma Görünümü",
   investmentWhyTitle: "Neden yatırım için birlikte çalışmalıyız?",
+  dealsSectionTitle: "Bugünün Fırsatları",
+  dealsSectionDescription: "Güncel portföylerden öne çıkan fırsatlar.",
+  priceDroppedLabel: "Fiyat Düştü",
+  urgentSaleLabel: "Acil Satılık",
+  daysOnlineLabel: "gündür yayında",
+  originalPriceLabel: "Önceki fiyat",
+  opportunityLabel: "Fırsat",
 };
 
 export const boldLuxuryFallbacks: TemplateContent = {
@@ -335,6 +349,30 @@ export const investmentFocusedFallbacks: TemplateContent = {
   navAbout: "Yatırım Yaklaşımı",
 };
 
+export const urgentDealsFallbacks: TemplateContent = {
+  ...warmEditorialFallbacks,
+  eyebrow: "Hızlı karar verenlere güncel fırsatlar",
+  headline: "Kaçırılmayacak Fırsatlar, Hızlı Sonuç",
+  headlineAccent: "Doğru fırsatı bugün yakalayın.",
+  bio: "Acil satılık ve fiyatı düşen portföyleri kısa, açık bilgilerle sunuyor; karar sürecinizi hızlandırıyoruz.",
+  tagline: "Doğru fiyat, net bilgi, hızlı iletişim.",
+  ctaText: "Fırsatları incele",
+  featuredEyebrow: "Günün seçkisi",
+  featuredTitle: "Bugünün Fırsatları",
+  listingsTitle: "Güncel Fırsat İlanları",
+  listingsDescription: "Konum ve bütçenize uyan acil satılık veya fiyatı düşen ilanları hızlıca karşılaştırın.",
+  tourTitle: "Fırsatı kaçırmadan bilgi alın",
+  tourDescription: "İlanın güncel durumu ve detayları için bilgilerinizi bırakın; hızlıca size dönelim.",
+  navAbout: "Bugünün Fırsatları",
+  dealsSectionTitle: "Bugünün Fırsatları",
+  dealsSectionDescription: "Acil satış veya güncel fiyat avantajı taşıyan portföyler.",
+  priceDroppedLabel: "Fiyat Düştü",
+  urgentSaleLabel: "Acil Satılık",
+  daysOnlineLabel: "gündür yayında",
+  originalPriceLabel: "Önceki fiyat",
+  opportunityLabel: "Fırsat",
+};
+
 /**
  * Keeps the existing flat ThemeConfig contract as the source of truth while
  * presenting every template with one stable, renderer-friendly config prop.
@@ -353,16 +391,19 @@ export function createTemplateConfig(
         ? neighborhoodFriendlyFallbacks
         : payload.config.template_id === "investment-focused"
           ? investmentFocusedFallbacks
+          : payload.config.template_id === "urgent-deals"
+            ? urgentDealsFallbacks
       : warmEditorialFallbacks;
   const isBoldLuxury = payload.config.template_id === "bold-luxury";
   const isCleanModern = payload.config.template_id === "clean-modern";
   const isNeighborhoodFriendly = payload.config.template_id === "neighborhood-friendly";
   const isInvestmentFocused = payload.config.template_id === "investment-focused";
+  const isUrgentDeals = payload.config.template_id === "urgent-deals";
   const legacyTheme: Pick<ThemeConfig, "primary" | "accent" | "fontPairing"> = {
     primary: payload.config.primary_color,
     accent: payload.config.accent_color,
     fontPairing: {
-      heading: raw.fonts?.heading || (isCleanModern || isNeighborhoodFriendly || isInvestmentFocused ? "Manrope, Inter, Arial, sans-serif" : "Cormorant Garamond, Georgia, serif"),
+      heading: raw.fonts?.heading || (isCleanModern || isNeighborhoodFriendly || isInvestmentFocused || isUrgentDeals ? "Manrope, Inter, Arial, sans-serif" : "Cormorant Garamond, Georgia, serif"),
       body: raw.fonts?.body || "Inter, Arial, sans-serif",
     },
   };
@@ -374,10 +415,10 @@ export function createTemplateConfig(
     siteId: payload.id,
     slug: payload.slug,
     colors: {
-      background: raw.colors?.background || (isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused ? "#FFFFFF" : isNeighborhoodFriendly ? "#FFF8F1" : "#F1EADF"),
+      background: raw.colors?.background || (isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#FFFFFF" : isNeighborhoodFriendly ? "#FFF8F1" : "#F1EADF"),
       primary: raw.colors?.primary || legacyTheme.primary,
       accent: raw.colors?.accent || legacyTheme.accent,
-      text: raw.colors?.text || (isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused ? "#17211C" : isNeighborhoodFriendly ? "#352B25" : "#25231F"),
+      text: raw.colors?.text || (isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#17211C" : isNeighborhoodFriendly ? "#352B25" : "#25231F"),
     },
     fonts: legacyTheme.fontPairing,
     content: {

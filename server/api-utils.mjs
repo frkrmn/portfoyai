@@ -203,6 +203,8 @@ export const serializeListing = (listing) => {
     bathroom_count: listing.bathroom_count ?? ((Number.parseInt(listing.room_count, 10) || 1) >= 4 ? 2 : 1),
     rental_yield_percent: listing.rental_yield_percent == null ? (Number.isFinite(featureYield) ? featureYield : null) : Number(listing.rental_yield_percent),
     roi_notes: listing.roi_notes || roiFeature?.replace("Yatırım görünümü: ", "") || null,
+    price_reduced_from: listing.price_reduced_from == null ? null : Number(listing.price_reduced_from),
+    urgent_sale: listing.urgent_sale === true,
   };
 };
 
@@ -237,12 +239,14 @@ export const listingPayload = (body, siteId) => {
   const roomCount = typeof body.room_count === "string" ? body.room_count.trim() : "";
   const price = Number(body.price);
   const m2 = Number(body.m2);
+  const priceReducedFrom = body.price_reduced_from == null || body.price_reduced_from === "" ? null : Number(body.price_reduced_from);
   if (!title || title.length > 200) throw new Error("VALIDATION:Title is required and must be at most 200 characters.");
   if (!description || description.length > 5000) throw new Error("VALIDATION:Description is required and must be at most 5000 characters.");
   if (!district || district.length > 120) throw new Error("VALIDATION:District is required and must be at most 120 characters.");
   if (!roomCount || roomCount.length > 30) throw new Error("VALIDATION:Room count is required.");
   if (!Number.isFinite(price) || price < 0) throw new Error("VALIDATION:Price must be a positive number.");
   if (!Number.isFinite(m2) || m2 <= 0) throw new Error("VALIDATION:Area must be greater than zero.");
+  if (priceReducedFrom != null && (!Number.isFinite(priceReducedFrom) || priceReducedFrom <= price)) throw new Error("VALIDATION:Reduced-from price must be greater than the current price.");
   if (!["sale", "rent"].includes(body.listing_type)) throw new Error("VALIDATION:Listing type must be sale or rent.");
   if (body.status !== undefined && !["active", "passive", "sold"].includes(body.status)) throw new Error("VALIDATION:Invalid listing status.");
   const media = Array.isArray(body.media) ? body.media.slice(0, 10).map((item, index) => ({
@@ -266,6 +270,8 @@ export const listingPayload = (body, siteId) => {
     media,
     status: body.status || "active",
     features: Array.isArray(body.features) ? body.features.map(String).map((value) => value.trim()).filter(Boolean).slice(0, 30) : [],
+    price_reduced_from: priceReducedFrom,
+    urgent_sale: body.urgent_sale === true,
   };
 };
 

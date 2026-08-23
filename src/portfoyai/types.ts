@@ -15,7 +15,7 @@ export type ThemeConfig = {
 
 export type GeneratedSiteConfig = {
   /** Opaque internal choice returned by generation; never render this in product UI. */
-  template_id?: "tm_01" | "tm_02" | "tm_03" | "tm_04" | "warm-editorial" | "bold-luxury" | "clean-modern" | "neighborhood-friendly" | "investment-focused";
+  template_id?: "tm_01" | "tm_02" | "tm_03" | "tm_04" | "warm-editorial" | "bold-luxury" | "clean-modern" | "neighborhood-friendly" | "investment-focused" | "urgent-deals";
   content?: { neighborhoods?: Array<{ name: string; description: string }> };
   business_name: string;
   tone: string;
@@ -81,6 +81,8 @@ export type Listing = {
   bathroom_count?: number | null;
   rental_yield_percent?: number | null;
   roi_notes?: string | null;
+  price_reduced_from?: number | null;
+  urgent_sale?: boolean | null;
 };
 
 export type Lead = {

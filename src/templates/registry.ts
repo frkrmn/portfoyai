@@ -9,6 +9,7 @@ import { BoldLuxuryDetail, BoldLuxuryHome, BoldLuxuryListings } from "./bold-lux
 import { CleanModernDetail, CleanModernHome, CleanModernListings } from "./clean-modern/CleanModernTemplate";
 import { NeighborhoodFriendlyDetail, NeighborhoodFriendlyHome, NeighborhoodFriendlyListings } from "./neighborhood-friendly/NeighborhoodFriendlyTemplate";
 import { InvestmentFocusedDetail, InvestmentFocusedHome, InvestmentFocusedListings } from "./investment-focused/InvestmentFocusedTemplate";
+import { UrgentDealsDetail, UrgentDealsHome, UrgentDealsListings } from "./urgent-deals/UrgentDealsTemplate";
 
 export const defaultTemplateId = "tm_01";
 
@@ -48,12 +49,19 @@ const investmentFocusedFamily: TemplateFamily = {
   Detail: InvestmentFocusedDetail,
 };
 
+const urgentDealsFamily: TemplateFamily = {
+  Home: UrgentDealsHome,
+  Listings: UrgentDealsListings,
+  Detail: UrgentDealsDetail,
+};
+
 export const templates: Record<string, TemplateFamily> = {
   "warm-editorial": warmEditorialFamily,
   "bold-luxury": boldLuxuryFamily,
   "clean-modern": cleanModernFamily,
   "neighborhood-friendly": neighborhoodFriendlyFamily,
   "investment-focused": investmentFocusedFamily,
+  "urgent-deals": urgentDealsFamily,
   tm_01: legacyFamily,
   tm_02: legacyFamily,
   tm_03: legacyFamily,

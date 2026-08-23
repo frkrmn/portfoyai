@@ -5,7 +5,7 @@
   "properties": {
     "template_id": {
       "type": "string",
-      "enum": ["tm_01", "tm_02", "tm_03", "tm_04", "warm-editorial", "bold-luxury", "clean-modern", "neighborhood-friendly", "investment-focused"]
+      "enum": ["tm_01", "tm_02", "tm_03", "tm_04", "warm-editorial", "bold-luxury", "clean-modern", "neighborhood-friendly", "investment-focused", "urgent-deals"]
     },
     "business_name": {
       "type": "string"

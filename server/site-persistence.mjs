@@ -22,16 +22,17 @@ const buildThemeConfig = (config) => {
   const isCleanModern = config.template_id === "clean-modern";
   const isNeighborhoodFriendly = config.template_id === "neighborhood-friendly";
   const isInvestmentFocused = config.template_id === "investment-focused";
+  const isUrgentDeals = config.template_id === "urgent-deals";
   return {
     template_id: config.template_id,
     colors: {
-      background: isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused ? "#FFFFFF" : isNeighborhoodFriendly ? "#FFF8F1" : "#F1EADF",
+      background: isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#FFFFFF" : isNeighborhoodFriendly ? "#FFF8F1" : "#F1EADF",
       primary: config.primary_color,
       accent: config.accent_color,
-      text: isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused ? "#17211C" : isNeighborhoodFriendly ? "#352B25" : "#25231F",
+      text: isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#17211C" : isNeighborhoodFriendly ? "#352B25" : "#25231F",
     },
     fonts: {
-      heading: isCleanModern || isNeighborhoodFriendly || isInvestmentFocused ? "Manrope, Inter, Arial, sans-serif" : "Cormorant Garamond, Georgia, serif",
+      heading: isCleanModern || isNeighborhoodFriendly || isInvestmentFocused || isUrgentDeals ? "Manrope, Inter, Arial, sans-serif" : "Cormorant Garamond, Georgia, serif",
       body: "Inter, Arial, sans-serif",
     },
     content: {
@@ -46,12 +47,14 @@ const buildThemeConfig = (config) => {
           ? "Kira getirisi, değer artışı ve piyasa verileriyle desteklenen yatırım danışmanlığı."
           : isNeighborhoodFriendly
           ? "Mahallenizi bilen, sizi dinleyen ve doğru evi birlikte bulan komşu gibi danışmanlık."
-          : isCleanModern
+        : isCleanModern
           ? "Doğru evi hızlı, şeffaf ve kolay bir deneyimle bulun."
+          : isUrgentDeals
+            ? "Güncel fiyat avantajlarını net bilgi ve hızlı iletişimle yakalayın."
           : "Yaşam alanlarını kişisel bir seçkiyle buluşturuyoruz.",
     },
     layout: {
-      show_categories: !isBoldLuxury && !isCleanModern && !isNeighborhoodFriendly && !isInvestmentFocused,
+      show_categories: !isBoldLuxury && !isCleanModern && !isNeighborhoodFriendly && !isInvestmentFocused && !isUrgentDeals,
       show_testimonial: isBoldLuxury || isCleanModern,
     },
   };
@@ -90,6 +93,7 @@ const investmentYields = [4.8, 5.4, 6.1, 6.7, 7.2, 7.8];
 export const buildStarterListings = (config, siteId) => {
   const districts = normalizeDistricts(config);
   const investmentFocused = config.template_id === "investment-focused";
+  const urgentDeals = config.template_id === "urgent-deals";
 
   return listingBlueprints.map((item, index) => {
     const district = districts[index % districts.length];
@@ -115,6 +119,10 @@ export const buildStarterListings = (config, siteId) => {
       ...(investmentFocused ? {
         rental_yield_percent: rentalYieldPercent,
         roi_notes: `%${rentalYieldPercent} tahmini yıllık brüt kira getirisi potansiyeli.`,
+      } : {}),
+      ...(urgentDeals ? {
+        urgent_sale: index === 0 || index === 2,
+        price_reduced_from: index === 1 || index === 2 ? Math.round(item.price * (index === 2 ? 1.14 : 1.1)) : null,
       } : {}),
     };
   });
