@@ -6,6 +6,7 @@ import sitesIndex from "./api/sites/index.js";
 import siteById from "./api/sites/[id].js";
 import siteListings from "./api/sites/[id]/listings.js";
 import listingById from "./api/listings/[id].js";
+import generateListingCopy from "./api/listings/generate-copy.js";
 import leads from "./api/leads.js";
 import publicSiteBySlug from "./api/public-sites/[slug].js";
 import experiment from "./api/experiment.js";
@@ -32,6 +33,7 @@ const server = createHttpServer(async (request, response) => {
   if (pathname === "/api/sites") return sitesIndex(request, response);
   if (pathname === "/api/leads") return leads(request, response);
   if (pathname === "/api/experiment") return experiment(request, response);
+  if (pathname === "/api/listings/generate-copy") return generateListingCopy(request, response);
 
   const publicSiteMatch = pathname.match(/^\/api\/public-sites\/([a-z0-9]+(?:-[a-z0-9]+)*)$/);
   if (publicSiteMatch) {

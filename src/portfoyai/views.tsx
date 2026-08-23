@@ -200,11 +200,35 @@ export function ListingForm({
   draft: ListingDraft & { id?: string };
   onDraftChange: (patch: Partial<ListingDraft & { id?: string }>) => void;
   onSave: () => void;
-  onGenerate: () => void;
+  onGenerate: () => Promise<{ platform_style: string; seo_style: string }>;
   onReset: () => void;
   onDelete: () => void;
   isSaving?: boolean;
 }) {
+  const [generatedCopy, setGeneratedCopy] = useState<{ platform_style: string; seo_style: string } | null>(null);
+  const [isGeneratingCopy, setIsGeneratingCopy] = useState(false);
+  const [copyError, setCopyError] = useState("");
+  const copyFactsSignature = JSON.stringify([draft.id, draft.title, draft.price, draft.m2, draft.room_count, draft.listing_type, draft.district, draft.features, draft.address, draft.category, draft.bedroom_count, draft.bathroom_count, draft.rental_yield_percent, draft.roi_notes, draft.urgent_sale, draft.price_reduced_from]);
+
+  useEffect(() => {
+    setGeneratedCopy(null);
+    setCopyError("");
+  }, [copyFactsSignature]);
+
+  const handleGenerateCopy = async () => {
+    setIsGeneratingCopy(true);
+    setCopyError("");
+    try {
+      setGeneratedCopy(await onGenerate());
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "İlan metinleri oluşturulamadı.";
+      setCopyError(message);
+      toast.error(message);
+    } finally {
+      setIsGeneratingCopy(false);
+    }
+  };
+
   const handleFiles = async (files: FileList | null) => {
     if (!files?.length) return;
     const selected = Array.from(files).slice(0, Math.max(0, 10 - draft.media.length));
@@ -286,15 +310,13 @@ export function ListingForm({
             </div>
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label>Açıklama</Label>
+            <div className="flex items-center justify-between gap-3"><Label>Açıklama</Label><Button type="button" size="sm" onClick={() => void handleGenerateCopy()} disabled={isGeneratingCopy} variant="secondary" className="gap-2"><Sparkles className="h-4 w-4" />{isGeneratingCopy ? "Oluşturuluyor..." : "Metin Oluştur"}</Button></div>
             <Textarea rows={6} value={draft.description} onChange={(e) => onDraftChange({ description: e.target.value })} />
+            {copyError ? <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{copyError}</p> : null}
           </div>
         </div>
+        {generatedCopy ? <div className="grid gap-4 md:grid-cols-2" aria-label="Oluşturulan açıklama seçenekleri"><div className="flex flex-col rounded-2xl border border-[#173f32]/10 bg-white p-4"><div className="text-sm font-semibold">Platform stili</div><p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#5f6c65]">{generatedCopy.platform_style}</p><Button type="button" variant="outline" onClick={() => onDraftChange({ description: generatedCopy.platform_style })} className="mt-4 self-start">Kullan</Button></div><div className="flex flex-col rounded-2xl border border-[#173f32]/10 bg-white p-4"><div className="text-sm font-semibold">SEO stili</div><p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#5f6c65]">{generatedCopy.seo_style}</p><Button type="button" variant="outline" onClick={() => onDraftChange({ description: generatedCopy.seo_style })} className="mt-4 self-start">Kullan</Button></div></div> : null}
         <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={onGenerate} variant="secondary" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            AI ile açıklama üret
-          </Button>
           <Button type="button" onClick={onSave} disabled={isSaving} className="gap-2">
             <Save className="h-4 w-4" />
             {isSaving ? "Kaydediliyor..." : "Kaydet"}
