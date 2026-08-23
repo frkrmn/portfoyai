@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { randomInt } from "node:crypto";
 
 export const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export const hexColorPattern = /^#[0-9a-f]{6}$/i;
@@ -73,6 +74,94 @@ export const getAuthenticatedUser = async (request, required = true) => {
     return null;
   }
   return data.user;
+};
+
+const pricingVariantCookie = "portfoyai_pricing_variant";
+
+const getCookie = (request, name) => {
+  const raw = request.headers.cookie;
+  if (typeof raw !== "string") return null;
+  const match = raw.split(";").map((item) => item.trim()).find((item) => item.startsWith(`${name}=`));
+  return match ? decodeURIComponent(match.slice(name.length + 1)) : null;
+};
+
+const setPricingVariantCookie = (request, response, variant) => {
+  const forwardedProtocol = request.headers["x-forwarded-proto"];
+  const secure = forwardedProtocol === "https" ? "; Secure" : "";
+  response.setHeader("Set-Cookie", `${pricingVariantCookie}=${variant}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`);
+};
+
+const subscriptionSelect = "id, subject_id, user_id, session_id, plan, pricing_variant, created_at, updated_at";
+
+export const resolveSubscription = async (request, response, { assignVariant = false } = {}) => {
+  const supabase = getSupabaseClient();
+  const user = await getAuthenticatedUser(request, false);
+  const sessionId = getSessionId(request);
+  if (!user && !sessionId) throw new Error("VALIDATION:A valid session id is required.");
+
+  let subscription = null;
+  if (user) {
+    const byUser = await supabase.from("subscriptions").select(subscriptionSelect).eq("user_id", user.id).maybeSingle();
+    if (byUser.error) throw new Error(`Failed to load subscription: ${byUser.error.message}`);
+    subscription = byUser.data;
+
+    if (!subscription && sessionId) {
+      const anonymous = await supabase.from("subscriptions").select(subscriptionSelect).eq("subject_id", sessionId).is("user_id", null).maybeSingle();
+      if (anonymous.error) throw new Error(`Failed to load session subscription: ${anonymous.error.message}`);
+      if (anonymous.data) {
+        const migrated = await supabase.from("subscriptions").update({ subject_id: user.id, user_id: user.id, session_id: sessionId, updated_at: new Date().toISOString() }).eq("id", anonymous.data.id).select(subscriptionSelect).single();
+        if (migrated.error) throw new Error(`Failed to link subscription to user: ${migrated.error.message}`);
+        subscription = migrated.data;
+      }
+    }
+
+    if (!subscription) {
+      const created = await supabase.from("subscriptions").insert({ subject_id: user.id, user_id: user.id, session_id: sessionId, plan: "free" }).select(subscriptionSelect).single();
+      if (created.error) throw new Error(`Failed to create free subscription: ${created.error.message}`);
+      subscription = created.data;
+    }
+  } else {
+    const existing = await supabase.from("subscriptions").select(subscriptionSelect).eq("subject_id", sessionId).maybeSingle();
+    if (existing.error) throw new Error(`Failed to load session subscription: ${existing.error.message}`);
+    subscription = existing.data;
+    if (!subscription) {
+      const created = await supabase.from("subscriptions").insert({ subject_id: sessionId, session_id: sessionId, plan: "free" }).select(subscriptionSelect).single();
+      if (created.error) throw new Error(`Failed to create session subscription: ${created.error.message}`);
+      subscription = created.data;
+    }
+  }
+
+  if (assignVariant && !subscription.pricing_variant) {
+    const cookieVariant = getCookie(request, pricingVariantCookie);
+    const variant = cookieVariant === "A" || cookieVariant === "B" ? cookieVariant : randomInt(2) === 0 ? "A" : "B";
+    const assigned = await supabase.from("subscriptions").update({ pricing_variant: variant, updated_at: new Date().toISOString() }).eq("id", subscription.id).is("pricing_variant", null).select(subscriptionSelect).maybeSingle();
+    if (assigned.error) throw new Error(`Failed to assign pricing variant: ${assigned.error.message}`);
+    if (assigned.data) subscription = assigned.data;
+    else {
+      const latest = await supabase.from("subscriptions").select(subscriptionSelect).eq("id", subscription.id).single();
+      if (latest.error) throw new Error(`Failed to reload pricing variant: ${latest.error.message}`);
+      subscription = latest.data;
+    }
+  }
+
+  if (subscription.pricing_variant) setPricingVariantCookie(request, response, subscription.pricing_variant);
+  return subscription;
+};
+
+export const getUserPlan = async (userId) => {
+  const { data, error } = await getSupabaseClient().from("subscriptions").select("plan").eq("user_id", userId).maybeSingle();
+  if (error) throw new Error(`Failed to load plan: ${error.message}`);
+  return data?.plan === "pro" ? "pro" : "free";
+};
+
+export const countActiveListingsForUser = async (userId) => {
+  const { data: sites, error: sitesError } = await getSupabaseClient().from("sites").select("id").eq("user_id", userId);
+  if (sitesError) throw new Error(`Failed to load owned sites for listing limit: ${sitesError.message}`);
+  const siteIds = (sites || []).map((site) => site.id);
+  if (!siteIds.length) return 0;
+  const { count, error } = await getSupabaseClient().from("listings").select("id", { count: "exact", head: true }).in("site_id", siteIds).eq("status", "active");
+  if (error) throw new Error(`Failed to count active listings: ${error.message}`);
+  return count || 0;
 };
 
 export const routeParam = (request, name) => {
@@ -183,6 +272,7 @@ export const listingPayload = (body, siteId) => {
 export const handleKnownError = (response, error, scope) => {
   if (error instanceof Error && error.message === "AUTH_REQUIRED") return sendJson(response, 401, { error: "Authentication required." });
   if (error instanceof Error && error.message.startsWith("VALIDATION:")) return sendJson(response, 400, { error: error.message.slice(11) });
+  if (error instanceof Error && error.message.includes("FREE_LISTING_LIMIT")) return sendJson(response, 402, { error: "Ücretsiz planda en fazla 5 aktif ilan yayınlayabilirsiniz.", code: "FREE_LISTING_LIMIT", context: "listing_limit", limit: 5, plan: "free" });
   console.error(scope, error);
   return sendJson(response, 500, { error: error instanceof Error ? error.message : String(error) });
 };

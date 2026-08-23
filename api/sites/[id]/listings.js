@@ -1,4 +1,4 @@
-import { getAuthenticatedUser, getOwnedSite, getSupabaseClient, handleKnownError, listingPayload, methodNotAllowed, readJsonBody, routeParam, sendJson, serializeListing, uuidPattern } from "../../../server/api-utils.mjs";
+import { countActiveListingsForUser, getAuthenticatedUser, getOwnedSite, getSupabaseClient, getUserPlan, handleKnownError, listingPayload, methodNotAllowed, readJsonBody, routeParam, sendJson, serializeListing, uuidPattern } from "../../../server/api-utils.mjs";
 
 export const config = { api: { bodyParser: { sizeLimit: "8mb" } } };
 
@@ -17,6 +17,16 @@ export default async function handler(request, response) {
     }
     const body = await readJsonBody(request, 8 * 1024 * 1024);
     const payload = listingPayload(body, siteId);
+    const plan = await getUserPlan(user.id);
+    if (plan === "free" && payload.status === "active" && await countActiveListingsForUser(user.id) >= 5) {
+      return sendJson(response, 402, {
+        error: "Ücretsiz planda en fazla 5 aktif ilan yayınlayabilirsiniz.",
+        code: "FREE_LISTING_LIMIT",
+        context: "listing_limit",
+        limit: 5,
+        plan,
+      });
+    }
     const { data, error } = await getSupabaseClient().from("listings").insert(payload).select("*").single();
     if (error) throw new Error(`Failed to create listing: ${error.message}`);
     return sendJson(response, 201, { listing: serializeListing(data) });

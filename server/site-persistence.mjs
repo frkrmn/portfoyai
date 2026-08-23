@@ -107,7 +107,10 @@ export const buildStarterListings = (config, siteId) => {
       lat: 41.0082 + index * 0.006,
       lng: 28.9784 + index * 0.006,
       media: [],
-      status: "active",
+      // Keep six useful starter rows while respecting the five-active-listing
+      // free allowance. The final starter remains editable and can be activated
+      // after another listing is made passive/deleted or the plan becomes Pro.
+      status: index === listingBlueprints.length - 1 ? "passive" : "active",
       features: ["Merkezi konum", "Ferah plan", "Gün ışığı"],
       ...(investmentFocused ? {
         rental_yield_percent: rentalYieldPercent,

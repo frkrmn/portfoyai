@@ -15,6 +15,7 @@ import {
   NotFoundPage,
 } from "./portfoyai/views";
 import { DashboardPage } from "./portfoyai/dashboard";
+import { PricingPage } from "./portfoyai/pricing";
 import { SiteRenderer } from "./templates/SiteRenderer";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
+              <Route path="/pricing" element={<PricingPage />} />
               <Route path="/preview/:siteId" element={<GeneratedSitePreviewPage />} />
               <Route path="/site/:slug" element={<SiteRenderer view="home" />} />
               <Route path="/site/:slug/listings" element={<SiteRenderer view="listings" />} />

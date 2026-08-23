@@ -1,4 +1,4 @@
-import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, sendJson } from "../../server/api-utils.mjs";
+import { getAuthenticatedUser, getSupabaseClient, getUserPlan, handleKnownError, methodNotAllowed, sendJson } from "../../server/api-utils.mjs";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") return methodNotAllowed(response, ["GET"]);
@@ -10,7 +10,8 @@ export default async function handler(request, response) {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) throw new Error(`Failed to load owned sites: ${error.message}`);
-    return sendJson(response, 200, { sites: data || [] });
+    const plan = await getUserPlan(user.id);
+    return sendJson(response, 200, { sites: data || [], plan });
   } catch (error) {
     return handleKnownError(response, error, "[sites] Owned site fetch failed");
   }
