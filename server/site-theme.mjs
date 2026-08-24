@@ -8,6 +8,9 @@ export const fineTuneEnums = {
   headingScale: ["modest", "bold"],
 };
 
+export const buttonColorSources = ["accent", "primary", "custom"];
+export const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+
 const clone = (value) => structuredClone(value && typeof value === "object" ? value : {});
 const textValue = (value, field, max) => {
   const text = String(value).trim();
@@ -56,9 +59,32 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
     themeConfig.colors[colorKey] = patch[field];
     appliedFields.push(field);
   }
+  if (patch.buttonColorSource !== undefined) {
+    if (!buttonColorSources.includes(patch.buttonColorSource)) throw new Error("VALIDATION:Button color source must be accent, primary or custom.");
+    themeConfig.colors.buttonColorSource = patch.buttonColorSource;
+    appliedFields.push("colors.buttonColorSource");
+  }
+  if (patch.buttonColorCustom !== undefined) {
+    if (!hexColorPattern.test(patch.buttonColorCustom)) throw new Error("VALIDATION:Custom button color must be a six-digit hex color.");
+    themeConfig.colors.buttonColorCustom = patch.buttonColorCustom;
+    appliedFields.push("colors.buttonColorCustom");
+  }
   for (const [field, fontKey] of [["heading_font", "heading"], ["body_font", "body"]]) {
     if (patch[field] === undefined) continue;
     themeConfig.fonts[fontKey] = textValue(patch[field], field, 160);
+    appliedFields.push(field);
+  }
+  for (const [field, fontKey] of [["heading_weight", "headingWeight"], ["body_weight", "bodyWeight"]]) {
+    if (patch[field] === undefined) continue;
+    const value = Number(patch[field]);
+    if (!fontWeights.includes(value)) throw new Error(`VALIDATION:${field} must be an available CSS font weight.`);
+    themeConfig.fonts[fontKey] = value;
+    appliedFields.push(field);
+  }
+  for (const [field, fontKey] of [["heading_italic", "headingItalic"], ["body_italic", "bodyItalic"]]) {
+    if (patch[field] === undefined) continue;
+    if (typeof patch[field] !== "boolean") throw new Error(`VALIDATION:${field} must be a boolean.`);
+    themeConfig.fonts[fontKey] = patch[field];
     appliedFields.push(field);
   }
   if (patch.layout_fine_tune !== undefined) {

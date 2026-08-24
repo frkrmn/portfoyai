@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { createTemplateConfig, type PublicSitePayload, type TemplateView } from "./types";
 import { getTemplateFamily } from "./registry";
+import { GoogleFontStylesheet } from "./GoogleFontStylesheet";
 
 function RendererMessage({ children }: { children: string }) {
   return <div className="grid min-h-screen place-items-center bg-[#f1eadf] px-5 text-center text-sm text-[#25231f]">{children}</div>;
@@ -46,7 +47,7 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
   const config = createTemplateConfig(payload, view, listing);
   const family = getTemplateFamily(config.templateId);
   const Component = view === "home" ? family.Home : view === "listings" ? family.Listings : family.Detail;
-  return <Component config={config} />;
+  return <><GoogleFontStylesheet fonts={config.fonts} /><Component config={config} /></>;
 }
 
 export function TemplateNotFoundLink({ slug }: { slug: string }) {

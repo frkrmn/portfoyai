@@ -126,24 +126,30 @@ All colors MUST be HSL.
  * template family's original hardcoded proportions.
  */
 @layer components {
-  .site-fine-tune[data-button-style="pill"] :is(button, a.inline-flex) {
+  .site-fine-tune [data-site-button] {
+    background-color: var(--site-button) !important;
+    border-color: var(--site-button) !important;
+    color: var(--site-button-text) !important;
+  }
+
+  .site-fine-tune[data-button-style="pill"] [data-site-button] {
     border-radius: 9999px !important;
   }
 
-  .site-fine-tune[data-button-style="sharp"] :is(button, a.inline-flex) {
+  .site-fine-tune[data-button-style="sharp"] [data-site-button] {
     border-radius: 0 !important;
   }
 
-  .site-fine-tune[data-button-style="outline"] :is(button, a.inline-flex) {
+  .site-fine-tune[data-button-style="outline"] [data-site-button] {
     background: transparent !important;
     border: 1px solid currentColor !important;
     color: inherit !important;
   }
 
-  .site-fine-tune[data-button-style="solid"] :is(button, a.inline-flex) {
-    background: var(--we-primary, var(--lux-accent, var(--cm-primary, var(--nf-primary, var(--if-primary, var(--ud-primary, var(--gm-primary))))))) !important;
+  .site-fine-tune[data-button-style="solid"] [data-site-button] {
+    background: var(--site-button) !important;
     border-color: transparent !important;
-    color: var(--we-bg, var(--lux-dark, var(--cm-on-primary, var(--nf-on-primary, var(--if-on-primary, var(--ud-on-primary, var(--gm-on-primary))))))) !important;
+    color: var(--site-button-text) !important;
   }
 
   @media (min-width: 768px) {
@@ -209,6 +215,30 @@ All colors MUST be HSL.
 
   .site-fine-tune[data-heading-scale="bold"] h2 {
     font-size: clamp(2.75rem, 5vw, 5rem) !important;
+  }
+
+  .site-fine-tune[data-heading-weight] :is(h1, h2, h3, h4, h5, h6) {
+    font-weight: var(--site-heading-weight) !important;
+  }
+
+  .site-fine-tune[data-heading-italic="true"] :is(h1, h2, h3, h4, h5, h6) {
+    font-style: italic !important;
+  }
+
+  .site-fine-tune[data-heading-italic="false"] :is(h1, h2, h3, h4, h5, h6) {
+    font-style: normal !important;
+  }
+
+  .site-fine-tune[data-body-weight] :is(p, nav, address, label, input, select, textarea, button) {
+    font-weight: var(--site-body-weight) !important;
+  }
+
+  .site-fine-tune[data-body-italic="true"] :is(p, nav, address, label, input, select, textarea, button) {
+    font-style: italic !important;
+  }
+
+  .site-fine-tune[data-body-italic="false"] :is(p, nav, address, label, input, select, textarea, button) {
+    font-style: normal !important;
   }
 }
 

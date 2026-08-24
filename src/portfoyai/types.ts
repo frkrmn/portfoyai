@@ -20,6 +20,22 @@ export type ThemeConfig = {
   fontPairing: FontPairing;
   layoutVariant: "editorial" | "gallery" | "heroSplit" | "corporate";
   layout_fine_tune?: LayoutFineTune;
+  colors?: {
+    background?: string;
+    primary?: string;
+    accent?: string;
+    text?: string;
+    buttonColorSource?: "accent" | "primary" | "custom";
+    buttonColorCustom?: string;
+  };
+  fonts?: {
+    heading?: string;
+    body?: string;
+    headingWeight?: number;
+    headingItalic?: boolean;
+    bodyWeight?: number;
+    bodyItalic?: boolean;
+  };
 };
 
 export type GeneratedSiteConfig = {

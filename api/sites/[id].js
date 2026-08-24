@@ -62,6 +62,8 @@ const updateSite = async (request, response, siteId) => {
     if (!hexColorPattern.test(body.accent_color)) return sendJson(response, 400, { error: "Accent color must be a six-digit hex color." });
     themePatch.accent_color = body.accent_color;
   }
+  if (body.buttonColorSource !== undefined) themePatch.buttonColorSource = body.buttonColorSource;
+  if (body.buttonColorCustom !== undefined) themePatch.buttonColorCustom = body.buttonColorCustom;
   if (body.heading_font !== undefined) {
     const value = String(body.heading_font).trim();
     if (!value || value.length > 160) return sendJson(response, 400, { error: "Heading font is invalid." });
@@ -71,6 +73,9 @@ const updateSite = async (request, response, siteId) => {
     const value = String(body.body_font).trim();
     if (!value || value.length > 160) return sendJson(response, 400, { error: "Body font is invalid." });
     themePatch.body_font = value;
+  }
+  for (const key of ["heading_weight", "body_weight", "heading_italic", "body_italic"]) {
+    if (body[key] !== undefined) themePatch[key] = body[key];
   }
   if (Object.keys(updates).length === 0 && Object.keys(body).length === 0) return sendJson(response, 400, { error: "No site changes were supplied." });
   const { themeConfig, topLevel } = mergeThemeConfig(current.theme_config, themePatch);

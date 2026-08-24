@@ -12,6 +12,7 @@ import socialKit from "./api/listings/[id]/social-kit.js";
 import leads from "./api/leads.js";
 import publicSiteBySlug from "./api/public-sites/[slug].js";
 import experiment from "./api/experiment.js";
+import fonts from "./api/fonts.js";
 import { sendJson } from "./server/api-utils.mjs";
 
 const fileEnv = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
@@ -35,6 +36,7 @@ const server = createHttpServer(async (request, response) => {
   if (pathname === "/api/sites") return sitesIndex(request, response);
   if (pathname === "/api/leads") return leads(request, response);
   if (pathname === "/api/experiment") return experiment(request, response);
+  if (pathname === "/api/fonts") return fonts(request, response);
   if (pathname === "/api/listings/generate-copy") return generateListingCopy(request, response);
 
   const publicSiteMatch = pathname.match(/^\/api\/public-sites\/([a-z0-9]+(?:-[a-z0-9]+)*)$/);

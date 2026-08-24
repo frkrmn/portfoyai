@@ -120,10 +120,18 @@ export type TemplateConfig = {
     primary: string;
     accent: string;
     text: string;
+    buttonColorSource: "accent" | "primary" | "custom";
+    buttonColorCustom?: string;
+    button: string;
+    buttonText: string;
   };
   fonts: {
     heading: string;
     body: string;
+    headingWeight?: number;
+    headingItalic?: boolean;
+    bodyWeight?: number;
+    bodyItalic?: boolean;
   };
   content: TemplateContent;
   layout: {
@@ -173,7 +181,26 @@ export const fineTuneAttributes = (config: TemplateConfig) => ({
   "data-spacing-density": config.layoutFineTune.spacingDensity,
   "data-card-style": config.layoutFineTune.cardStyle,
   "data-heading-scale": config.layoutFineTune.headingScale,
+  "data-heading-weight": config.fonts.headingWeight,
+  "data-heading-italic": config.fonts.headingItalic === undefined ? undefined : String(config.fonts.headingItalic),
+  "data-body-weight": config.fonts.bodyWeight,
+  "data-body-italic": config.fonts.bodyItalic === undefined ? undefined : String(config.fonts.bodyItalic),
 });
+
+export const themeStyleVariables = (config: TemplateConfig) => ({
+  "--site-button": config.colors.button,
+  "--site-button-text": config.colors.buttonText,
+  "--site-heading-weight": config.fonts.headingWeight,
+  "--site-body-weight": config.fonts.bodyWeight,
+});
+
+const contrastText = (color: string) => {
+  const match = /^#([0-9a-f]{6})$/i.exec(color);
+  if (!match) return "#FFFFFF";
+  const channels = [0, 2, 4].map((offset) => Number.parseInt(match[1].slice(offset, offset + 2), 16) / 255)
+    .map((value) => value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722 > 0.48 ? "#151515" : "#FFFFFF";
+};
 
 export const warmEditorialFallbacks: TemplateContent = {
   businessName: "Seçkin Gayrimenkul",
@@ -475,6 +502,13 @@ export function createTemplateConfig(
     },
   };
   const content = raw.content || {};
+  const buttonColorSource = ["accent", "primary", "custom"].includes(raw.colors?.buttonColorSource || "")
+    ? raw.colors!.buttonColorSource as "accent" | "primary" | "custom"
+    : "accent";
+  const primary = raw.colors?.primary || legacyTheme.primary;
+  const accent = raw.colors?.accent || legacyTheme.accent;
+  const customButton = /^#[0-9a-f]{6}$/i.test(raw.colors?.buttonColorCustom || "") ? raw.colors?.buttonColorCustom : undefined;
+  const button = buttonColorSource === "primary" ? primary : buttonColorSource === "custom" && customButton ? customButton : accent;
 
   return {
     templateId: payload.config.template_id || "tm_01",
@@ -483,11 +517,21 @@ export function createTemplateConfig(
     slug: payload.slug,
     colors: {
       background: raw.colors?.background || (isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#FFFFFF" : isNeighborhoodFriendly || isGuidedMatch ? "#FFF8F1" : "#F1EADF"),
-      primary: raw.colors?.primary || legacyTheme.primary,
-      accent: raw.colors?.accent || legacyTheme.accent,
+      primary,
+      accent,
       text: raw.colors?.text || (isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#17211C" : isNeighborhoodFriendly || isGuidedMatch ? "#352B25" : "#25231F"),
+      buttonColorSource,
+      buttonColorCustom: customButton,
+      button,
+      buttonText: contrastText(button),
     },
-    fonts: legacyTheme.fontPairing,
+    fonts: {
+      ...legacyTheme.fontPairing,
+      headingWeight: raw.fonts?.headingWeight,
+      headingItalic: raw.fonts?.headingItalic,
+      bodyWeight: raw.fonts?.bodyWeight,
+      bodyItalic: raw.fonts?.bodyItalic,
+    },
     content: {
       ...defaults,
       ...content,

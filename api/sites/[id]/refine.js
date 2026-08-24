@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { dashboardSite, getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../../../server/api-utils.mjs";
-import { fineTuneEnums, mergeThemeConfig } from "../../../server/site-theme.mjs";
+import { buttonColorSources, fineTuneEnums, mergeThemeConfig } from "../../../server/site-theme.mjs";
 
 export const siteRefineModel = "gemini-3.5-flash-lite";
 const allowedFonts = [
@@ -21,6 +21,8 @@ export const siteRefineSchema = {
     },
     primary_color: { type: "string", pattern: "^#[0-9A-Fa-f]{6}$" },
     accent_color: { type: "string", pattern: "^#[0-9A-Fa-f]{6}$" },
+    buttonColorSource: { type: "string", enum: buttonColorSources },
+    buttonColorCustom: { type: "string", pattern: "^#[0-9A-Fa-f]{6}$" },
     heading_font: { type: "string", enum: allowedFonts },
     body_font: { type: "string", enum: allowedFonts },
     unsupported_note: { type: "string", nullable: true },
@@ -34,6 +36,7 @@ const systemInstruction = [
   "Sadece açıkça istenen alanları döndür; ilişkili görünse bile başka alanları tahmin ederek değiştirme.",
   "Daha yuvarlak butonlar buttonStyle=pill; köşesiz butonlar buttonStyle=sharp; menüyü ortalama navAlignment=center; gölgeyi kaldırma/sade kart cardStyle=flat; belirgin gölge cardStyle=shadow; çerçeveli kart cardStyle=bordered olarak eşlenir.",
   "Renk isteğinde uygun primary_color veya accent_color alanına erişilebilir, altı haneli hex renk döndür. Font isteğinde yalnızca enumdaki fontlardan birini seç.",
+  "Buton rengi ana renkle aynı istendiğinde buttonColorSource=primary; vurgu rengiyle aynı istendiğinde buttonColorSource=accent döndür. Kullanıcı buton için belirli bir renk söylerse buttonColorSource=custom ile birlikte buttonColorCustom hex değerini döndür.",
   "İsteğin herhangi bir bölümü desteklenmiyorsa desteklenen bölümü yine uygula ve unsupported_note içinde desteklenmeyen bölümü kısa, açık Türkçe ile belirt.",
   "Hiçbir bölüm desteklenmiyorsa değişiklik alanlarını tamamen atla ve unsupported_note yaz. Sessizce görmezden gelme.",
 ].join("\n");
@@ -53,7 +56,7 @@ export async function mapRefinementRequest(requestText, apiKey = process.env.GEM
     : null;
   const patch = {};
   if (mapped.layout_fine_tune && typeof mapped.layout_fine_tune === "object") patch.layout_fine_tune = mapped.layout_fine_tune;
-  for (const field of ["primary_color", "accent_color", "heading_font", "body_font"]) {
+  for (const field of ["primary_color", "accent_color", "buttonColorSource", "buttonColorCustom", "heading_font", "body_font"]) {
     if (mapped[field] !== undefined) patch[field] = mapped[field];
   }
   return { patch, unsupported_note: unsupportedNote, model: result.modelVersion || siteRefineModel };

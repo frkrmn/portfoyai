@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { CSSProperties, FormEvent } from "react";
 import type { Listing } from "@/portfoyai/types";
-import { fineTuneAttributes, type SiteTemplateProps, type TemplateConfig } from "../types";
+import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getHeroImage, getListingImage } from "../mediaFallbacks";
 
 const labels = {
@@ -65,6 +65,7 @@ const getBathroomCount = (listing: Listing) => listing.bathroom_count ?? (getBed
 
 const templateStyle = (config: TemplateConfig) =>
   ({
+    ...themeStyleVariables(config),
     "--we-bg": config.colors.background,
     "--we-primary": config.colors.primary,
     "--we-accent": config.colors.accent,
@@ -88,7 +89,7 @@ function Header({ config }: SiteTemplateProps) {
           <a href="#hakkimizda">{labels.navAbout}</a>
           <a href="#iletisim">{labels.navContact}</a>
         </nav>
-        <a href="#iletisim" className="rounded-full bg-[var(--we-primary)] px-5 py-3 text-xs font-semibold text-white">
+        <a data-site-button href="#iletisim" className="rounded-full bg-[var(--we-primary)] px-5 py-3 text-xs font-semibold text-white">
           {config.content.ctaText}
         </a>
       </div>
@@ -130,7 +131,7 @@ function SearchPanel({ config, compact = false }: SiteTemplateProps & { compact?
       {!compact ? <label className="border-b border-black/10 px-3 pb-2"><span className="block text-[10px] uppercase tracking-[0.16em] opacity-50">{labels.status}</span><select className={`${fieldClass} w-full`} defaultValue="active"><option value="active">Aktif</option></select></label> : null}
       <label className="border-b border-black/10 px-3 pb-2"><span className="block text-[10px] uppercase tracking-[0.16em] opacity-50">{labels.type}</span><select className={`${fieldClass} w-full`} value={type} onChange={(event) => setType(event.target.value)}><option value="all">{labels.all}</option><option value="sale">{labels.sale}</option><option value="rent">{labels.rent}</option></select></label>
       <label className="border-b border-black/10 px-3 pb-2"><span className="block text-[10px] uppercase tracking-[0.16em] opacity-50">{labels.location}</span><input className={`${fieldClass} w-full`} value={location} onChange={(event) => setLocation(event.target.value)} placeholder={config.content.address} /></label>
-      <button className="grid h-14 w-full place-items-center bg-[var(--we-primary)] px-7 text-white md:w-auto" aria-label={labels.search}><Search className="h-4 w-4" /></button>
+      <button data-site-button className="grid h-14 w-full place-items-center bg-[var(--we-primary)] px-7 text-white md:w-auto" aria-label={labels.search}><Search className="h-4 w-4" /></button>
     </form>
   );
 }
@@ -141,7 +142,7 @@ export function WarmListingCard({ config, listing }: { config: TemplateConfig; l
       <Link to={`/site/${config.slug}/listings/${listing.id}`} className="relative block overflow-hidden bg-black/5">
         <img src={getListingImage(listing)} alt={listing.title} className="aspect-[1.25/1] w-full object-cover transition duration-700 group-hover:scale-[1.035]" />
         <span className="absolute left-4 top-4 bg-[var(--we-primary)] px-3 py-2 text-[9px] font-bold uppercase tracking-[0.16em] text-white">{listing.listing_type === "sale" ? labels.sale : labels.rent}</span>
-        <button type="button" aria-label="Favorilere ekle" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/90"><Heart className="h-4 w-4" /></button>
+        <button data-site-button type="button" aria-label="Favorilere ekle" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/90"><Heart className="h-4 w-4" /></button>
       </Link>
       <div className="pt-5">
         <div className="text-[10px] uppercase tracking-[0.15em] opacity-48">{listing.address || `${listing.district}, İstanbul`}</div>
@@ -185,7 +186,7 @@ function TourForm({ config, listing }: { config: TemplateConfig; listing?: Listi
       <input className={inputClass} placeholder={labels.name} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
       <input className={inputClass} placeholder={labels.contact} value={form.contact} onChange={(event) => setForm({ ...form, contact: event.target.value })} required />
       <textarea className={`${inputClass} min-h-24 resize-none`} placeholder={labels.message} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} />
-      <button disabled={state === "submitting"} className="mt-3 flex h-14 w-full items-center justify-center gap-2 bg-[var(--we-primary)] px-5 text-xs font-semibold text-white disabled:opacity-60">{state === "submitting" ? labels.submitting : labels.submit}<ArrowRight className="h-4 w-4" /></button>
+      <button data-site-button disabled={state === "submitting"} className="mt-3 flex h-14 w-full items-center justify-center gap-2 bg-[var(--we-primary)] px-5 text-xs font-semibold text-white disabled:opacity-60">{state === "submitting" ? labels.submitting : labels.submit}<ArrowRight className="h-4 w-4" /></button>
       {state === "success" ? <p role="status" className="text-sm leading-6 text-emerald-800">{labels.success}</p> : null}
       {state === "error" ? <p role="alert" className="text-sm leading-6 text-red-700">{labels.genericError}</p> : null}
     </form>
@@ -278,7 +279,7 @@ export function WarmEditorialListings({ config }: SiteTemplateProps) {
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
   return (
-    <div {...fineTuneAttributes(config)} style={templateStyle(config)}><Header config={config} /><main><section className="mx-auto max-w-[1380px] px-5 py-16 sm:px-8 lg:px-12 lg:py-24"><div className="text-[10px] uppercase tracking-[0.2em] text-[var(--we-accent)]">{config.content.featuredEyebrow}</div><h1 className="mt-4 font-[family-name:var(--we-heading)] text-6xl font-medium">{labels.listingsTitle}</h1><p className="mt-4 text-sm opacity-60">{labels.listingsDescription}</p><div className="mt-10 max-w-4xl"><div className="grid gap-4 bg-white p-4 shadow-sm md:grid-cols-[1fr_1fr_auto]"><label className="border-b border-black/10 px-3 pb-2"><span className="block text-[10px] uppercase tracking-wider opacity-50">{labels.type}</span><select className="w-full bg-transparent pt-1 text-sm outline-none" value={type} onChange={(event) => { setType(event.target.value); setPage(1); }}><option value="all">{labels.all}</option><option value="sale">{labels.sale}</option><option value="rent">{labels.rent}</option></select></label><label className="border-b border-black/10 px-3 pb-2"><span className="block text-[10px] uppercase tracking-wider opacity-50">{labels.location}</span><input className="w-full bg-transparent pt-1 text-sm outline-none" value={location} onChange={(event) => { setLocation(event.target.value); setPage(1); }} /></label><div className="grid h-14 place-items-center bg-[var(--we-primary)] px-7 text-xs text-white">{filtered.length} {labels.navListings.toLocaleLowerCase("tr-TR")}</div></div></div>{visible.length ? <div className="mt-14 grid gap-x-6 gap-y-14 md:grid-cols-2 lg:grid-cols-3">{visible.map((listing) => <WarmListingCard key={listing.id} config={config} listing={listing} />)}</div> : <div className="mt-16 border border-black/10 p-10 text-sm opacity-60">{labels.empty}</div>}<div className="mt-16 flex items-center justify-center gap-4"><button disabled={page === 1} onClick={() => setPage((value) => value - 1)} className="flex items-center gap-2 px-4 py-2 text-xs disabled:opacity-30"><ChevronLeft className="h-4 w-4" />{labels.previous}</button><span className="text-xs">{page} / {pageCount}</span><button disabled={page === pageCount} onClick={() => setPage((value) => value + 1)} className="flex items-center gap-2 px-4 py-2 text-xs disabled:opacity-30">{labels.next}<ChevronRight className="h-4 w-4" /></button></div></section></main><Footer config={config} /></div>
+    <div {...fineTuneAttributes(config)} style={templateStyle(config)}><Header config={config} /><main><section className="mx-auto max-w-[1380px] px-5 py-16 sm:px-8 lg:px-12 lg:py-24"><div className="text-[10px] uppercase tracking-[0.2em] text-[var(--we-accent)]">{config.content.featuredEyebrow}</div><h1 className="mt-4 font-[family-name:var(--we-heading)] text-6xl font-medium">{labels.listingsTitle}</h1><p className="mt-4 text-sm opacity-60">{labels.listingsDescription}</p><div className="mt-10 max-w-4xl"><div className="grid gap-4 bg-white p-4 shadow-sm md:grid-cols-[1fr_1fr_auto]"><label className="border-b border-black/10 px-3 pb-2"><span className="block text-[10px] uppercase tracking-wider opacity-50">{labels.type}</span><select className="w-full bg-transparent pt-1 text-sm outline-none" value={type} onChange={(event) => { setType(event.target.value); setPage(1); }}><option value="all">{labels.all}</option><option value="sale">{labels.sale}</option><option value="rent">{labels.rent}</option></select></label><label className="border-b border-black/10 px-3 pb-2"><span className="block text-[10px] uppercase tracking-wider opacity-50">{labels.location}</span><input className="w-full bg-transparent pt-1 text-sm outline-none" value={location} onChange={(event) => { setLocation(event.target.value); setPage(1); }} /></label><div className="grid h-14 place-items-center bg-[var(--we-primary)] px-7 text-xs text-white">{filtered.length} {labels.navListings.toLocaleLowerCase("tr-TR")}</div></div></div>{visible.length ? <div className="mt-14 grid gap-x-6 gap-y-14 md:grid-cols-2 lg:grid-cols-3">{visible.map((listing) => <WarmListingCard key={listing.id} config={config} listing={listing} />)}</div> : <div className="mt-16 border border-black/10 p-10 text-sm opacity-60">{labels.empty}</div>}<div className="mt-16 flex items-center justify-center gap-4"><button data-site-button disabled={page === 1} onClick={() => setPage((value) => value - 1)} className="flex items-center gap-2 px-4 py-2 text-xs disabled:opacity-30"><ChevronLeft className="h-4 w-4" />{labels.previous}</button><span className="text-xs">{page} / {pageCount}</span><button data-site-button disabled={page === pageCount} onClick={() => setPage((value) => value + 1)} className="flex items-center gap-2 px-4 py-2 text-xs disabled:opacity-30">{labels.next}<ChevronRight className="h-4 w-4" /></button></div></section></main><Footer config={config} /></div>
   );
 }
 

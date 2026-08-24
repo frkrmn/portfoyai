@@ -30,6 +30,7 @@ const buildThemeConfig = (config) => {
       background: isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#FFFFFF" : isNeighborhoodFriendly || isGuidedMatch ? "#FFF8F1" : "#F1EADF",
       primary: config.primary_color,
       accent: config.accent_color,
+      buttonColorSource: "accent",
       text: isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#17211C" : isNeighborhoodFriendly || isGuidedMatch ? "#352B25" : "#25231F",
     },
     fonts: {

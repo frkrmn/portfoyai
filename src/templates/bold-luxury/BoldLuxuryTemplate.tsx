@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Bath, BedDouble, MapPin, Maximize2, Search } from "lucide-react";
 import type { CSSProperties, FormEvent } from "react";
 import type { Listing } from "@/portfoyai/types";
-import { fineTuneAttributes, type SiteTemplateProps, type TemplateConfig } from "../types";
+import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getHeroImage, getListingImage } from "../mediaFallbacks";
 
 const formatPrice = (listing: Listing) => new Intl.NumberFormat("tr-TR", {
@@ -13,6 +13,7 @@ const formatPrice = (listing: Listing) => new Intl.NumberFormat("tr-TR", {
 }).format(Number(listing.price));
 
 const luxuryStyle = (config: TemplateConfig) => ({
+  ...themeStyleVariables(config),
   "--lux-dark": config.colors.background,
   "--lux-primary": config.colors.primary,
   "--lux-accent": config.colors.accent,
@@ -28,7 +29,7 @@ const luxuryStyle = (config: TemplateConfig) => ({
 
 function LuxuryHeader({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="relative z-30 border-b border-[color:color-mix(in_srgb,var(--lux-text)_14%,transparent)] bg-[var(--lux-dark)]"><div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--lux-heading)] text-2xl font-bold uppercase tracking-[0.08em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs uppercase tracking-[0.14em] md:flex"><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a href="#yaklasim">{c.navAbout}</a><a href="#iletisim">{c.navContact}</a></nav><a href="#iletisim" className="bg-[var(--lux-accent)] px-5 py-3 text-xs font-semibold text-[var(--lux-ink)]">{c.formSubmit}</a></div></header>;
+  return <header className="relative z-30 border-b border-[color:color-mix(in_srgb,var(--lux-text)_14%,transparent)] bg-[var(--lux-dark)]"><div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--lux-heading)] text-2xl font-bold uppercase tracking-[0.08em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs uppercase tracking-[0.14em] md:flex"><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a href="#yaklasim">{c.navAbout}</a><a href="#iletisim">{c.navContact}</a></nav><a data-site-button href="#iletisim" className="bg-[var(--lux-accent)] px-5 py-3 text-xs font-semibold text-[var(--lux-ink)]">{c.formSubmit}</a></div></header>;
 }
 
 function LuxuryFooter({ config }: SiteTemplateProps) {
@@ -56,7 +57,7 @@ function LeadForm({ config, listing, hero = false, dark = false }: { config: Tem
   const inputClass = hero || dark
     ? "h-12 min-w-0 border-0 border-b border-[color:color-mix(in_srgb,var(--lux-text)_24%,transparent)] bg-transparent px-0 text-sm text-[var(--lux-text)] outline-none placeholder:text-[color:color-mix(in_srgb,var(--lux-text)_50%,transparent)]"
     : "h-12 w-full border-0 border-b border-[color:color-mix(in_srgb,var(--lux-ink)_22%,transparent)] bg-transparent px-0 text-sm text-[var(--lux-ink)] outline-none placeholder:text-[color:color-mix(in_srgb,var(--lux-ink)_48%,transparent)]";
-  return <form onSubmit={submit} className={hero ? "grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end" : "space-y-4"}><input className={inputClass} placeholder={c.fullNameLabel} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /><input type="email" className={inputClass} placeholder={c.emailLabel} value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required /><input className={inputClass} placeholder={c.phoneLabel} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} required />{hero ? null : <textarea className={`${inputClass} min-h-24 resize-none pt-4`} placeholder={c.messageLabel} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} />}<button disabled={status === "submitting"} className="flex h-12 items-center justify-center gap-2 bg-[var(--lux-accent)] px-6 text-xs font-bold uppercase tracking-[0.1em] text-[var(--lux-ink)] disabled:opacity-60">{status === "submitting" ? c.formSubmitting : c.formSubmit}<ArrowRight className="h-4 w-4" /></button>{status === "success" ? <p role="status" className={`${hero ? "lg:col-span-4" : ""} text-sm text-[var(--lux-accent)]`}>{c.formSuccess}</p> : null}{status === "error" ? <p role="alert" className={`${hero ? "lg:col-span-4" : ""} text-sm`}>{c.formError}</p> : null}</form>;
+  return <form onSubmit={submit} className={hero ? "grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end" : "space-y-4"}><input className={inputClass} placeholder={c.fullNameLabel} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /><input type="email" className={inputClass} placeholder={c.emailLabel} value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required /><input className={inputClass} placeholder={c.phoneLabel} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} required />{hero ? null : <textarea className={`${inputClass} min-h-24 resize-none pt-4`} placeholder={c.messageLabel} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} />}<button data-site-button disabled={status === "submitting"} className="flex h-12 items-center justify-center gap-2 bg-[var(--lux-accent)] px-6 text-xs font-bold uppercase tracking-[0.1em] text-[var(--lux-ink)] disabled:opacity-60">{status === "submitting" ? c.formSubmitting : c.formSubmit}<ArrowRight className="h-4 w-4" /></button>{status === "success" ? <p role="status" className={`${hero ? "lg:col-span-4" : ""} text-sm text-[var(--lux-accent)]`}>{c.formSuccess}</p> : null}{status === "error" ? <p role="alert" className={`${hero ? "lg:col-span-4" : ""} text-sm`}>{c.formError}</p> : null}</form>;
 }
 
 function LuxuryListingCard({ config, listing }: { config: TemplateConfig; listing: Listing }) {
