@@ -31,7 +31,7 @@ export const apiRouteInventory = [
   { pattern: /^\/api\/sites$/, methods: ["GET"], handler: sites },
 ];
 
-const requestPathname = (request) => new URL(
+const requestPathname = (request) => request.routedApiPath || new URL(
   request.url || "/",
   `${request.headers["x-forwarded-proto"] || "http"}://${request.headers.host || "localhost"}`,
 ).pathname;

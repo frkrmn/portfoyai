@@ -1,6 +1,6 @@
 import { createServer as createHttpServer } from "node:http";
 import { createServer as createViteServer, loadEnv } from "vite";
-import dispatchApiRequest from "./server/api-router.mjs";
+import apiHandler from "./api/index.js";
 
 const fileEnv = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
 for (const [key, value] of Object.entries(fileEnv)) {
@@ -16,7 +16,7 @@ const vite = await createViteServer({ server: { middlewareMode: true }, appType:
 
 const server = createHttpServer(async (request, response) => {
   const pathname = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`).pathname;
-  if (pathname.startsWith("/api/")) return dispatchApiRequest(request, response);
+  if (pathname === "/api" || pathname.startsWith("/api/")) return apiHandler(request, response);
 
   vite.middlewares(request, response);
 });

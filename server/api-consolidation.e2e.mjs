@@ -135,6 +135,8 @@ try {
   const wrongMethod = await fetch(`${baseUrl}/api/fonts`, { method: "POST" });
   assert.equal(wrongMethod.status, 405);
   assert.equal(wrongMethod.headers.get("allow"), "GET");
+  const rewrittenSites = await json(await fetch(`${baseUrl}/api?route=sites`, { headers: bearer }));
+  assert.ok(rewrittenSites.sites.some((candidate) => candidate.id === siteId));
   const missingApi = await fetch(`${baseUrl}/api/does-not-exist`);
   assert.equal(missingApi.status, 404);
   assert.match(missingApi.headers.get("content-type") || "", /^application\/json/);
@@ -156,7 +158,7 @@ try {
     experiment: { status: 201, variant: experiment.variant },
     fonts: { status: 200, count: fonts.fonts.length },
     site_refine: { status: 200, applied_fields: refined.applied_fields },
-    router_guards: { method_not_allowed: 405, missing_api_json: 404 },
+    router_guards: { vercel_rewrite_target: 200, method_not_allowed: 405, missing_api_json: 404 },
     spa_fallback: { dashboard: 200, content_type: spaRoute.headers.get("content-type") },
   }, null, 2));
 } finally {
