@@ -1,4 +1,4 @@
-import { getAuthenticatedUser, getSessionId, getSupabaseClient, handleKnownError, methodNotAllowed, resolveSubscription, sendJson } from "../../server/api-utils.mjs";
+import { getAuthenticatedUser, getSessionId, getSupabaseClient, handleKnownError, methodNotAllowed, resolveSubscription, sendJson } from "../api-utils.mjs";
 
 export default async function handler(request, response) {
   if (request.method !== "POST") return methodNotAllowed(response, ["POST"]);

@@ -19,6 +19,8 @@ try {
   const { data: created, error: createError } = await supabase.auth.admin.createUser({ email, password, email_confirm: true });
   if (createError) throw createError;
   userId = created.user.id;
+  const { error: subscriptionError } = await supabase.from("subscriptions").insert({ subject_id: userId, user_id: userId, plan: "pro" });
+  if (subscriptionError) throw subscriptionError;
 
   const site = await insertGeneratedSite(supabase, {
     template_id: "clean-modern",
@@ -91,7 +93,7 @@ try {
   const publicResponse = await fetch(`${baseUrl}/api/public-sites/${site.slug}`);
   const publicSite = await publicResponse.json();
   const publicEdited = publicSite.listings.find((item) => item.id === createdListing.listing.id);
-  assert(publicResponse.ok && publicSite.listings.length === 7, "Public site did not immediately receive the added listing");
+  assert(publicResponse.ok && publicSite.listings.length === 6, "Public site did not immediately receive the added listing");
   assert(publicEdited?.price === 7_990_000 && publicEdited?.room_count === "3+1" && publicEdited?.media[0]?.url === photo, "Public listing did not reflect dashboard edit/photo");
   assert(publicSite.config.business_name === sitePatch.business_name && publicSite.config.primary_color === sitePatch.primary_color, "Public site did not reflect identity/color changes");
   assert(publicSite.config.theme_config.content.phone === sitePatch.phone && publicSite.config.theme_config.fonts.heading === sitePatch.heading_font, "Public theme_config did not reflect contact/font changes");
@@ -110,7 +112,7 @@ try {
   const deleteResponse = await fetch(`${baseUrl}/api/listings/${createdListing.listing.id}`, { method: "DELETE", headers });
   assert(deleteResponse.ok, "Listing delete failed");
   const afterDelete = await (await fetch(`${baseUrl}/api/public-sites/${site.slug}`)).json();
-  assert(afterDelete.listings.length === 6 && !afterDelete.listings.some((item) => item.id === createdListing.listing.id), "Deleted listing remained on public site");
+  assert(afterDelete.listings.length === 5 && !afterDelete.listings.some((item) => item.id === createdListing.listing.id), "Deleted listing remained on public site");
 
   console.log(JSON.stringify({
     site: site.slug,

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { loadEnv } from "vite";
-import { mapRefinementRequest } from "../api/sites/[id]/refine.js";
+import { mapRefinementRequest } from "./handlers/site-refine.mjs";
 import { mergeThemeConfig } from "./site-theme.mjs";
 
 const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");

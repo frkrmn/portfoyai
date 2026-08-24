@@ -1,5 +1,5 @@
-import { dashboardSite, getAuthenticatedUser, getSessionId, getSupabaseClient, handleKnownError, hexColorPattern, methodNotAllowed, readJsonBody, routeParam, sendJson, uuidPattern } from "../../server/api-utils.mjs";
-import { mergeThemeConfig } from "../../server/site-theme.mjs";
+import { dashboardSite, getAuthenticatedUser, getSessionId, getSupabaseClient, handleKnownError, hexColorPattern, methodNotAllowed, readJsonBody, routeParam, sendJson, uuidPattern } from "../api-utils.mjs";
+import { mergeThemeConfig } from "../site-theme.mjs";
 
 const getSite = async (request, response, siteId) => {
   const sessionId = getSessionId(request);

@@ -1,4 +1,4 @@
-import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../server/api-utils.mjs";
+import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../api-utils.mjs";
 
 const createLead = async (request, response) => {
   const body = await readJsonBody(request);

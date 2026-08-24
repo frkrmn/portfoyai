@@ -1,4 +1,4 @@
-import { getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, resolveSubscription, sendJson } from "../server/api-utils.mjs";
+import { getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, resolveSubscription, sendJson } from "../api-utils.mjs";
 
 const eventTypes = new Set(["pricing_view", "upgrade_click", "paywall_view"]);
 
@@ -31,4 +31,3 @@ export default async function handler(request, response) {
     return handleKnownError(response, error, "[experiment] Event recording failed");
   }
 }
-

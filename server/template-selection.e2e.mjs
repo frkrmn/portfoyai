@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { loadEnv } from "vite";
-import { siteConfigModel, siteConfigSchema, siteConfigSystemPrompt } from "../api/generate-theme.js";
+import { siteConfigModel, siteConfigSchema, siteConfigSystemPrompt } from "./handlers/generate-theme.mjs";
 
 const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
 if (!env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is required.");

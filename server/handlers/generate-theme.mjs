@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { GoogleGenAI } from "@google/genai";
-import { insertGeneratedSite } from "../server/site-persistence.mjs";
-import { getAuthenticatedUser, getSessionId, getSupabaseClient, methodNotAllowed, readJsonBody, sendJson } from "../server/api-utils.mjs";
+import { insertGeneratedSite } from "../site-persistence.mjs";
+import { getAuthenticatedUser, getSessionId, getSupabaseClient, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
 
-export const siteConfigSchema = JSON.parse(readFileSync(new URL("../server/site-config.schema.json", import.meta.url), "utf8"));
+export const siteConfigSchema = JSON.parse(readFileSync(new URL("../site-config.schema.json", import.meta.url), "utf8"));
 export const siteConfigModel = "gemini-3.5-flash-lite";
 export const siteConfigSystemPrompt = [
   "You are the brand design engine for PortföyAI, a premium Turkish real-estate website builder.",

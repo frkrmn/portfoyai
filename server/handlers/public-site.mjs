@@ -1,4 +1,4 @@
-import { getSupabaseClient, methodNotAllowed, routeParam, sendJson, serializeListing } from "../../server/api-utils.mjs";
+import { getSupabaseClient, methodNotAllowed, routeParam, sendJson, serializeListing } from "../api-utils.mjs";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") return methodNotAllowed(response, ["GET"]);

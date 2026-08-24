@@ -1,5 +1,5 @@
 import { loadEnv } from "vite";
-import { generateListingCopy, listingFactsFromBody } from "../api/listings/generate-copy.js";
+import { generateListingCopy, listingFactsFromBody } from "./handlers/listing-copy.mjs";
 
 const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
 if (!env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is required.");

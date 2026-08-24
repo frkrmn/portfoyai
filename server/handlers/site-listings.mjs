@@ -1,4 +1,4 @@
-import { countActiveListingsForUser, getAuthenticatedUser, getOwnedSite, getSupabaseClient, getUserPlan, handleKnownError, listingPayload, methodNotAllowed, readJsonBody, routeParam, sendJson, serializeListing, uuidPattern } from "../../../server/api-utils.mjs";
+import { countActiveListingsForUser, getAuthenticatedUser, getOwnedSite, getSupabaseClient, getUserPlan, handleKnownError, listingPayload, methodNotAllowed, readJsonBody, routeParam, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
 
 export const config = { api: { bodyParser: { sizeLimit: "8mb" } } };
 

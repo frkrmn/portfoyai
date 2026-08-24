@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
 import { loadEnv } from "vite";
-import { buildSocialKitImage, placeholderImageFor } from "../api/listings/[id]/social-kit.js";
+import { buildSocialKitImage, placeholderImageFor } from "./handlers/listing-social-kit.mjs";
 
 const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
 if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase service credentials are required.");

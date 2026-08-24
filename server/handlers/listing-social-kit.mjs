@@ -1,6 +1,6 @@
 import { ImageResponse } from "@vercel/og";
 import { createElement as h } from "react";
-import { getAuthenticatedUser, getOwnedSite, getSupabaseClient, handleKnownError, methodNotAllowed, sendJson, uuidPattern } from "../../../server/api-utils.mjs";
+import { getAuthenticatedUser, getOwnedSite, getSupabaseClient, handleKnownError, methodNotAllowed, sendJson, uuidPattern } from "../api-utils.mjs";
 
 const placeholderImages = [
   "/images/listings/bagdat-residence.jpg",

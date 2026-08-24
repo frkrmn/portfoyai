@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
-import { dashboardSite, getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../../../server/api-utils.mjs";
-import { buttonColorSources, fineTuneEnums, mergeThemeConfig } from "../../../server/site-theme.mjs";
+import { dashboardSite, getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../api-utils.mjs";
+import { buttonColorSources, fineTuneEnums, mergeThemeConfig } from "../site-theme.mjs";
 
 export const siteRefineModel = "gemini-3.5-flash-lite";
 const allowedFonts = [

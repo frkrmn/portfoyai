@@ -53,7 +53,7 @@ await new Promise((resolve) => fakeSupabase.listen(0, "127.0.0.1", resolve));
 const address = fakeSupabase.address();
 process.env.SUPABASE_URL = `http://127.0.0.1:${address.port}`;
 process.env.SUPABASE_SERVICE_ROLE_KEY = "fake-service-role-key";
-const { default: experimentHandler } = await import("../api/experiment.js");
+const { default: experimentHandler } = await import("./handlers/experiment.mjs");
 const { getUserPlan } = await import("./api-utils.mjs");
 
 const invoke = async ({ sessionId, cookie = "", accessToken = "", eventType = "pricing_view", context = "manual_pricing_page_visit" }) => {

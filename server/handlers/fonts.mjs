@@ -1,4 +1,4 @@
-import { getAuthenticatedUser, handleKnownError, methodNotAllowed, sendJson } from "../server/api-utils.mjs";
+import { getAuthenticatedUser, handleKnownError, methodNotAllowed, sendJson } from "../api-utils.mjs";
 
 const cacheTtlMs = 24 * 60 * 60 * 1000;
 let fontCache = null;

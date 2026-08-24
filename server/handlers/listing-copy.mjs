@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { getAuthenticatedUser, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../../server/api-utils.mjs";
+import { getAuthenticatedUser, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
 
 export const listingCopyModel = "gemini-3.5-flash-lite";
 
