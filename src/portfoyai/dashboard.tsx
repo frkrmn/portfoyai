@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Download, Globe, Home, Lock, Plus, RefreshCw, Users } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Download, Globe, Home, Lock, Plus, RefreshCw, Search, Users } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -87,11 +87,76 @@ const weightsFor = (font: GoogleFont | undefined, italic: boolean) => {
   return [...new Set(weights)].sort((a, b) => a - b);
 };
 const closestWeight = (weights: number[], target: number) => weights.reduce((best, weight) => Math.abs(weight - target) < Math.abs(best - target) ? weight : best, weights[0] || 400);
-const semanticWeightOptions = (weights: number[]) => [
-  { label: "Normal", value: closestWeight(weights, 400) },
-  { label: "Medium", value: closestWeight(weights, 500) },
-  { label: "Bold", value: closestWeight(weights, 700) },
-];
+const weightLabels: Record<number, string> = { 100: "İnce", 200: "Ekstra ince", 300: "Hafif", 400: "Normal", 500: "Orta", 600: "Yarı kalın", 700: "Kalın", 800: "Ekstra kalın", 900: "Siyah" };
+const familyName = (family: string) => family.split(",")[0].trim().replace(/^['"]|['"]$/g, "");
+
+const previewStylesheetUrl = (fonts: GoogleFont[]) => {
+  const families = fonts.map((font) => {
+    const normalWeights = weightsFor(font, false);
+    const italicWeights = weightsFor(font, true);
+    if (normalWeights.length) return `family=${encodeURIComponent(font.family).replace(/%20/g, "+")}:wght@${closestWeight(normalWeights, 400)}`;
+    return `family=${encodeURIComponent(font.family).replace(/%20/g, "+")}:ital,wght@1,${closestWeight(italicWeights, 400)}`;
+  });
+  return families.length ? `https://fonts.googleapis.com/css2?${families.join("&")}&display=swap` : "";
+};
+
+function FontFamilyPicker({ id, fonts, family, disabled, onSelect }: {
+  id: string;
+  fonts: GoogleFont[];
+  family: string;
+  disabled: boolean;
+  onSelect: (font: GoogleFont) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [scrollTop, setScrollTop] = useState(0);
+  const root = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const selectedName = familyName(family);
+  const filteredFonts = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase("tr-TR");
+    return fonts.filter((font) => !normalized || font.family.toLocaleLowerCase("tr-TR").includes(normalized));
+  }, [fonts, query]);
+  const rowHeight = 68;
+  const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - 2);
+  const visibleFonts = filteredFonts.slice(startIndex, startIndex + 10);
+
+  useEffect(() => {
+    setScrollTop(0);
+    if (list.current) list.current.scrollTop = 0;
+  }, [query]);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  return <div ref={root} className="relative mt-2">
+    {open && visibleFonts.length ? <link rel="stylesheet" href={previewStylesheetUrl(visibleFonts)} /> : null}
+    <button id={id} type="button" disabled={disabled} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="flex h-11 w-full items-center justify-between rounded-md border bg-white px-3 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50">
+      <span className="truncate" style={{ fontFamily: family }}>{selectedName || "Font seçin"}</span>
+      <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")} />
+    </button>
+    {open ? <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border bg-white shadow-xl">
+      <div className="border-b p-2"><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Font ara..." className="pl-9" /></div></div>
+      <div ref={list} role="listbox" aria-labelledby={id} onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)} className="h-72 overflow-y-auto p-1">
+        <div className="relative" style={{ height: filteredFonts.length * rowHeight }}>
+        {visibleFonts.map((font, visibleIndex) => {
+          const selected = font.family === selectedName;
+          const previewWeight = closestWeight(weightsFor(font, false).length ? weightsFor(font, false) : weightsFor(font, true), 400);
+          return <button key={font.family} type="button" role="option" aria-selected={selected} onClick={() => { onSelect(font); setOpen(false); setQuery(""); }} className={cn("absolute left-0 flex w-full items-center gap-3 rounded-lg px-3 text-left hover:bg-[#f2f0e9]", selected && "bg-[#edf1eb]")} style={{ height: rowHeight, top: (startIndex + visibleIndex) * rowHeight }}>
+            <span className="min-w-0 flex-1"><span className="block truncate text-xs text-slate-500">{font.family}</span><span className="mt-1 block truncate text-lg" style={{ fontFamily: `'${font.family}'`, fontWeight: previewWeight }}>İstanbul’da doğru evi bulun</span></span>
+            {selected ? <Check className="h-4 w-4 shrink-0 text-[#173f32]" /> : null}
+          </button>;
+        })}
+        </div>
+        {!filteredFonts.length ? <p className="p-5 text-center text-sm text-slate-500">Eşleşen font bulunamadı.</p> : null}
+      </div>
+    </div> : null}
+  </div>;
+}
 
 function FontControl({ id, label, fonts, family, weight, italic, disabled, onChange }: {
   id: string;
@@ -104,24 +169,21 @@ function FontControl({ id, label, fonts, family, weight, italic, disabled, onCha
   onChange: (change: { family?: string; weight?: number; italic?: boolean }) => void;
 }) {
   const selected = fonts.find((font) => font.family === family);
-  const availableWeights = weightsFor(selected, italic);
-  const weightOptions = semanticWeightOptions(availableWeights);
-  const italicWeights = weightsFor(selected, true);
-  const canItalic = Boolean(selected && selected.variants.some((variant) => variant.includes("italic")));
+  const resolvedSelected = selected || fonts.find((font) => font.family === familyName(family));
+  const availableWeights = weightsFor(resolvedSelected, italic);
+  const italicWeights = weightsFor(resolvedSelected, true);
+  const canItalic = Boolean(resolvedSelected && resolvedSelected.variants.some((variant) => variant.includes("italic")));
   return <div className="rounded-xl border bg-white p-4">
     <Label htmlFor={`${id}-family`}>{label}</Label>
-    <Input id={`${id}-family`} list={`${id}-font-list`} value={family} disabled={disabled} onChange={(event) => {
-      const nextFamily = event.target.value;
-      const font = fonts.find((item) => item.family === nextFamily);
-      if (!font) return onChange({ family: nextFamily });
+    <FontFamilyPicker id={`${id}-family`} fonts={fonts} family={family} disabled={disabled} onSelect={(font) => {
+      const nextFamily = font.family;
       const nextItalic = italic && font.variants.some((variant) => variant.includes("italic"));
       const nextWeights = weightsFor(font, nextItalic);
       onChange({ family: nextFamily, italic: nextItalic, weight: closestWeight(nextWeights, weight) });
-    }} placeholder="Font ara..." className="mt-2" />
-    <datalist id={`${id}-font-list`}>{fonts.map((font) => <option key={font.family} value={font.family} />)}</datalist>
+    }} />
     <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-3">
-      <div><Label htmlFor={`${id}-weight`}>Kalınlık</Label><select id={`${id}-weight`} disabled={disabled || !selected} value={weightOptions.some((option) => option.value === weight) ? weight : closestWeight(weightOptions.map((option) => option.value), weight)} onChange={(event) => onChange({ weight: Number(event.target.value) })} className="mt-2 h-10 w-full rounded-md border bg-white px-3 text-sm">{weightOptions.map((option) => <option key={option.label} value={option.value}>{option.label} ({option.value})</option>)}</select></div>
-      <label className="flex h-10 items-center gap-2 rounded-md border px-3 text-sm"><input type="checkbox" checked={italic && canItalic} disabled={disabled || !canItalic} onChange={(event) => { const nextItalic = event.target.checked; const nextWeights = nextItalic ? italicWeights : weightsFor(selected, false); onChange({ italic: nextItalic, weight: closestWeight(nextWeights, weight) }); }} /> İtalik</label>
+      <div><Label htmlFor={`${id}-weight`}>Kalınlık</Label><Select disabled={disabled || !resolvedSelected} value={String(availableWeights.includes(weight) ? weight : closestWeight(availableWeights, weight))} onValueChange={(value) => onChange({ weight: Number(value) })}><SelectTrigger id={`${id}-weight`} className="mt-2 bg-white"><SelectValue /></SelectTrigger><SelectContent>{availableWeights.map((option) => <SelectItem key={option} value={String(option)}><span style={{ fontFamily: family, fontWeight: option, fontStyle: italic ? "italic" : "normal" }}>{weightLabels[option] || `Kalınlık ${option}`} ({option}) — Örnek yazı</span></SelectItem>)}</SelectContent></Select></div>
+      <label className="flex h-10 items-center gap-2 rounded-md border px-3 text-sm"><input type="checkbox" checked={italic && canItalic} disabled={disabled || !canItalic} onChange={(event) => { const nextItalic = event.target.checked; const nextWeights = nextItalic ? italicWeights : weightsFor(resolvedSelected, false); onChange({ italic: nextItalic, weight: closestWeight(nextWeights, weight) }); }} /> İtalik</label>
     </div>
   </div>;
 }
@@ -162,6 +224,8 @@ const siteDraftFrom = (site: DashboardSite): SiteDraft => ({
   buttonColorCustom: site.theme_config?.colors?.buttonColorCustom || site.accent_color,
 });
 
+const themeFields = ["primary_color", "accent_color", "heading_font", "body_font", "heading_weight", "heading_italic", "body_weight", "body_italic", "buttonColorSource", "buttonColorCustom"] as const;
+
 function Metric({ label, value }: { label: string; value: string }) {
   return <Card className="rounded-[1.5rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardContent className="p-5"><div className="text-xs text-[#7a857e]">{label}</div><div className="mt-2 text-2xl font-semibold">{value}</div></CardContent></Card>;
 }
@@ -169,11 +233,12 @@ function Metric({ label, value }: { label: string; value: string }) {
 export function DashboardPage() {
   const { session, user, claimResult, claimError, isClaiming, retryClaim } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const requestedSiteId = searchParams.get("site") || "";
   const [sites, setSites] = useState<DashboardSite[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [leads, setLeads] = useState<DashboardLead[]>([]);
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
-  const [selectedSiteId, setSelectedSiteId] = useState(searchParams.get("site") || "");
+  const [selectedSiteId, setSelectedSiteId] = useState(requestedSiteId);
   const [draft, setDraft] = useState<ListingDraft & { id?: string }>(() => blankListing(""));
   const [siteDraft, setSiteDraft] = useState<SiteDraft | null>(null);
   const [loading, setLoading] = useState(true);
@@ -189,13 +254,14 @@ export function DashboardPage() {
   const [fonts, setFonts] = useState<GoogleFont[]>([]);
   const [fontsLoading, setFontsLoading] = useState(false);
   const [fontsError, setFontsError] = useState("");
-  const themePatchQueue = useRef<Promise<void>>(Promise.resolve());
-  const themePatchVersion = useRef(0);
+  const siteDraftSiteId = useRef("");
   const navigate = useNavigate();
 
   const authHeaders = useMemo(() => session ? { Authorization: `Bearer ${session.access_token}` } : {}, [session]);
   const activeSite = sites.find((site) => site.id === selectedSiteId) || sites[0] || null;
   const siteLeads = leads.filter((lead) => lead.site_id === activeSite?.id);
+  const persistedSiteDraft = activeSite ? siteDraftFrom(activeSite) : null;
+  const themeDirty = Boolean(siteDraft && persistedSiteDraft && themeFields.some((field) => siteDraft[field] !== persistedSiteDraft[field]));
 
   const loadLeads = useCallback(async (signal?: AbortSignal) => {
     if (!session) return;
@@ -217,8 +283,7 @@ export function DashboardPage() {
         const nextSites: DashboardSite[] = payload.sites || [];
         setPlan(payload.plan === "pro" ? "pro" : "free");
         setSites(nextSites);
-        const requested = searchParams.get("site");
-        const nextId = nextSites.some((site) => site.id === requested) ? requested! : nextSites[0]?.id || "";
+        const nextId = nextSites.some((site) => site.id === requestedSiteId) ? requestedSiteId : nextSites[0]?.id || "";
         setSelectedSiteId(nextId);
         await loadLeads(controller.signal);
       } catch (error) {
@@ -229,7 +294,7 @@ export function DashboardPage() {
     };
     void load();
     return () => controller.abort();
-  }, [authHeaders, claimResult, loadLeads, searchParams, session]);
+  }, [authHeaders, claimResult, loadLeads, requestedSiteId, session]);
 
   useEffect(() => {
     if (!session) return;
@@ -252,6 +317,8 @@ export function DashboardPage() {
   useEffect(() => {
     if (!activeSite || !session) {
       setListings([]);
+      setSiteDraft(null);
+      siteDraftSiteId.current = "";
       return;
     }
     const controller = new AbortController();
@@ -262,7 +329,10 @@ export function DashboardPage() {
         if (!response.ok) throw new Error(payload.error || "İlanlar yüklenemedi.");
         setListings(payload.listings || []);
         setDraft(blankListing(activeSite.id, activeSite.theme_config?.content?.address || "İstanbul"));
-        setSiteDraft(siteDraftFrom(activeSite));
+        if (siteDraftSiteId.current !== activeSite.id) {
+          siteDraftSiteId.current = activeSite.id;
+          setSiteDraft(siteDraftFrom(activeSite));
+        }
       } catch (error) {
         if (!(error instanceof DOMException && error.name === "AbortError")) toast.error(error instanceof Error ? error.message : "İlanlar yüklenemedi.");
       }
@@ -280,6 +350,7 @@ export function DashboardPage() {
   }, [loadLeads, session]);
 
   const selectSite = (siteId: string) => {
+    siteDraftSiteId.current = "";
     setSelectedSiteId(siteId);
     setSearchParams({ site: siteId });
   };
@@ -373,7 +444,7 @@ export function DashboardPage() {
   };
 
   const patchSite = async (changes: Record<string, unknown>, success: string) => {
-    if (!session || !activeSite) return;
+    if (!session || !activeSite) return false;
     setSavingSite(true);
     try {
       const response = await fetch(`/api/sites/${activeSite.id}`, { method: "PATCH", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify(changes) });
@@ -382,8 +453,10 @@ export function DashboardPage() {
       setSites((current) => current.map((site) => site.id === payload.site.id ? payload.site : site));
       setSiteDraft(siteDraftFrom(payload.site));
       toast.success(success);
+      return true;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Site güncellenemedi.");
+      return false;
     } finally {
       setSavingSite(false);
     }
@@ -392,30 +465,28 @@ export function DashboardPage() {
   const saveIdentity = () => siteDraft && patchSite({ business_name: siteDraft.business_name, headline: siteDraft.headline, tone: siteDraft.tone, phone: siteDraft.phone, email: siteDraft.email, address: siteDraft.address }, "Site ve iletişim bilgileri güncellendi.");
   const togglePublication = () => activeSite && patchSite({ status: activeSite.status === "published" ? "draft" : "published" }, activeSite.status === "published" ? "Site taslağa alındı." : "Site yayınlandı.");
 
-  const applyThemeSettings = (changes: Record<string, unknown>, nextDraft: SiteDraft) => {
-    if (!session || !activeSite) return Promise.resolve();
-    const version = ++themePatchVersion.current;
-    const siteAtRequest = activeSite;
-    setSiteDraft(nextDraft);
-    setSavingSite(true);
-    const execute = async () => {
-      try {
-        const response = await fetch(`/api/sites/${siteAtRequest.id}`, { method: "PATCH", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify(changes) });
-        const payload = await readApiJson<{ error?: string; site?: DashboardSite }>(response);
-        if (!response.ok || !payload.site) throw new Error(payload.error || "Tema ayarı kaydedilemedi.");
-        setSites((current) => current.map((site) => site.id === payload.site!.id ? payload.site! : site));
-        if (version === themePatchVersion.current) setSiteDraft(siteDraftFrom(payload.site));
-        setPreviewVersion((value) => value + 1);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Tema ayarı kaydedilemedi.");
-        if (version === themePatchVersion.current) setSiteDraft(siteDraftFrom(siteAtRequest));
-      } finally {
-        if (version === themePatchVersion.current) setSavingSite(false);
-      }
-    };
-    const task = themePatchQueue.current.then(execute, execute);
-    themePatchQueue.current = task;
-    return task;
+  const saveThemeSettings = async () => {
+    if (!siteDraft) return;
+    const saved = await patchSite({
+      primary_color: siteDraft.primary_color,
+      accent_color: siteDraft.accent_color,
+      buttonColorSource: siteDraft.buttonColorSource,
+      buttonColorCustom: siteDraft.buttonColorCustom,
+      heading_font: siteDraft.heading_font,
+      heading_weight: siteDraft.heading_weight,
+      heading_italic: siteDraft.heading_italic,
+      body_font: siteDraft.body_font,
+      body_weight: siteDraft.body_weight,
+      body_italic: siteDraft.body_italic,
+    }, "Tema ayarları kaydedildi.");
+    if (saved) setPreviewVersion((value) => value + 1);
+  };
+
+  const resetThemeSettings = () => {
+    if (!siteDraft || !persistedSiteDraft) return;
+    const next = { ...siteDraft };
+    themeFields.forEach((field) => { next[field] = persistedSiteDraft[field] as never; });
+    setSiteDraft(next);
   };
 
   const updateFont = (kind: "heading" | "body", change: { family?: string; weight?: number; italic?: boolean }) => {
@@ -428,8 +499,6 @@ export function DashboardPage() {
     if (change.weight !== undefined) next[weightKey] = change.weight;
     if (change.italic !== undefined) next[italicKey] = change.italic;
     setSiteDraft(next);
-    if (change.family !== undefined && !fonts.some((font) => font.family === change.family)) return;
-    void applyThemeSettings({ [familyKey]: next[familyKey], [weightKey]: next[weightKey], [italicKey]: next[italicKey] }, next);
   };
 
   const refineSite = async (undo = false) => {
@@ -481,7 +550,7 @@ export function DashboardPage() {
       {activeSite && activeTab === "site" && siteDraft ? (
         <div className="grid gap-6 xl:grid-cols-2">
           <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
-            <CardHeader><CardTitle>Site ve iletişim bilgileri</CardTitle><CardDescription>Değerler sites tablosundaki theme_config içeriğine ve ilgili ana kolonlara kaydedilir.</CardDescription></CardHeader>
+            <CardHeader><CardTitle>Site ve iletişim bilgileri</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div><Label>İşletme adı</Label><Input value={siteDraft.business_name} onChange={(e) => setSiteDraft({ ...siteDraft, business_name: e.target.value })} /></div>
               <div><Label>Başlık</Label><Input value={siteDraft.headline} onChange={(e) => setSiteDraft({ ...siteDraft, headline: e.target.value })} /></div>
@@ -496,15 +565,16 @@ export function DashboardPage() {
             </CardContent>
           </Card>
           <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
-            <CardHeader><CardTitle>Tema ayarları</CardTitle><CardDescription>Mevcut theme_config yalnızca seçtiğiniz alanlarda PATCH edilir; Gemini yeniden çağrılmaz.</CardDescription></CardHeader>
+            <CardHeader><CardTitle>Tema ayarları</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4"><div><Label>Ana renk</Label><Input type="color" className="h-12 p-1" value={siteDraft.primary_color} onChange={(event) => { const next = { ...siteDraft, primary_color: event.target.value }; void applyThemeSettings({ primary_color: event.target.value }, next); }} /></div><div><Label>Vurgu rengi</Label><Input type="color" className="h-12 p-1" value={siteDraft.accent_color} onChange={(event) => { const next = { ...siteDraft, accent_color: event.target.value }; void applyThemeSettings({ accent_color: event.target.value }, next); }} /></div></div>
-              <div><Label>Buton Rengi</Label><Select value={siteDraft.buttonColorSource} onValueChange={(value: "accent" | "primary" | "custom") => { const next = { ...siteDraft, buttonColorSource: value }; void applyThemeSettings({ buttonColorSource: value }, next); }}><SelectTrigger className="mt-2"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="accent">Vurgu rengiyle aynı</SelectItem><SelectItem value="primary">Ana renkle aynı</SelectItem><SelectItem value="custom">Özel renk seç</SelectItem></SelectContent></Select>{siteDraft.buttonColorSource === "custom" ? <div className="mt-3"><Label>Özel buton rengi</Label><Input type="color" className="mt-2 h-12 p-1" value={siteDraft.buttonColorCustom} onChange={(event) => { const next = { ...siteDraft, buttonColorCustom: event.target.value }; void applyThemeSettings({ buttonColorSource: "custom", buttonColorCustom: event.target.value }, next); }} /></div> : null}</div>
+              <div className="grid grid-cols-2 gap-4"><div><Label>Ana renk</Label><Input type="color" className="h-12 p-1" value={siteDraft.primary_color} onChange={(event) => setSiteDraft({ ...siteDraft, primary_color: event.target.value })} /></div><div><Label>Vurgu rengi</Label><Input type="color" className="h-12 p-1" value={siteDraft.accent_color} onChange={(event) => setSiteDraft({ ...siteDraft, accent_color: event.target.value })} /></div></div>
+              <div><Label>Buton Rengi</Label><Select value={siteDraft.buttonColorSource} onValueChange={(value: "accent" | "primary" | "custom") => setSiteDraft({ ...siteDraft, buttonColorSource: value })}><SelectTrigger className="mt-2"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="accent">Vurgu rengiyle aynı</SelectItem><SelectItem value="primary">Ana renkle aynı</SelectItem><SelectItem value="custom">Özel renk seç</SelectItem></SelectContent></Select>{siteDraft.buttonColorSource === "custom" ? <div className="mt-3"><Label>Özel buton rengi</Label><Input type="color" className="mt-2 h-12 p-1" value={siteDraft.buttonColorCustom} onChange={(event) => setSiteDraft({ ...siteDraft, buttonColorCustom: event.target.value })} /></div> : null}</div>
               {fontsError ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{fontsError}</div> : null}
+              {fontsLoading ? <p className="text-sm text-[#69756e]">Fontlar yükleniyor...</p> : null}
               <FontControl id="heading" label="Başlık fontu" fonts={fonts} family={siteDraft.heading_font} weight={siteDraft.heading_weight} italic={siteDraft.heading_italic} disabled={fontsLoading || Boolean(fontsError)} onChange={(change) => updateFont("heading", change)} />
               <FontControl id="body" label="Gövde fontu" fonts={fonts} family={siteDraft.body_font} weight={siteDraft.body_weight} italic={siteDraft.body_italic} disabled={fontsLoading || Boolean(fontsError)} onChange={(change) => updateFont("body", change)} />
-              <div className="rounded-2xl p-7 text-white" style={{ background: `linear-gradient(135deg, ${siteDraft.primary_color}, ${siteDraft.accent_color})`, fontFamily: siteDraft.body_font, fontWeight: siteDraft.body_weight, fontStyle: siteDraft.body_italic ? "italic" : "normal" }}><div className="text-xs opacity-70">Canlı tema önizlemesi</div><h3 className="mt-8 text-4xl" style={{ fontFamily: siteDraft.heading_font, fontWeight: siteDraft.heading_weight, fontStyle: siteDraft.heading_italic ? "italic" : "normal" }}>{siteDraft.headline}</h3><span className="mt-6 inline-flex rounded-lg px-4 py-2 text-xs font-semibold" style={{ backgroundColor: siteDraft.buttonColorSource === "primary" ? siteDraft.primary_color : siteDraft.buttonColorSource === "custom" ? siteDraft.buttonColorCustom : siteDraft.accent_color }}>Örnek buton</span></div>
-              <p className="text-xs text-[#69756e]">{savingSite ? "Kaydediliyor ve canlı önizleme yenileniyor..." : `${fonts.length ? `${fonts.length} Google Font` : "Font kataloğu"} · Değişiklikler otomatik kaydedilir.`}</p>
+              <div className="rounded-2xl p-7 text-white" style={{ background: `linear-gradient(135deg, ${siteDraft.primary_color}, ${siteDraft.accent_color})`, fontFamily: siteDraft.body_font, fontWeight: siteDraft.body_weight, fontStyle: siteDraft.body_italic ? "italic" : "normal" }}><div className="text-xs opacity-70">Tema önizlemesi</div><h3 className="mt-8 text-4xl" style={{ fontFamily: siteDraft.heading_font, fontWeight: siteDraft.heading_weight, fontStyle: siteDraft.heading_italic ? "italic" : "normal" }}>{siteDraft.headline}</h3><span className="mt-6 inline-flex rounded-lg px-4 py-2 text-xs font-semibold" style={{ backgroundColor: siteDraft.buttonColorSource === "primary" ? siteDraft.primary_color : siteDraft.buttonColorSource === "custom" ? siteDraft.buttonColorCustom : siteDraft.accent_color }}>Örnek buton</span></div>
+              <div className="flex flex-wrap items-center gap-2"><Button onClick={() => void saveThemeSettings()} disabled={savingSite || !themeDirty}>{savingSite ? "Kaydediliyor..." : "Tema ayarlarını kaydet"}</Button><Button type="button" variant="outline" onClick={resetThemeSettings} disabled={savingSite || !themeDirty}>Değişiklikleri iptal et</Button>{themeDirty ? <span className="text-xs text-amber-700">Kaydedilmemiş değişiklikler var.</span> : null}</div>
             </CardContent>
           </Card>
           <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] xl:col-span-2">
