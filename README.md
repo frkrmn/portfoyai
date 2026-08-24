@@ -28,6 +28,7 @@ adapter and is not used as the production backend.
 Configure these Vercel environment variables for Production and Preview:
 
 - `GEMINI_API_KEY`
+- `ADMIN_EMAILS` (comma-separated emails that may own more than one site)
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `VITE_SUPABASE_URL`

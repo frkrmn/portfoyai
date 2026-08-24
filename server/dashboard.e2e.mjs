@@ -30,7 +30,7 @@ try {
     accent_color: "#D86F45",
     headline: "Ankara'da doğru portföyü kolayca bulun",
     region_focus: "Çankaya, Yenimahalle",
-  }, `dashboard-e2e-session-${suffix}`, userId);
+  }, userId);
   siteId = site.id;
 
   const { data: signedIn, error: signInError } = await supabase.auth.signInWithPassword({ email, password });

@@ -39,12 +39,12 @@ export default function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<LandingPage />} />
-              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/auth" element={<RequireAuth><AuthPage /></RequireAuth>} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
               <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/preview/:siteId" element={<GeneratedSitePreviewPage />} />
+              <Route path="/preview/:siteId" element={<RequireAuth><GeneratedSitePreviewPage /></RequireAuth>} />
               <Route path="/site/:slug" element={<SiteRenderer view="home" />} />
               <Route path="/site/:slug/listings" element={<SiteRenderer view="listings" />} />
               <Route path="/site/:slug/listings/:listingId" element={<SiteRenderer view="detail" />} />

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -35,7 +35,8 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { getSiteSessionId } from "@/lib/site-session";
+import { clearPendingPrompt, getPendingPrompt, savePendingPrompt } from "@/lib/pending-prompt";
+import { readApiJson } from "@/lib/api";
 import { toast } from "sonner";
 import { formatDateTR, formatTRY, generateThemeFromPrompt } from "./mock";
 import { usePortfoyAI } from "./store";
@@ -384,6 +385,7 @@ export function ListingForm({
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { state, setPrompt } = usePortfoyAI();
   usePageMeta("PortföyAI — Emlak markanız için akıllı web sitesi", "Portföyünüzü seçkin bir web sitesine dönüştürün; ilanlarınızı yönetin ve talepleri tek yerde toplayın.");
   const prompt = state.onboardingPrompt;
@@ -391,7 +393,20 @@ export function LandingPage() {
   const previewListings = state.listings.slice(0, 3);
   const demoSubdomain = state.sites[0]?.subdomain || "kaya-gayrimenkul";
 
-  const continueWithDesign = () => navigate("/auth?prompt=" + encodeURIComponent(prompt));
+  const continueWithDesign = () => {
+    const normalizedPrompt = prompt.trim();
+    if (normalizedPrompt.length < 10) {
+      toast.error("Lütfen işinizi en az 10 karakterle anlatın.");
+      return;
+    }
+    savePendingPrompt(normalizedPrompt);
+    if (user) {
+      navigate("/auth");
+      return;
+    }
+    toast.info("Sitenizi oluşturmak için önce hesap oluşturmanız gerekiyor — birazdan kaldığınız yerden devam edeceksiniz.");
+    navigate("/signup", { state: { from: "/auth" } });
+  };
 
   return (
     <div className="min-h-screen overflow-hidden bg-[#f4f1ea] text-[#17231e]">
@@ -448,7 +463,7 @@ export function LandingPage() {
                   <div className="flex flex-col gap-3 border-t border-[#173f32]/10 px-1 pt-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="px-3 text-xs leading-5 text-[#758078]">Canlı önizleme yazdıkça güncellenir.</div>
                     <Button onClick={continueWithDesign} className="h-12 rounded-full bg-[#d86f45] px-5 text-white shadow-[0_10px_24px_rgba(216,111,69,0.24)] hover:bg-[#c55f38]">
-                      Tasarımımla devam et
+                      Sitemi oluştur
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
@@ -584,7 +599,7 @@ export function LandingPage() {
         <section id="sss" className="border-t border-[#173f32]/10 bg-[#ebe7de]">
           <div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[0.7fr_1.3fr] lg:px-10 lg:py-24">
             <div><div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a35f3d]">Sık sorulanlar</div><h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em]">Aklınıza takılanlar.</h2></div>
-            <div className="divide-y divide-[#173f32]/12 border-y border-[#173f32]/12">{[{ q: "Siteyi görmek için hesap açmam gerekiyor mu?", a: "Hayır. İşinizi anlattığınız anda tasarım önizlemesi oluşur. Kaydolma adımı yalnızca tasarımınızı kaydetmek ve yayınlamak istediğinizde gelir." }, { q: "Tasarımı daha sonra değiştirebilir miyim?", a: "Evet. Renkleri, yazı karakterlerini ve site metinlerini panelinizden dilediğiniz zaman güncelleyebilirsiniz." }, { q: "İlanlarımı nasıl eklerim?", a: "Paneldeki ilan formundan fotoğraf, fiyat, oda sayısı, konum ve diğer bilgileri ekleyebilirsiniz. İlan açıklamasını AI ile oluşturup yayınlamadan önce düzenleyebilirsiniz." }, { q: "Müşteri talepleri nereye gelir?", a: "Site ve ilan sayfalarındaki formlardan gelen tüm talepler, ilgili portföy bilgisiyle birlikte panelinizdeki Talepler alanında toplanır." }].map((item) => <details key={item.q} className="group py-6"><summary className="flex cursor-pointer list-none items-center justify-between gap-6 font-semibold"><span>{item.q}</span><Plus className="h-5 w-5 shrink-0 transition-transform group-open:rotate-45" /></summary><p className="max-w-2xl pt-4 text-sm leading-7 text-[#66726b]">{item.a}</p></details>)}</div>
+            <div className="divide-y divide-[#173f32]/12 border-y border-[#173f32]/12">{[{ q: "Siteyi oluşturmak için hesap açmam gerekiyor mu?", a: "Evet. Yazdığınız işletme tanımı tarayıcınızda korunur; giriş veya kayıt işlemi biter bitmez site oluşturma otomatik devam eder." }, { q: "Tasarımı daha sonra değiştirebilir miyim?", a: "Evet. Renkleri, yazı karakterlerini ve site metinlerini panelinizden dilediğiniz zaman güncelleyebilirsiniz." }, { q: "İlanlarımı nasıl eklerim?", a: "Paneldeki ilan formundan fotoğraf, fiyat, oda sayısı, konum ve diğer bilgileri ekleyebilirsiniz. İlan açıklamasını AI ile oluşturup yayınlamadan önce düzenleyebilirsiniz." }, { q: "Müşteri talepleri nereye gelir?", a: "Site ve ilan sayfalarındaki formlardan gelen tüm talepler, ilgili portföy bilgisiyle birlikte panelinizdeki Talepler alanında toplanır." }].map((item) => <details key={item.q} className="group py-6"><summary className="flex cursor-pointer list-none items-center justify-between gap-6 font-semibold"><span>{item.q}</span><Plus className="h-5 w-5 shrink-0 transition-transform group-open:rotate-45" /></summary><p className="max-w-2xl pt-4 text-sm leading-7 text-[#66726b]">{item.a}</p></details>)}</div>
           </div>
         </section>
       </main>
@@ -599,14 +614,13 @@ export function LandingPage() {
 export function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialPrompt = searchParams.get("prompt") || "Kadıköy'de lüks daire satan modern ve güvenilir bir emlakçıyım";
+  const initialPrompt = getPendingPrompt() || searchParams.get("prompt") || "";
   const { state } = usePortfoyAI();
   const { session } = useAuth();
   const [prompt, setPrompt] = useState(initialPrompt);
-  const [name, setName] = useState("Demet Kaya");
-  const [email, setEmail] = useState("demet@portfoyai.com");
-  const [phone, setPhone] = useState("+90 532 555 00 10");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState("");
+  const generationStarted = useRef(false);
 
   usePageMeta("PortföyAI - Onboarding", "Emlak işletmenizi anlatın, PortföyAI sitenizi oluştursun.");
   const preview = useMemo(() => generateThemeFromPrompt(prompt), [prompt]);
@@ -619,33 +633,47 @@ export function AuthPage() {
     headline: "Doğru ev, doğru hikâyeyle başlar.",
   };
 
-  const handleGenerateSite = async () => {
+  const handleGenerateSite = useCallback(async () => {
+    if (!session || generationStarted.current || prompt.trim().length < 10) return;
+    generationStarted.current = true;
     setIsGenerating(true);
+    setGenerationError("");
     try {
       const response = await fetch("/api/generate-theme", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Session-ID": getSiteSessionId(),
-          ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ prompt }),
       });
-      const payload = await response.json();
+      const payload = await readApiJson<{ error?: string; code?: string; site_id?: string; slug?: string; public_path?: string; redirect_path?: string }>(response);
+      if (response.status === 409 && payload.code === "SITE_LIMIT_REACHED") {
+        toast.info(payload.error || "Zaten bir siteniz var, buradan düzenleyebilirsiniz.");
+        navigate(payload.redirect_path || "/dashboard", { replace: true });
+        return;
+      }
       if (!response.ok) throw new Error(payload.error || "Site configuration could not be generated.");
       if (!payload.site_id) throw new Error("The generated site was saved without an id.");
       if (!payload.slug || !payload.public_path) throw new Error("The generated site was saved without a public URL.");
 
+      clearPendingPrompt();
       toast.success(`Siteniz hazır: ${payload.public_path}`);
       navigate(payload.public_path);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected generation error";
       console.error("[onboarding] generate-theme request failed", error);
+      setGenerationError(message);
       toast.error(message);
+      generationStarted.current = false;
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [navigate, prompt, session]);
+
+  useEffect(() => {
+    void handleGenerateSite();
+  }, [handleGenerateSite]);
 
   return (
     <div className="min-h-screen bg-[#f4f1ea] text-[#17231e]">
@@ -658,20 +686,18 @@ export function AuthPage() {
         <div className="mx-auto w-full max-w-xl">
           <div className="mb-8 flex items-center gap-2">{[{ no: "01", label: "Tasarım", done: true }, { no: "02", label: "Bilgileriniz", done: false }, { no: "03", label: "Yayınla", done: false }].map((step, index) => <div key={step.no} className="flex items-center gap-2"><div className={cn("grid h-8 w-8 place-items-center rounded-full text-[10px] font-semibold", step.done || index === 1 ? "bg-[#173f32] text-white" : "border border-[#173f32]/15 bg-white/50 text-[#7b857f]")}>{step.done ? <Check className="h-3.5 w-3.5" /> : step.no}</div><span className={cn("hidden text-xs sm:block", index === 1 ? "font-semibold text-[#173f32]" : "text-[#8a948e]")}>{step.label}</span>{index < 2 ? <div className="mx-1 h-px w-5 bg-[#173f32]/15 sm:w-8" /> : null}</div>)}</div>
 
-          <Badge className="rounded-full border border-[#173f32]/10 bg-white/65 px-4 py-2 text-[#173f32] shadow-sm hover:bg-white/65"><Sparkles className="mr-2 h-3.5 w-3.5" />Tasarımınız hazır</Badge>
-          <h1 className="mt-6 text-5xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-6xl">Sitenizi kaydedelim.</h1>
-          <p className="mt-5 max-w-lg text-base leading-7 text-[#66726b]">Tasarıma dilediğiniz zaman geri dönebilirsiniz. Şimdilik yalnızca çalışma alanınızı oluşturmak için temel iletişim bilgilerinize ihtiyacımız var.</p>
+          <Badge className="rounded-full border border-[#173f32]/10 bg-white/65 px-4 py-2 text-[#173f32] shadow-sm hover:bg-white/65"><Sparkles className="mr-2 h-3.5 w-3.5" />Hesabınız hazır</Badge>
+          <h1 className="mt-6 text-5xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-6xl">Kaldığınız yerden devam ediyoruz.</h1>
+          <p className="mt-5 max-w-lg text-base leading-7 text-[#66726b]">İşletme tanımınız korundu. Siteniz şimdi hesabınıza bağlı olarak otomatik hazırlanıyor.</p>
 
           <Card className="mt-8 rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-[0_22px_65px_rgba(39,52,45,0.10)]">
             <CardContent className="space-y-5 p-6 sm:p-7">
-              <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="auth-name">Adınız ve soyadınız</Label><Input id="auth-name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className="h-12 rounded-xl border-[#173f32]/10 bg-white" /></div><div className="space-y-2"><Label htmlFor="auth-phone">Telefon</Label><Input id="auth-phone" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="h-12 rounded-xl border-[#173f32]/10 bg-white" /></div></div>
-              <div className="space-y-2"><Label htmlFor="auth-email">E-posta adresiniz</Label><Input id="auth-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl border-[#173f32]/10 bg-white" /></div>
-              <div className="space-y-2"><div className="flex items-center justify-between gap-3"><Label htmlFor="auth-prompt">İşletme tanımınız</Label><span className="text-[11px] text-[#8a948e]">Tasarımı günceller</span></div><Textarea id="auth-prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} className="min-h-24 resize-none rounded-xl border-[#173f32]/10 bg-white leading-6" /></div>
-              <Button className="h-12 w-full rounded-full bg-[#d86f45] text-white shadow-[0_10px_24px_rgba(216,111,69,0.22)] hover:bg-[#c76039]" onClick={handleGenerateSite} disabled={isGenerating || prompt.trim().length < 10}><Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />{isGenerating ? "Gemini tasarımınızı oluşturuyor..." : "Sitemi yapay zekâ ile oluştur"}<ArrowRight className="ml-2 h-4 w-4" /></Button>
-              <div className="flex items-center justify-center gap-2 text-[11px] text-[#7d8781]"><Check className="h-3.5 w-3.5 text-[#3b725d]" />Kredi kartı gerekmez · Tasarımınızı sonra değiştirebilirsiniz</div>
+              <div className="space-y-2"><Label htmlFor="auth-prompt">İşletme tanımınız</Label><Textarea id="auth-prompt" value={prompt} readOnly className="min-h-28 resize-none rounded-xl border-[#173f32]/10 bg-white leading-6" /></div>
+              {generationError ? <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700" role="alert">{generationError}</div> : null}
+              <Button className="h-12 w-full rounded-full bg-[#d86f45] text-white shadow-[0_10px_24px_rgba(216,111,69,0.22)] hover:bg-[#c76039]" onClick={() => { generationStarted.current = false; void handleGenerateSite(); }} disabled={isGenerating || prompt.trim().length < 10}><Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />{isGenerating ? "Gemini tasarımınızı oluşturuyor..." : generationError ? "Tekrar dene" : "Otomatik oluşturma başlatılıyor..."}</Button>
+              <div className="flex items-center justify-center gap-2 text-[11px] text-[#7d8781]"><Check className="h-3.5 w-3.5 text-[#3b725d]" />İsteğiniz yalnızca site başarıyla oluşturulduğunda silinir</div>
             </CardContent>
           </Card>
-          <Button variant="ghost" onClick={() => navigate("/login")} className="mt-3 w-full rounded-full text-[#66726b]">Zaten hesabınız var mı? Giriş yapın</Button>
         </div>
 
         <div className="relative mx-auto w-full max-w-[760px] lg:pl-6">
@@ -709,7 +735,7 @@ export function GeneratedSitePreviewPage() {
       try {
         setLoadError("");
         const response = await fetch(`/api/sites/${encodeURIComponent(siteId)}`, {
-          headers: { "X-Session-ID": getSiteSessionId(), ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+          headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
           signal: controller.signal,
         });
         const payload = await response.json();

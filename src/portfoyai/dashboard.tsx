@@ -231,7 +231,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 export function DashboardPage() {
-  const { session, user, claimResult, claimError, isClaiming, retryClaim } = useAuth();
+  const { session, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedSiteId = searchParams.get("site") || "";
   const [sites, setSites] = useState<DashboardSite[]>([]);
@@ -294,7 +294,7 @@ export function DashboardPage() {
     };
     void load();
     return () => controller.abort();
-  }, [authHeaders, claimResult, loadLeads, requestedSiteId, session]);
+  }, [authHeaders, loadLeads, requestedSiteId, session]);
 
   useEffect(() => {
     if (!session) return;
@@ -535,11 +535,10 @@ export function DashboardPage() {
     <div className="space-y-7">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm text-[#78827c]">{activeSite ? `${activeSite.business_name} · ${activeSite.status === "published" ? "Yayında" : "Taslak"}` : loading ? "Siteleriniz yükleniyor..." : "Hesabınıza bağlı site bulunamadı"}</div><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Merhaba{user?.email ? `, ${user.email.split("@")[0]}` : ""}.</h1><p className="mt-2 text-sm text-[#69756e]">Sitenizi, ilanlarınızı ve taleplerinizi gerçek zamanlı yönetin.</p></div>{activeSite ? <div className="flex gap-2"><Select value={activeSite.id} onValueChange={selectSite}><SelectTrigger className="w-[220px] rounded-full bg-white"><SelectValue /></SelectTrigger><SelectContent>{sites.map((site) => <SelectItem key={site.id} value={site.id}>{site.business_name}</SelectItem>)}</SelectContent></Select><Button onClick={startNewListing} className="rounded-full bg-[#d86f45] text-white"><Plus className="mr-2 h-4 w-4" />Yeni ilan</Button></div> : null}</div>
 
-      {claimError ? <Card className="border-red-200 bg-red-50 shadow-none"><CardContent className="flex items-center justify-between gap-3 p-4 text-sm text-red-800"><span>Misafir siteniz bağlanamadı: {claimError}</span><Button variant="outline" disabled={isClaiming} onClick={() => void retryClaim()}>{isClaiming ? "Deneniyor..." : "Tekrar dene"}</Button></CardContent></Card> : null}
 
       <div className="flex gap-2 overflow-x-auto">{(["overview", "listings", "leads", "site"] as const).map((tab) => <Button key={tab} variant="ghost" onClick={() => setActiveTab(tab)} className={cn("rounded-full px-5", activeTab === tab ? "bg-[#173f32] text-white hover:bg-[#173f32] hover:text-white" : "bg-white/60")}>{tab === "overview" ? "Genel bakış" : tab === "listings" ? "Portföyler" : tab === "leads" ? "Gelen Talepler" : "Site ayarları"}</Button>)}</div>
 
-      {!activeSite && !loading ? <Card><CardContent className="p-8 text-center text-sm text-[#69756e]">Önce onboarding akışından bir site oluşturun veya misafir sitenizi bu hesaba bağlayın.</CardContent></Card> : null}
+      {!activeSite && !loading ? <Card><CardContent className="p-8 text-center text-sm text-[#69756e]">Ana sayfada işinizi anlatarak sitenizi oluşturabilirsiniz.</CardContent></Card> : null}
 
       {activeSite && activeTab === "overview" ? <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric label="Toplam portföy" value={String(listings.length)} /><Metric label="Satılık" value={String(saleCount)} /><Metric label="Kiralık" value={String(rentCount)} /><Metric label="Gelen talep" value={String(siteLeads.length)} /></div><div className="grid gap-6 xl:grid-cols-[1.4fr_.6fr]"><Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between"><div><CardTitle>Son portföyler</CardTitle><CardDescription>Supabase listings tablosundaki güncel kayıtlar</CardDescription></div><Button variant="ghost" onClick={() => setActiveTab("listings")}>Tümü <ArrowRight className="ml-2 h-4 w-4" /></Button></CardHeader><CardContent className="grid gap-4 md:grid-cols-3">{listings.slice(0, 3).map((listing) => <button key={listing.id} onClick={() => { setDraft({ ...listing }); setActiveTab("listings"); }} className="overflow-hidden rounded-2xl border bg-white text-left"><img src={getListingImage(listing)} alt={listing.title} className="aspect-[4/3] w-full object-cover" /><div className="p-4"><div className="truncate font-semibold">{listing.title}</div><div className="mt-1 text-xs text-[#7a857e]">{listing.district} · {listing.room_count} · {listing.m2} m²</div><div className="mt-3 font-semibold">{formatTRY(listing.price)}</div></div></button>)}</CardContent></Card><Card className="rounded-[2rem] border-0 bg-[#173f32] text-white"><CardContent className="p-7"><Badge className="bg-white/15 text-white">{activeSite.status === "published" ? "Yayında" : "Taslak"}</Badge><h2 className="mt-8 text-3xl font-semibold">{activeSite.business_name}</h2><p className="mt-3 text-sm text-white/60">/site/{activeSite.slug}</p><Button onClick={togglePublication} disabled={savingSite} className="mt-7 w-full rounded-full bg-white text-[#173f32]">{activeSite.status === "published" ? "Yayından kaldır" : "Yayınla"}</Button></CardContent></Card></div></> : null}
 

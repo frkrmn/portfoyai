@@ -1,4 +1,3 @@
-import claimSites from "./handlers/auth-claim-sites.mjs";
 import experiment from "./handlers/experiment.mjs";
 import fonts from "./handlers/fonts.mjs";
 import generateTheme from "./handlers/generate-theme.mjs";
@@ -16,7 +15,6 @@ import { methodNotAllowed, sendJson } from "./api-utils.mjs";
 const uuidSource = "([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})";
 
 export const apiRouteInventory = [
-  { pattern: /^\/api\/auth\/claim-sites$/, methods: ["POST"], handler: claimSites },
   { pattern: /^\/api\/experiment$/, methods: ["POST"], handler: experiment },
   { pattern: /^\/api\/fonts$/, methods: ["GET"], handler: fonts },
   { pattern: /^\/api\/generate-theme$/, methods: ["POST"], handler: generateTheme },

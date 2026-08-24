@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { GoogleGenAI } from "@google/genai";
 import { insertGeneratedSite } from "../site-persistence.mjs";
-import { getAuthenticatedUser, getSessionId, getSupabaseClient, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
+import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
 
 export const siteConfigSchema = JSON.parse(readFileSync(new URL("../site-config.schema.json", import.meta.url), "utf8"));
 export const siteConfigModel = "gemini-3.5-flash-lite";
@@ -31,14 +31,39 @@ export const siteConfigSystemPrompt = [
   "Do not inspect files, call tools, or modify anything.",
 ].join("\n");
 
+const adminEmails = () => new Set(
+  String(process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLocaleLowerCase("en-US"))
+    .filter(Boolean),
+);
+
+const existingSiteResponse = (response, site) => sendJson(response, 409, {
+  error: "Zaten bir siteniz var, buradan düzenleyebilirsiniz.",
+  code: "SITE_LIMIT_REACHED",
+  existing_site: { id: site.id, slug: site.slug },
+  redirect_path: `/dashboard?site=${site.id}`,
+});
+
 export default async function handler(request, response) {
   if (request.method !== "POST") return methodNotAllowed(response, ["POST"]);
   try {
+    const user = await getAuthenticatedUser(request);
     const body = await readJsonBody(request);
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (prompt.length < 10) return sendJson(response, 400, { error: "Please describe the real-estate business in at least 10 characters." });
-    const sessionId = getSessionId(request);
-    if (!sessionId) return sendJson(response, 400, { error: "Missing or invalid X-Session-ID header." });
+    const isAdmin = adminEmails().has(String(user.email || "").toLocaleLowerCase("en-US"));
+    if (!isAdmin) {
+      const existing = await getSupabaseClient()
+        .from("sites")
+        .select("id, slug")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existing.error) throw new Error(`Failed to check existing site ownership: ${existing.error.message}`);
+      if (existing.data) return existingSiteResponse(response, existing.data);
+    }
     if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY environment variable is not set.");
 
     const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -53,8 +78,17 @@ export default async function handler(request, response) {
     const config = JSON.parse(result.text);
     const model = result.modelVersion || siteConfigModel;
     console.info(`[generate-theme] Gemini structured response received in ${Date.now() - startedAt}ms; model=${model}`);
-    const user = await getAuthenticatedUser(request, false);
-    const site = await insertGeneratedSite(getSupabaseClient(), config, sessionId, user?.id ?? null);
+    let site;
+    try {
+      site = await insertGeneratedSite(getSupabaseClient(), config, user.id, { siteLimitExempt: isAdmin });
+    } catch (error) {
+      if (!isAdmin && error instanceof Error && error.message === "SITE_LIMIT_REACHED") {
+        const existing = await getSupabaseClient().from("sites").select("id, slug").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (existing.error) throw new Error(`Failed to resolve existing site after a concurrent generation: ${existing.error.message}`);
+        if (existing.data) return existingSiteResponse(response, existing.data);
+      }
+      throw error;
+    }
     return sendJson(response, 200, {
       config,
       site_id: site.id,
@@ -65,7 +99,6 @@ export default async function handler(request, response) {
       meta: { provider: "gemini", model },
     });
   } catch (error) {
-    console.error("[generate-theme] Gemini generation failed", error);
-    return sendJson(response, 500, { error: error instanceof Error ? error.message : String(error) });
+    return handleKnownError(response, error, "[generate-theme] Generation failed");
   }
 }

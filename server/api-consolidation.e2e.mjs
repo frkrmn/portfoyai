@@ -30,18 +30,12 @@ try {
 
   const generated = await json(await fetch(`${baseUrl}/api/generate-theme`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Session-ID": sessionId },
+    headers: authenticatedJson,
     body: JSON.stringify({ prompt: "Ankara'da genel amaçlı, orta segment konut ve daire alım-satımı yapan bir emlakçıyım, standart bir web sitesi yeterli, özel bir tarz beklentim yok." }),
   }));
   siteId = generated.site_id;
   assert.equal(generated.config.template_id, "clean-modern");
   assert.equal(generated.starter_listings_count, 6);
-
-  const claimed = await json(await fetch(`${baseUrl}/api/auth/claim-sites`, {
-    method: "POST",
-    headers: { ...bearer, "X-Session-ID": sessionId },
-  }));
-  assert.ok(claimed.claimedSiteIds.includes(siteId));
 
   const owned = await json(await fetch(`${baseUrl}/api/sites`, { headers: bearer }));
   assert.ok(owned.sites.some((candidate) => candidate.id === siteId));

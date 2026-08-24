@@ -1,13 +1,9 @@
-import { dashboardSite, getAuthenticatedUser, getSessionId, getSupabaseClient, handleKnownError, hexColorPattern, methodNotAllowed, readJsonBody, routeParam, sendJson, uuidPattern } from "../api-utils.mjs";
+import { dashboardSite, getAuthenticatedUser, getSupabaseClient, handleKnownError, hexColorPattern, methodNotAllowed, readJsonBody, routeParam, sendJson, uuidPattern } from "../api-utils.mjs";
 import { mergeThemeConfig } from "../site-theme.mjs";
 
 const getSite = async (request, response, siteId) => {
-  const sessionId = getSessionId(request);
-  const user = await getAuthenticatedUser(request, false);
-  if (!sessionId && !user) return sendJson(response, 401, { error: "Authentication or a browser session is required." });
-  let query = getSupabaseClient().from("sites").select("id, slug, user_id, theme_config, business_name, tone, primary_color, accent_color, headline, status, created_at").eq("id", siteId);
-  query = user ? query.eq("user_id", user.id) : query.eq("session_id", sessionId).is("user_id", null);
-  const { data: site, error } = await query.maybeSingle();
+  const user = await getAuthenticatedUser(request);
+  const { data: site, error } = await getSupabaseClient().from("sites").select("id, slug, user_id, theme_config, business_name, tone, primary_color, accent_color, headline, status, created_at").eq("id", siteId).eq("user_id", user.id).maybeSingle();
   if (error) throw new Error(`Failed to load site: ${error.message}`);
   if (!site) return sendJson(response, 404, { error: "Site not found." });
   return sendJson(response, 200, {

@@ -135,7 +135,7 @@ export const buildStarterListings = (config, siteId) => {
   });
 };
 
-export const insertGeneratedSite = async (supabase, config, sessionId, userId = null) => {
+export const insertGeneratedSite = async (supabase, config, userId, { siteLimitExempt = false } = {}) => {
   const baseSlug = slugifyBusinessName(config.business_name);
 
   for (let attempt = 0; attempt < 25; attempt += 1) {
@@ -143,8 +143,8 @@ export const insertGeneratedSite = async (supabase, config, sessionId, userId = 
     const { data: site, error } = await supabase
       .from("sites")
       .insert({
-        session_id: sessionId,
         user_id: userId,
+        ...(siteLimitExempt ? { owner_limit_exempt: true } : {}),
         slug,
         business_name: config.business_name,
         tone: config.tone,
@@ -183,6 +183,9 @@ export const insertGeneratedSite = async (supabase, config, sessionId, userId = 
       const { error: cleanupError } = await supabase.from("sites").delete().eq("id", site.id);
       const cleanupMessage = cleanupError ? ` Cleanup also failed: ${cleanupError.message}` : "";
       throw new Error(`Failed to save starter listings: ${listingsError.message}.${cleanupMessage}`);
+    }
+    if (error.code === "23505" && /sites_one_per_user_idx|user_id/.test(`${error.message} ${error.details || ""}`)) {
+      throw new Error("SITE_LIMIT_REACHED");
     }
     if (error.code !== "23505") {
       throw new Error(`Failed to save generated site: ${error.message}`);
