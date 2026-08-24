@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { Listing, ThemeConfig } from "@/portfoyai/types";
+import type { LayoutFineTune, Listing, ThemeConfig } from "@/portfoyai/types";
 
 export type TemplateView = "home" | "listings" | "detail";
 
@@ -130,6 +130,7 @@ export type TemplateConfig = {
     showCategories: boolean;
     showTestimonial: boolean;
   };
+  layoutFineTune: LayoutFineTune;
   listings: Listing[];
   listing?: Listing;
 };
@@ -162,7 +163,17 @@ type NestedThemeConfig = {
   fonts?: Partial<TemplateConfig["fonts"]>;
   content?: Partial<TemplateContent>;
   layout?: { show_categories?: boolean; show_testimonial?: boolean };
+  layout_fine_tune?: LayoutFineTune;
 };
+
+export const fineTuneAttributes = (config: TemplateConfig) => ({
+  className: "site-fine-tune min-h-screen",
+  "data-button-style": config.layoutFineTune.buttonStyle,
+  "data-nav-alignment": config.layoutFineTune.navAlignment,
+  "data-spacing-density": config.layoutFineTune.spacingDensity,
+  "data-card-style": config.layoutFineTune.cardStyle,
+  "data-heading-scale": config.layoutFineTune.headingScale,
+});
 
 export const warmEditorialFallbacks: TemplateContent = {
   businessName: "Seçkin Gayrimenkul",
@@ -491,6 +502,7 @@ export function createTemplateConfig(
       showCategories: raw.layout?.show_categories !== false,
       showTestimonial: raw.layout?.show_testimonial === true,
     },
+    layoutFineTune: raw.layout_fine_tune || {},
     listings: payload.listings || [],
     listing,
   };

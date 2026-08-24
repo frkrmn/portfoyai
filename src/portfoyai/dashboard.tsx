@@ -34,7 +34,15 @@ type DashboardSite = {
     fonts?: { heading?: string; body?: string };
     content?: { businessName?: string; headline?: string; bio?: string; phone?: string; email?: string; address?: string };
     layout?: Record<string, unknown>;
+    layout_fine_tune?: {
+      buttonStyle?: "solid" | "outline" | "pill" | "sharp";
+      navAlignment?: "left" | "center" | "split";
+      spacingDensity?: "compact" | "comfortable" | "spacious";
+      cardStyle?: "flat" | "shadow" | "bordered";
+      headingScale?: "modest" | "bold";
+    };
   };
+  can_undo: boolean;
   status: "draft" | "published";
   created_at: string;
 };
@@ -110,6 +118,11 @@ export function DashboardPage() {
   const [savingSite, setSavingSite] = useState(false);
   const [plan, setPlan] = useState<"free" | "pro">("free");
   const [openingPaywall, setOpeningPaywall] = useState(false);
+  const [refineRequest, setRefineRequest] = useState("");
+  const [refining, setRefining] = useState(false);
+  const [refineNote, setRefineNote] = useState<string | null>(null);
+  const [refineFields, setRefineFields] = useState<string[]>([]);
+  const [previewVersion, setPreviewVersion] = useState(0);
   const navigate = useNavigate();
 
   const authHeaders = useMemo(() => session ? { Authorization: `Bearer ${session.access_token}` } : {}, [session]);
@@ -294,6 +307,32 @@ export function DashboardPage() {
   const saveTheme = () => siteDraft && patchSite({ primary_color: siteDraft.primary_color, accent_color: siteDraft.accent_color, heading_font: siteDraft.heading_font, body_font: siteDraft.body_font }, "Tema güncellendi; canlı siteye yansıdı.");
   const togglePublication = () => activeSite && patchSite({ status: activeSite.status === "published" ? "draft" : "published" }, activeSite.status === "published" ? "Site taslağa alındı." : "Site yayınlandı.");
 
+  const refineSite = async (undo = false) => {
+    if (!session || !activeSite || (!undo && refineRequest.trim().length < 3)) return;
+    setRefining(true);
+    setRefineNote(null);
+    try {
+      const response = await fetch(`/api/sites/${activeSite.id}/refine`, {
+        method: "POST",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify(undo ? { action: "undo" } : { request: refineRequest.trim() }),
+      });
+      const payload = await readApiJson<{ error?: string; site?: DashboardSite; unsupported_note?: string | null; applied_fields?: string[] }>(response);
+      if (!response.ok || !payload.site) throw new Error(payload.error || "İnce ayar uygulanamadı.");
+      setSites((current) => current.map((site) => site.id === payload.site!.id ? payload.site! : site));
+      setSiteDraft(siteDraftFrom(payload.site));
+      setRefineNote(payload.unsupported_note || null);
+      setRefineFields(payload.applied_fields || []);
+      setPreviewVersion((value) => value + 1);
+      if (!undo && payload.applied_fields?.length) setRefineRequest("");
+      toast.success(undo ? "Son ince ayar geri alındı." : payload.applied_fields?.length ? "İnce ayar canlı siteye uygulandı." : "İstek değerlendirildi; uygulanabilir değişiklik bulunamadı.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "İnce ayar uygulanamadı.");
+    } finally {
+      setRefining(false);
+    }
+  };
+
   const saleCount = listings.filter((listing) => listing.listing_type === "sale").length;
   const rentCount = listings.filter((listing) => listing.listing_type === "rent").length;
 
@@ -338,6 +377,19 @@ export function DashboardPage() {
               <div><Label>Gövde fontu</Label><Select value={siteDraft.body_font} onValueChange={(value) => setSiteDraft({ ...siteDraft, body_font: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Inter, Arial, sans-serif">Inter</SelectItem><SelectItem value="Manrope, Inter, Arial, sans-serif">Manrope</SelectItem></SelectContent></Select></div>
               <div className="rounded-2xl p-7 text-white" style={{ background: `linear-gradient(135deg, ${siteDraft.primary_color}, ${siteDraft.accent_color})`, fontFamily: siteDraft.body_font }}><div className="text-xs opacity-70">Canlı tema önizlemesi</div><h3 className="mt-8 text-4xl" style={{ fontFamily: siteDraft.heading_font }}>{siteDraft.headline}</h3></div>
               <Button onClick={saveTheme} disabled={savingSite}>{savingSite ? "Kaydediliyor..." : "Temayı kaydet"}</Button>
+            </CardContent>
+          </Card>
+          <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] xl:col-span-2">
+            <CardHeader><CardTitle>İnce Ayar</CardTitle><CardDescription>Serbest metin isteğiniz yalnızca desteklenen renk, font, buton, menü hizası, aralık, kart ve başlık seçeneklerine eşlenir. Kod veya serbest CSS üretilmez.</CardDescription></CardHeader>
+            <CardContent className="grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
+              <div className="space-y-4">
+                <div><Label htmlFor="fine-tune-request">Mikro değişiklik isteği</Label><Textarea id="fine-tune-request" value={refineRequest} onChange={(event) => setRefineRequest(event.target.value)} maxLength={500} rows={5} placeholder="Örn. butonları daha yuvarlak yap ve menüyü ortala" /></div>
+                <div className="flex flex-wrap gap-2"><Button onClick={() => void refineSite(false)} disabled={refining || refineRequest.trim().length < 3}>{refining ? "Uygulanıyor..." : "İnce ayarı uygula"}</Button><Button variant="outline" onClick={() => void refineSite(true)} disabled={refining || !activeSite.can_undo}>Son Değişikliği Geri Al</Button></div>
+                {refineFields.length ? <div className="flex flex-wrap gap-2">{refineFields.map((field) => <Badge key={field} variant="secondary">{field}</Badge>)}</div> : null}
+                {refineNote ? <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><strong>Desteklenmeyen bölüm:</strong> {refineNote}</div> : null}
+                <p className="text-xs leading-5 text-[#69756e]">Geri alma yalnızca son başarılı ince ayarı saklar. Tamamen desteklenmeyen bir istek yeni geri alma kaydı oluşturmaz.</p>
+              </div>
+              <div className="overflow-hidden rounded-2xl border bg-white"><div className="border-b px-4 py-3 text-xs font-semibold text-[#69756e]">Canlı site önizlemesi</div><iframe key={`${activeSite.id}-${previewVersion}`} title="Canlı site önizlemesi" src={`/site/${activeSite.slug}`} className="h-[520px] w-full bg-white" /></div>
             </CardContent>
           </Card>
         </div>

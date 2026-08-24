@@ -62,6 +62,7 @@ const buildThemeConfig = (config) => {
       show_categories: !isBoldLuxury && !isCleanModern && !isNeighborhoodFriendly && !isInvestmentFocused && !isUrgentDeals && !isGuidedMatch,
       show_testimonial: isBoldLuxury || isCleanModern,
     },
+    ...(config.layout_fine_tune ? { layout_fine_tune: config.layout_fine_tune } : {}),
   };
 };
 

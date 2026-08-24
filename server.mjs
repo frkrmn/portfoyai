@@ -4,6 +4,7 @@ import generateTheme from "./api/generate-theme.js";
 import claimSites from "./api/auth/claim-sites.js";
 import sitesIndex from "./api/sites/index.js";
 import siteById from "./api/sites/[id].js";
+import refineSite from "./api/sites/[id]/refine.js";
 import siteListings from "./api/sites/[id]/listings.js";
 import listingById from "./api/listings/[id].js";
 import generateListingCopy from "./api/listings/generate-copy.js";
@@ -46,6 +47,12 @@ const server = createHttpServer(async (request, response) => {
   if (siteListingsMatch) {
     request.query.id = siteListingsMatch[1];
     return siteListings(request, response);
+  }
+
+  const siteRefineMatch = pathname.match(/^\/api\/sites\/([0-9a-f-]{36})\/refine$/i);
+  if (siteRefineMatch) {
+    request.query.id = siteRefineMatch[1];
+    return refineSite(request, response);
   }
 
   const listingMatch = pathname.match(/^\/api\/listings\/([0-9a-f-]{36})$/i);

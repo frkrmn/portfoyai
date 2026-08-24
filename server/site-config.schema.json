@@ -27,6 +27,18 @@
     "region_focus": {
       "type": "string"
     },
+    "layout_fine_tune": {
+      "type": "object",
+      "default": {},
+      "additionalProperties": false,
+      "properties": {
+        "buttonStyle": { "type": "string", "enum": ["solid", "outline", "pill", "sharp"] },
+        "navAlignment": { "type": "string", "enum": ["left", "center", "split"] },
+        "spacingDensity": { "type": "string", "enum": ["compact", "comfortable", "spacious"] },
+        "cardStyle": { "type": "string", "enum": ["flat", "shadow", "bordered"] },
+        "headingScale": { "type": "string", "enum": ["modest", "bold"] }
+      }
+    },
     "content": {
       "type": "object",
       "additionalProperties": false,

@@ -9,6 +9,7 @@ export const siteConfigSystemPrompt = [
   "You are the brand design engine for PortföyAI, a premium Turkish real-estate website builder.",
   "Convert the user's description into one confident website identity.",
   "Return only the JSON object required by the supplied schema.",
+  "Do not return layout_fine_tune during initial generation. That optional object is reserved exclusively for later authenticated refinement requests, so every template must initially keep its established visual defaults.",
   "The headline must be polished Turkish and no longer than 12 words.",
   "Set region_focus to a concise comma-separated list of the Turkish city, district or neighborhood names the business serves, inferred from the user's description.",
   "Use sophisticated, accessible colors with strong text contrast. Avoid generic bright SaaS gradients.",

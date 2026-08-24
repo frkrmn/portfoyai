@@ -120,6 +120,98 @@ All colors MUST be HSL.
   }
 }
 
+/*
+ * Bounded site refinement controls. These selectors are inert unless a
+ * layout_fine_tune value is present, so legacy/generated sites retain each
+ * template family's original hardcoded proportions.
+ */
+@layer components {
+  .site-fine-tune[data-button-style="pill"] :is(button, a.inline-flex) {
+    border-radius: 9999px !important;
+  }
+
+  .site-fine-tune[data-button-style="sharp"] :is(button, a.inline-flex) {
+    border-radius: 0 !important;
+  }
+
+  .site-fine-tune[data-button-style="outline"] :is(button, a.inline-flex) {
+    background: transparent !important;
+    border: 1px solid currentColor !important;
+    color: inherit !important;
+  }
+
+  .site-fine-tune[data-button-style="solid"] :is(button, a.inline-flex) {
+    background: var(--we-primary, var(--lux-accent, var(--cm-primary, var(--nf-primary, var(--if-primary, var(--ud-primary, var(--gm-primary))))))) !important;
+    border-color: transparent !important;
+    color: var(--we-bg, var(--lux-dark, var(--cm-on-primary, var(--nf-on-primary, var(--if-on-primary, var(--ud-on-primary, var(--gm-on-primary))))))) !important;
+  }
+
+  @media (min-width: 768px) {
+    .site-fine-tune[data-nav-alignment="center"] header {
+      position: relative;
+    }
+
+    .site-fine-tune[data-nav-alignment="center"] header nav {
+      left: 50% !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      position: absolute !important;
+      transform: translateX(-50%) !important;
+    }
+
+    .site-fine-tune[data-nav-alignment="left"] header nav {
+      margin-left: 2rem !important;
+      margin-right: auto !important;
+    }
+  }
+
+  .site-fine-tune[data-spacing-density="compact"] main > section:not(:first-child) {
+    padding-bottom: 3rem !important;
+    padding-top: 3rem !important;
+  }
+
+  .site-fine-tune[data-spacing-density="comfortable"] main > section:not(:first-child) {
+    padding-bottom: 5rem !important;
+    padding-top: 5rem !important;
+  }
+
+  .site-fine-tune[data-spacing-density="spacious"] main > section:not(:first-child) {
+    padding-bottom: 8rem !important;
+    padding-top: 8rem !important;
+  }
+
+  .site-fine-tune[data-card-style="flat"] main :is(article, aside) {
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .site-fine-tune[data-card-style="shadow"] main :is(article, aside) {
+    border-color: transparent !important;
+    box-shadow: 0 22px 55px rgb(15 23 42 / 0.16) !important;
+  }
+
+  .site-fine-tune[data-card-style="bordered"] main :is(article, aside) {
+    border: 1px solid currentColor !important;
+    box-shadow: none !important;
+  }
+
+  .site-fine-tune[data-heading-scale="modest"] h1 {
+    font-size: clamp(2.5rem, 5vw, 4.8rem) !important;
+  }
+
+  .site-fine-tune[data-heading-scale="modest"] h2 {
+    font-size: clamp(2rem, 3.5vw, 3.25rem) !important;
+  }
+
+  .site-fine-tune[data-heading-scale="bold"] h1 {
+    font-size: clamp(3.75rem, 8vw, 8rem) !important;
+  }
+
+  .site-fine-tune[data-heading-scale="bold"] h2 {
+    font-size: clamp(2.75rem, 5vw, 5rem) !important;
+  }
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;

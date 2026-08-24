@@ -1,4 +1,5 @@
 import { dashboardSite, getAuthenticatedUser, getSessionId, getSupabaseClient, handleKnownError, hexColorPattern, methodNotAllowed, readJsonBody, routeParam, sendJson, uuidPattern } from "../../server/api-utils.mjs";
+import { mergeThemeConfig } from "../../server/site-theme.mjs";
 
 const getSite = async (request, response, siteId) => {
   const sessionId = getSessionId(request);
@@ -26,10 +27,7 @@ const updateSite = async (request, response, siteId) => {
   if (currentError) throw new Error(`Failed to verify site ownership: ${currentError.message}`);
   if (!current) return sendJson(response, 404, { error: "Owned site not found." });
   const updates = {};
-  const themeConfig = structuredClone(current.theme_config || {});
-  themeConfig.colors ||= {};
-  themeConfig.fonts ||= {};
-  themeConfig.content ||= {};
+  const themePatch = {};
   if (body.status !== undefined) {
     if (!["draft", "published"].includes(body.status)) return sendJson(response, 400, { error: "Status must be draft or published." });
     updates.status = body.status;
@@ -37,51 +35,47 @@ const updateSite = async (request, response, siteId) => {
   if (body.business_name !== undefined) {
     const value = String(body.business_name).trim();
     if (!value || value.length > 160) return sendJson(response, 400, { error: "Business name is required and must be at most 160 characters." });
-    updates.business_name = value;
-    themeConfig.content.businessName = value;
+    themePatch.business_name = value;
   }
   if (body.headline !== undefined) {
     const value = String(body.headline).trim();
     if (!value || value.length > 240) return sendJson(response, 400, { error: "Headline is required and must be at most 240 characters." });
-    updates.headline = value;
-    themeConfig.content.headline = value;
+    themePatch.headline = value;
   }
   if (body.tone !== undefined) {
     const value = String(body.tone).trim();
     if (value.length > 500) return sendJson(response, 400, { error: "Description must be at most 500 characters." });
-    updates.tone = value;
-    themeConfig.content.bio = value;
+    themePatch.tone = value;
   }
   for (const key of ["phone", "email", "address"]) {
     if (body[key] !== undefined) {
       const value = String(body[key]).trim();
       if (value.length > 240) return sendJson(response, 400, { error: `${key} must be at most 240 characters.` });
-      themeConfig.content[key] = value;
+      themePatch[key] = value;
     }
   }
   if (body.primary_color !== undefined) {
     if (!hexColorPattern.test(body.primary_color)) return sendJson(response, 400, { error: "Primary color must be a six-digit hex color." });
-    updates.primary_color = body.primary_color;
-    themeConfig.colors.primary = body.primary_color;
+    themePatch.primary_color = body.primary_color;
   }
   if (body.accent_color !== undefined) {
     if (!hexColorPattern.test(body.accent_color)) return sendJson(response, 400, { error: "Accent color must be a six-digit hex color." });
-    updates.accent_color = body.accent_color;
-    themeConfig.colors.accent = body.accent_color;
+    themePatch.accent_color = body.accent_color;
   }
   if (body.heading_font !== undefined) {
     const value = String(body.heading_font).trim();
     if (!value || value.length > 160) return sendJson(response, 400, { error: "Heading font is invalid." });
-    themeConfig.fonts.heading = value;
+    themePatch.heading_font = value;
   }
   if (body.body_font !== undefined) {
     const value = String(body.body_font).trim();
     if (!value || value.length > 160) return sendJson(response, 400, { error: "Body font is invalid." });
-    themeConfig.fonts.body = value;
+    themePatch.body_font = value;
   }
   if (Object.keys(updates).length === 0 && Object.keys(body).length === 0) return sendJson(response, 400, { error: "No site changes were supplied." });
-  updates.theme_config = themeConfig;
-  const { data: site, error } = await getSupabaseClient().from("sites").update(updates).eq("id", siteId).eq("user_id", user.id).select("id, slug, business_name, tone, primary_color, accent_color, headline, theme_config, status, created_at").maybeSingle();
+  const { themeConfig, topLevel } = mergeThemeConfig(current.theme_config, themePatch);
+  Object.assign(updates, topLevel, { theme_config: themeConfig });
+  const { data: site, error } = await getSupabaseClient().from("sites").update(updates).eq("id", siteId).eq("user_id", user.id).select("id, slug, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, created_at").maybeSingle();
   if (error) throw new Error(`Failed to update site: ${error.message}`);
   if (!site) return sendJson(response, 404, { error: "Owned site not found." });
   return sendJson(response, 200, { site: dashboardSite(site) });

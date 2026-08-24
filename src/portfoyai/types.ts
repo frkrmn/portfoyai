@@ -5,12 +5,21 @@ export type FontPairing = {
   body: string;
 };
 
+export type LayoutFineTune = {
+  buttonStyle?: "solid" | "outline" | "pill" | "sharp";
+  navAlignment?: "left" | "center" | "split";
+  spacingDensity?: "compact" | "comfortable" | "spacious";
+  cardStyle?: "flat" | "shadow" | "bordered";
+  headingScale?: "modest" | "bold";
+};
+
 export type ThemeConfig = {
   variant: ThemeVariant;
   primary: string;
   accent: string;
   fontPairing: FontPairing;
   layoutVariant: "editorial" | "gallery" | "heroSplit" | "corporate";
+  layout_fine_tune?: LayoutFineTune;
 };
 
 export type GeneratedSiteConfig = {
@@ -27,6 +36,7 @@ export type GeneratedSiteConfig = {
   accent_color: string;
   headline: string;
   region_focus?: string;
+  layout_fine_tune?: LayoutFineTune;
 };
 
 export type Agent = {
