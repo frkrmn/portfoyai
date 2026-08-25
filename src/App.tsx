@@ -17,13 +17,15 @@ import {
 import { DashboardPage } from "./portfoyai/dashboard";
 import { PricingPage } from "./portfoyai/pricing";
 import { SiteRenderer } from "./templates/SiteRenderer";
+import { useTranslation } from "react-i18next";
 
 const queryClient = new QueryClient();
 
 function RequireAuth({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { user, isLoading } = useAuth();
   const location = useLocation();
-  if (isLoading) return <div className="grid min-h-screen place-items-center bg-[#f4f1ea] text-sm text-slate-600">Oturum yükleniyor...</div>;
+  if (isLoading) return <div className="grid min-h-screen place-items-center bg-[#f4f1ea] text-sm text-slate-600">{t("auth.sessionLoading")}</div>;
   if (!user) return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />;
   return children;
 }

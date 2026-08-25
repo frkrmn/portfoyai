@@ -9,14 +9,16 @@ import { isSupabaseAuthConfigured, supabase } from "@/lib/supabase";
 import { getPendingPrompt } from "@/lib/pending-prompt";
 import { useAuth } from "./auth";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-[#f4f1ea] px-5 py-8 text-[#17231e]">
       <div className="mx-auto max-w-md">
         <Link to="/" className="mb-10 flex items-center justify-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-full bg-[#173f32] text-white"><Home className="h-4 w-4" /></div>
-          <span className="text-lg font-bold">PortföyAI</span>
+          <span className="text-lg font-bold">{t("common.brand")}</span>
         </Link>
         {children}
       </div>
@@ -25,6 +27,7 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
 }
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,14 +45,15 @@ export function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
     if (error) return toast.error(error.message);
-    toast.success(hasPendingPrompt ? "Giriş yapıldı. Siteniz şimdi otomatik olarak oluşturuluyor." : "Giriş yapıldı.");
+    toast.success(t(hasPendingPrompt ? "auth.login.pendingSuccess" : "auth.login.success"));
     navigate(destination, { replace: true });
   };
 
-  return <AuthLayout><Card className="rounded-[2rem] border-[#173f32]/10 bg-white"><CardHeader><CardTitle className="text-3xl">Giriş yap</CardTitle><CardDescription>{hasPendingPrompt ? "Sitenizi oluşturmak için giriş yapın — ardından kaldığınız yerden otomatik devam edeceğiz." : "Sitelerinizi yönetmek ve yayınlamak için hesabınıza girin."}</CardDescription></CardHeader><CardContent><form onSubmit={submit} className="space-y-4"><div className="space-y-2"><Label htmlFor="login-email">E-posta</Label><Input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div><div className="space-y-2"><Label htmlFor="login-password">Şifre</Label><Input id="login-password" type="password" autoComplete="current-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required /></div><Button className="w-full rounded-full bg-[#173f32]" disabled={submitting || !isSupabaseAuthConfigured}>{submitting ? "Giriş yapılıyor..." : "Giriş yap"}</Button><Button type="button" variant="outline" className="w-full rounded-full" disabled={!isSupabaseAuthConfigured} onClick={() => void supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}${hasPendingPrompt ? "/auth" : "/dashboard"}` } })}>Google ile devam et</Button><p className="text-center text-sm text-slate-600">Hesabınız yok mu? <Link className="font-semibold text-[#173f32] underline" to="/signup" state={{ from: destination }}>Kaydolun</Link></p>{!isSupabaseAuthConfigured ? <p className="text-center text-xs text-red-600">Supabase istemci ortam değişkenleri eksik.</p> : null}</form></CardContent></Card></AuthLayout>;
+  return <AuthLayout><Card className="rounded-[2rem] border-[#173f32]/10 bg-white"><CardHeader><CardTitle className="text-3xl">{t("auth.login.title")}</CardTitle><CardDescription>{t(hasPendingPrompt ? "auth.login.pendingDescription" : "auth.login.description")}</CardDescription></CardHeader><CardContent><form onSubmit={submit} className="space-y-4"><div className="space-y-2"><Label htmlFor="login-email">{t("auth.login.emailLabel")}</Label><Input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div><div className="space-y-2"><Label htmlFor="login-password">{t("auth.login.passwordLabel")}</Label><Input id="login-password" type="password" autoComplete="current-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required /></div><Button className="w-full rounded-full bg-[#173f32]" disabled={submitting || !isSupabaseAuthConfigured}>{t(submitting ? "auth.login.submitting" : "auth.login.submit")}</Button><Button type="button" variant="outline" className="w-full rounded-full" disabled={!isSupabaseAuthConfigured} onClick={() => void supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}${hasPendingPrompt ? "/auth" : "/dashboard"}` } })}>{t("auth.login.google")}</Button><p className="text-center text-sm text-slate-600">{t("auth.login.noAccount")} <Link className="font-semibold text-[#173f32] underline" to="/signup" state={{ from: destination }}>{t("auth.login.signupLink")}</Link></p>{!isSupabaseAuthConfigured ? <p className="text-center text-xs text-red-600">{t("auth.configMissing")}</p> : null}</form></CardContent></Card></AuthLayout>;
 }
 
 export function SignupPage() {
+  const { t } = useTranslation();
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,12 +79,12 @@ export function SignupPage() {
     setSubmitting(false);
     if (error) return toast.error(error.message);
     if (data.session) {
-      toast.success(hasPendingPrompt ? "Hesabınız oluşturuldu. Siteniz şimdi otomatik olarak hazırlanıyor." : "Hesabınız oluşturuldu.");
+      toast.success(t(hasPendingPrompt ? "auth.signup.pendingSuccess" : "auth.signup.success"));
       navigate(destination, { replace: true });
     } else {
       setConfirmationSent(true);
     }
   };
 
-  return <AuthLayout><Card className="rounded-[2rem] border-[#173f32]/10 bg-white"><CardHeader><CardTitle className="text-3xl">Hesap oluştur</CardTitle><CardDescription>{hasPendingPrompt ? "Sitenizi oluşturmak için önce hesabınızı oluşturun — doğrulamadan sonra kaldığınız yerden otomatik devam edeceğiz." : "Sitenizi oluşturmak ve yönetmek için ücretsiz hesabınızı açın."}</CardDescription></CardHeader><CardContent>{confirmationSent ? <div className="space-y-4 text-sm leading-6"><p><strong>{email}</strong> adresine doğrulama bağlantısı gönderdik.</p><p>Bağlantıyı bu tarayıcıda açtığınızda oturumunuz başlayacak ve bekleyen site isteğiniz otomatik olarak devam edecek.</p><Button asChild variant="outline" className="w-full rounded-full"><Link to="/login" state={{ from: destination }}>Giriş sayfasına dön</Link></Button></div> : <form onSubmit={submit} className="space-y-4"><div className="space-y-2"><Label htmlFor="signup-email">E-posta</Label><Input id="signup-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div><div className="space-y-2"><Label htmlFor="signup-password">Şifre</Label><Input id="signup-password" type="password" autoComplete="new-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required /></div><Button className="w-full rounded-full bg-[#d86f45]" disabled={submitting || !isSupabaseAuthConfigured}>{submitting ? "Hesap oluşturuluyor..." : "Hesap oluştur ve devam et"}</Button><Button type="button" variant="outline" className="w-full rounded-full" disabled={!isSupabaseAuthConfigured} onClick={() => void supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}${hasPendingPrompt ? "/auth" : "/dashboard"}` } })}>Google ile kaydol</Button><p className="text-center text-sm text-slate-600">Zaten hesabınız var mı? <Link className="font-semibold underline" to="/login" state={{ from: destination }}>Giriş yapın</Link></p></form>}</CardContent></Card></AuthLayout>;
+  return <AuthLayout><Card className="rounded-[2rem] border-[#173f32]/10 bg-white"><CardHeader><CardTitle className="text-3xl">{t("auth.signup.title")}</CardTitle><CardDescription>{t(hasPendingPrompt ? "auth.signup.pendingDescription" : "auth.signup.description")}</CardDescription></CardHeader><CardContent>{confirmationSent ? <div className="space-y-4 text-sm leading-6"><p>{t("auth.signup.confirmationSent", { email })}</p><p>{t("auth.signup.confirmationHelp")}</p><Button asChild variant="outline" className="w-full rounded-full"><Link to="/login" state={{ from: destination }}>{t("auth.signup.backToLogin")}</Link></Button></div> : <form onSubmit={submit} className="space-y-4"><div className="space-y-2"><Label htmlFor="signup-email">{t("auth.signup.emailLabel")}</Label><Input id="signup-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div><div className="space-y-2"><Label htmlFor="signup-password">{t("auth.signup.passwordLabel")}</Label><Input id="signup-password" type="password" autoComplete="new-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required /></div><Button className="w-full rounded-full bg-[#d86f45]" disabled={submitting || !isSupabaseAuthConfigured}>{t(submitting ? "auth.signup.submitting" : "auth.signup.submit")}</Button><Button type="button" variant="outline" className="w-full rounded-full" disabled={!isSupabaseAuthConfigured} onClick={() => void supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}${hasPendingPrompt ? "/auth" : "/dashboard"}` } })}>{t("auth.signup.google")}</Button><p className="text-center text-sm text-slate-600">{t("auth.signup.hasAccount")} <Link className="font-semibold underline" to="/login" state={{ from: destination }}>{t("auth.signup.loginLink")}</Link></p></form>}</CardContent></Card></AuthLayout>;
 }
