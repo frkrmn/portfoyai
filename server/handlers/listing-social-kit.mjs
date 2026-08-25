@@ -1,6 +1,6 @@
 import { ImageResponse } from "@vercel/og";
 import { createElement as h } from "react";
-import { getAuthenticatedUser, getOwnedSite, getSupabaseClient, handleKnownError, methodNotAllowed, sendJson, uuidPattern } from "../api-utils.mjs";
+import { getAuthenticatedUser, getOwnedSite, getSupabaseClient, handleKnownError, listingSelect, methodNotAllowed, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
 
 const placeholderImages = [
   "/images/listings/bagdat-residence.jpg",
@@ -43,6 +43,10 @@ const readableText = (background) => {
   return (red * 299 + green * 587 + blue * 114) / 1000 > 145 ? "#17211C" : "#FFFFFF";
 };
 const priceText = (listing) => `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(Number(listing.price))} ${listing.currency === "USD" ? "USD" : listing.currency === "EUR" ? "EUR" : "TL"}`;
+const locationText = (listing) => {
+  const structured = [listing.province_name, listing.district_name || listing.district, listing.neighborhood_name].filter(Boolean);
+  return structured.length > 1 ? structured.join(" / ") : listing.district;
+};
 
 const badge = (text, accent, accentText, story = false) => h("div", {
   style: {
@@ -63,7 +67,7 @@ function PostLayout({ listing, site, background, primary, accent, primaryText, a
     h("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, height: "38%", display: "flex", flexDirection: "column", justifyContent: "center", padding: "46px 56px", backgroundColor: primary, color: primaryText } },
       h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 30 } },
         h("div", { style: { display: "flex", flexDirection: "column", minWidth: 0 } },
-          h("div", { style: { display: "flex", fontSize: 27, fontWeight: 600, opacity: 0.78 } }, listing.address || listing.district),
+          h("div", { style: { display: "flex", fontSize: 27, fontWeight: 600, opacity: 0.78 } }, locationText(listing)),
           h("div", { style: { display: "flex", marginTop: 12, fontSize: 67, lineHeight: 1, fontWeight: 800, letterSpacing: -3 } }, priceText(listing)),
         ),
         h("div", { style: { display: "flex", gap: 12, flexShrink: 0 } }, badge(`${listing.m2} m²`, accent, accentText), badge(listing.room_count, accent, accentText)),
@@ -82,7 +86,7 @@ function StoryLayout({ listing, site, background, primary, accent, primaryText, 
       h("div", { style: { display: "flex", width: 18, height: 18, borderRadius: 999, backgroundColor: accent } }),
     ),
     h("div", { style: { position: "absolute", left: 58, right: 58, bottom: 90, display: "flex", flexDirection: "column" } },
-      h("div", { style: { display: "flex", color: accent, fontSize: 31, fontWeight: 700 } }, listing.address || listing.district),
+      h("div", { style: { display: "flex", color: accent, fontSize: 31, fontWeight: 700 } }, locationText(listing)),
       h("div", { style: { display: "flex", marginTop: 22, maxWidth: 900, fontSize: 61, lineHeight: 1.06, fontWeight: 700, letterSpacing: -2 } }, listing.title),
       h("div", { style: { display: "flex", marginTop: 45, fontSize: 82, lineHeight: 1, fontWeight: 800, letterSpacing: -4 } }, priceText(listing)),
       h("div", { style: { display: "flex", gap: 14, marginTop: 36 } }, badge(`${listing.m2} m²`, accent, accentText, true), badge(listing.room_count, accent, accentText, true), badge(listing.listing_type === "sale" ? "Satılık" : "Kiralık", primaryText, primary, true)),
@@ -110,9 +114,10 @@ export default async function handler(request, response) {
     if (!uuidPattern.test(listingId)) return sendJson(response, 400, { error: "A valid listing id is required." });
     if (!["post", "story"].includes(format)) return sendJson(response, 400, { error: "Format must be post or story." });
     const user = await getAuthenticatedUser(request);
-    const { data: listing, error } = await getSupabaseClient().from("listings").select("*").eq("id", listingId).maybeSingle();
+    const { data: rawListing, error } = await getSupabaseClient().from("listings").select(listingSelect).eq("id", listingId).maybeSingle();
     if (error) throw new Error(`Failed to load listing: ${error.message}`);
-    if (!listing) return sendJson(response, 404, { error: "Listing not found." });
+    if (!rawListing) return sendJson(response, 404, { error: "Listing not found." });
+    const listing = serializeListing(rawListing);
     const site = await getOwnedSite(user.id, listing.site_id);
     if (!site) return sendJson(response, 404, { error: "Owned listing not found." });
     const image = buildSocialKitImage({ listing, site, background: imageUrlFor(listing, request), format });

@@ -175,6 +175,13 @@ export const routeParam = (request, name) => {
   return "";
 };
 
+export const listingSelect = "*, country:countries(name), province:provinces(name), structured_district:districts(name), neighborhood:neighborhoods(name)";
+
+const relationName = (relation) => {
+  const value = Array.isArray(relation) ? relation[0] : relation;
+  return typeof value?.name === "string" ? value.name : null;
+};
+
 export const serializeListing = (listing) => {
   const features = Array.isArray(listing.features) ? listing.features : [];
   const yieldFeature = features.find((feature) => typeof feature === "string" && feature.startsWith("Tahmini kira getirisi: %"));
@@ -195,6 +202,10 @@ export const serializeListing = (listing) => {
     province_id: listing.province_id || null,
     district_id: listing.district_id || null,
     neighborhood_id: listing.neighborhood_id || null,
+    country_name: relationName(listing.country),
+    province_name: relationName(listing.province),
+    district_name: relationName(listing.structured_district),
+    neighborhood_name: relationName(listing.neighborhood),
     lat: Number(listing.lat),
     lng: Number(listing.lng),
     media: Array.isArray(listing.media) ? listing.media : [],

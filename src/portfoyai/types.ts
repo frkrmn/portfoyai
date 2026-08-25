@@ -103,6 +103,10 @@ export type Listing = {
   province_id?: string | null;
   district_id?: string | null;
   neighborhood_id?: string | null;
+  country_name?: string | null;
+  province_name?: string | null;
+  district_name?: string | null;
+  neighborhood_name?: string | null;
   lat: number;
   lng: number;
   media: MediaItem[];

@@ -1,4 +1,4 @@
-import { getSupabaseClient, methodNotAllowed, routeParam, sendJson, serializeListing } from "../api-utils.mjs";
+import { getSupabaseClient, listingSelect, methodNotAllowed, routeParam, sendJson, serializeListing } from "../api-utils.mjs";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") return methodNotAllowed(response, ["GET"]);
@@ -8,7 +8,7 @@ export default async function handler(request, response) {
     const { data: site, error } = await getSupabaseClient().from("sites").select("id, slug, theme_config, business_name, tone, primary_color, accent_color, headline, status, created_at").eq("slug", slug).maybeSingle();
     if (error) throw new Error(`Failed to load public site: ${error.message}`);
     if (!site) return sendJson(response, 404, { error: "Site not found." });
-    const { data: listings, error: listingsError } = await getSupabaseClient().from("listings").select("*").eq("site_id", site.id).eq("status", "active").order("created_at", { ascending: false });
+    const { data: listings, error: listingsError } = await getSupabaseClient().from("listings").select(listingSelect).eq("site_id", site.id).eq("status", "active").order("created_at", { ascending: false });
     if (listingsError) throw new Error(`Failed to load public listings: ${listingsError.message}`);
     return sendJson(response, 200, {
       id: site.id,
