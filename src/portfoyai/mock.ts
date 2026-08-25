@@ -1,4 +1,5 @@
 import type { Agent, AppState, GeneratedSiteConfig, Listing, MediaItem, PromptProfile, Site, ThemeConfig } from "./types";
+import { formatListingPrice } from "@/lib/listing-price";
 
 const now = () => new Date().toISOString();
 
@@ -92,9 +93,6 @@ export const generateThemeFromPrompt = (prompt: string): { profile: PromptProfil
   };
 };
 
-const formatTL = (value: number) =>
-  new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(value);
-
 export const generateDescriptionFromFacts = (listing: {
   title: string;
   district: string;
@@ -102,11 +100,12 @@ export const generateDescriptionFromFacts = (listing: {
   m2: number;
   room_count: string;
   price: number;
+  currency?: Listing["currency"];
   features: string[];
 }) =>
   [
     `${listing.district} bölgesinde yer alan ${listing.title.toLowerCase()}, ${listing.m2} m² kullanım alanı ve ${listing.room_count} oda düzeniyle öne çıkıyor.`,
-    `Fiyat: ${formatTL(listing.price)}. ${listing.listing_type === "sale" ? "Satılık" : "Kiralık"} seçenek, modern yaşam beklentisine uygun olarak düzenlendi.`,
+    `Fiyat: ${formatListingPrice({ price: listing.price, currency: listing.currency || "TRY" })}. ${listing.listing_type === "sale" ? "Satılık" : "Kiralık"} seçenek, modern yaşam beklentisine uygun olarak düzenlendi.`,
     listing.features.length
       ? `Öne çıkan özellikler: ${listing.features.join(", ")}.`
       : "Öne çıkan detaylar, ferah plan ve doğal ışık alan yaşam alanlarıdır.",
@@ -422,9 +421,6 @@ export const saveState = (state: AppState) => {
   if (typeof window === "undefined") return;
   window.localStorage.setItem("portfoyai-state", JSON.stringify(state));
 };
-
-export const formatTRY = (value: number) =>
-  new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(value);
 
 export const formatDateTR = (value: string) =>
   new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));

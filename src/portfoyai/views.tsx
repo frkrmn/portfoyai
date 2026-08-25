@@ -35,10 +35,11 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { formatListingPrice, LISTING_CURRENCIES } from "@/lib/listing-price";
 import { clearPendingPrompt, getPendingPrompt, savePendingPrompt } from "@/lib/pending-prompt";
 import { readApiJson } from "@/lib/api";
 import { toast } from "sonner";
-import { formatDateTR, formatTRY, generateThemeFromPrompt } from "./mock";
+import { formatDateTR, generateThemeFromPrompt } from "./mock";
 import { usePortfoyAI } from "./store";
 import { useAuth } from "./auth";
 import type { GeneratedSiteConfig, Listing, ListingDraft, ThemeConfig } from "./types";
@@ -218,7 +219,7 @@ export function ListingForm({
   const [socialKitLoading, setSocialKitLoading] = useState(false);
   const [socialKitError, setSocialKitError] = useState("");
   const [socialKitUrls, setSocialKitUrls] = useState<{ post: string; story: string } | null>(null);
-  const copyFactsSignature = JSON.stringify([draft.id, draft.title, draft.price, draft.m2, draft.room_count, draft.listing_type, draft.district, draft.features, draft.address, draft.category, draft.bedroom_count, draft.bathroom_count, draft.rental_yield_percent, draft.roi_notes, draft.urgent_sale, draft.price_reduced_from]);
+  const copyFactsSignature = JSON.stringify([draft.id, draft.title, draft.price, draft.currency, draft.m2, draft.room_count, draft.listing_type, draft.district, draft.features, draft.address, draft.category, draft.bedroom_count, draft.bathroom_count, draft.rental_yield_percent, draft.roi_notes, draft.urgent_sale, draft.price_reduced_from]);
 
   useEffect(() => {
     setGeneratedCopy(null);
@@ -310,9 +311,18 @@ export function ListingForm({
             <Label>Başlık</Label>
             <Input placeholder="Örn. Caddebostan deniz manzaralı 3+1" value={draft.title} onChange={(e) => onDraftChange({ title: e.target.value })} />
           </div>
-          <div className="space-y-2">
-            <Label>Fiyat</Label>
-            <Input type="number" value={draft.price} onChange={(e) => onDraftChange({ price: Number(e.target.value) })} />
+          <div className="grid grid-cols-[minmax(0,1fr)_110px] gap-3">
+            <div className="space-y-2">
+              <Label>Fiyat</Label>
+              <Input type="number" min="0" value={draft.price} onChange={(e) => onDraftChange({ price: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Para birimi</Label>
+              <Select value={draft.currency || "TRY"} onValueChange={(value) => onDraftChange({ currency: value as Listing["currency"] })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{LISTING_CURRENCIES.map((currency) => <SelectItem key={currency} value={currency}>{currency}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Daire / Alan</Label>
@@ -499,7 +509,7 @@ export function LandingPage() {
                       <div className="rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur">
                         <div className="text-[9px] uppercase tracking-[0.16em] text-white/60">Öne çıkan portföy</div>
                         <div className="mt-2 text-sm font-medium">{previewListings[0]?.title}</div>
-                        <div className="mt-1 text-xs text-white/70">{previewListings[0] && formatTRY(previewListings[0].price)}</div>
+                        <div className="mt-1 text-xs text-white/70">{previewListings[0] && formatListingPrice(previewListings[0])}</div>
                       </div>
                     </div>
                   </div>
@@ -567,7 +577,7 @@ export function LandingPage() {
               <div className="overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#f7f4ee] p-3 text-[#17231e] shadow-[0_30px_90px_rgba(0,0,0,0.22)] sm:p-5">
                 <div className="rounded-[1.65rem] border border-[#173f32]/10 bg-white p-4 sm:p-6">
                   <div className="flex items-center justify-between"><div><div className="text-xs text-[#7a857e]">Portföyler</div><div className="mt-1 text-xl font-semibold">Aktif ilanlar</div></div><Button size="sm" className="rounded-full bg-[#173f32] text-white hover:bg-[#173f32]"> <Plus className="mr-1 h-3.5 w-3.5" /> Yeni ilan</Button></div>
-                  <div className="mt-5 space-y-2.5">{previewListings.map((listing, index) => <div key={listing.id} className="grid grid-cols-[52px_1fr_auto] items-center gap-3 rounded-2xl border border-[#173f32]/8 bg-[#fbfaf7] p-2.5"><img src={listing.media[0]?.thumbUrl} alt="" className="h-12 w-12 rounded-xl object-cover" /><div className="min-w-0"><div className="truncate text-sm font-semibold">{listing.title}</div><div className="mt-1 text-[11px] text-[#7a857e]">{formatListingLocation(listing)} · {listing.m2} m² · {listing.room_count}</div></div><div className="text-right"><div className="text-xs font-semibold">{formatTRY(listing.price)}</div><Badge className="mt-1 bg-[#e4f0e9] text-[9px] text-[#326049] hover:bg-[#e4f0e9]">Yayında</Badge></div></div>)}</div>
+                  <div className="mt-5 space-y-2.5">{previewListings.map((listing, index) => <div key={listing.id} className="grid grid-cols-[52px_1fr_auto] items-center gap-3 rounded-2xl border border-[#173f32]/8 bg-[#fbfaf7] p-2.5"><img src={listing.media[0]?.thumbUrl} alt="" className="h-12 w-12 rounded-xl object-cover" /><div className="min-w-0"><div className="truncate text-sm font-semibold">{listing.title}</div><div className="mt-1 text-[11px] text-[#7a857e]">{formatListingLocation(listing)} · {listing.m2} m² · {listing.room_count}</div></div><div className="text-right"><div className="text-xs font-semibold">{formatListingPrice(listing)}</div><Badge className="mt-1 bg-[#e4f0e9] text-[9px] text-[#326049] hover:bg-[#e4f0e9]">Yayında</Badge></div></div>)}</div>
                 </div>
               </div>
               <div className="grid gap-6">
@@ -792,7 +802,7 @@ export function GeneratedSitePreviewPage() {
             {previewListings.map((listing) => (
               <Card key={listing.id} className="overflow-hidden rounded-[1.5rem] border-[#173f32]/10 bg-white shadow-none">
                 <img src={listing.media[0]?.url} alt={listing.title} className="aspect-[4/3] w-full object-cover" />
-                <CardContent className="p-5"><h3 className="font-semibold">{listing.title}</h3><p className="mt-2 text-sm text-[#78837c]">{formatListingLocation(listing)} · {listing.room_count}</p><div className="mt-4 font-semibold" style={{ color: config.primary_color }}>{formatTRY(listing.price)}</div></CardContent>
+                <CardContent className="p-5"><h3 className="font-semibold">{listing.title}</h3><p className="mt-2 text-sm text-[#78837c]">{formatListingLocation(listing)} · {listing.room_count}</p><div className="mt-4 font-semibold" style={{ color: config.primary_color }}>{formatListingPrice(listing)}</div></CardContent>
               </Card>
             ))}
           </div>
@@ -912,7 +922,7 @@ export function PublicSitePage() {
               <div><div className="text-xs uppercase tracking-[0.24em] text-white/60">{agent.region} · Gayrimenkul danışmanlığı</div><h1 className="mt-8 text-5xl font-semibold leading-[0.98] tracking-[-0.045em] sm:text-6xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{site.heroTitle}</h1><p className="mt-6 max-w-xl text-base leading-7 text-white/72">{site.heroSubtitle}</p></div>
               <div className="mt-14 flex flex-wrap items-center gap-4"><Button asChild className="rounded-full bg-white px-6 text-[#173f32] hover:bg-white/90"><a href="#portfoyler">Portföyleri keşfedin <ArrowRight className="ml-2 h-4 w-4" /></a></Button><div className="text-xs text-white/55">Yerel uzmanlık · Kişisel danışmanlık</div></div>
             </div>
-            {featured ? <Link to={`/site/${site.subdomain}/listings/${featured.id}`} className="group relative min-h-[480px] overflow-hidden rounded-[2.5rem] lg:min-h-[620px]"><img src={featured.media[0]?.url} alt={featured.title} className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]" /><div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" /><div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-9"><Badge className="rounded-full border-white/20 bg-white/15 text-white backdrop-blur hover:bg-white/15">Öne çıkan portföy</Badge><div className="mt-4 flex items-end justify-between gap-4"><div><h2 className="text-3xl font-semibold sm:text-4xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{featured.title}</h2><div className="mt-2 text-sm text-white/70">{featured.district} · {featured.room_count} · {featured.m2} m²</div></div><div className="shrink-0 text-xl font-semibold sm:text-2xl">{formatTRY(featured.price)}</div></div></div></Link> : null}
+            {featured ? <Link to={`/site/${site.subdomain}/listings/${featured.id}`} className="group relative min-h-[480px] overflow-hidden rounded-[2.5rem] lg:min-h-[620px]"><img src={featured.media[0]?.url} alt={featured.title} className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]" /><div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" /><div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-9"><Badge className="rounded-full border-white/20 bg-white/15 text-white backdrop-blur hover:bg-white/15">Öne çıkan portföy</Badge><div className="mt-4 flex items-end justify-between gap-4"><div><h2 className="text-3xl font-semibold sm:text-4xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{featured.title}</h2><div className="mt-2 text-sm text-white/70">{featured.district} · {featured.room_count} · {featured.m2} m²</div></div><div className="shrink-0 text-xl font-semibold sm:text-2xl">{formatListingPrice(featured)}</div></div></div></Link> : null}
           </div>
         </section>
 
@@ -928,7 +938,7 @@ export function PublicSitePage() {
               <div className="grid h-12 place-items-center rounded-xl px-5 text-sm text-white" style={{ backgroundColor: site.theme_config.primary }}>{filteredListings.length} portföy</div>
             </div>
 
-            <div className="mt-10 grid gap-x-5 gap-y-10 md:grid-cols-2 lg:grid-cols-3">{filteredListings.map((listing) => <Link to={`/site/${site.subdomain}/listings/${listing.id}`} key={listing.id} className="group"><div className="relative overflow-hidden rounded-[2rem]"><img src={listing.media[0]?.thumbUrl} alt={listing.title} className="aspect-[4/3] w-full object-cover transition duration-700 group-hover:scale-105" /><div className="absolute left-4 top-4 flex gap-2"><Badge className="rounded-full bg-white/90 text-[#173f32] backdrop-blur hover:bg-white">{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</Badge><Badge className="rounded-full bg-black/35 text-white backdrop-blur hover:bg-black/35">{formatListingLocation(listing)}</Badge></div><div className="absolute bottom-4 right-4 grid h-11 w-11 place-items-center rounded-full bg-white text-[#173f32] transition-transform group-hover:translate-x-1"><ArrowRight className="h-4 w-4" /></div></div><div className="px-1 pt-5"><div className="flex items-start justify-between gap-4"><h3 className="text-2xl font-semibold leading-tight" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{listing.title}</h3><div className="shrink-0 font-semibold">{formatTRY(listing.price)}</div></div><div className="mt-3 flex items-center gap-4 text-xs text-[#738078]"><span>{listing.room_count} oda</span><span>{listing.m2} m²</span><span>{listing.features[0]}</span></div></div></Link>)}</div>
+            <div className="mt-10 grid gap-x-5 gap-y-10 md:grid-cols-2 lg:grid-cols-3">{filteredListings.map((listing) => <Link to={`/site/${site.subdomain}/listings/${listing.id}`} key={listing.id} className="group"><div className="relative overflow-hidden rounded-[2rem]"><img src={listing.media[0]?.thumbUrl} alt={listing.title} className="aspect-[4/3] w-full object-cover transition duration-700 group-hover:scale-105" /><div className="absolute left-4 top-4 flex gap-2"><Badge className="rounded-full bg-white/90 text-[#173f32] backdrop-blur hover:bg-white">{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</Badge><Badge className="rounded-full bg-black/35 text-white backdrop-blur hover:bg-black/35">{formatListingLocation(listing)}</Badge></div><div className="absolute bottom-4 right-4 grid h-11 w-11 place-items-center rounded-full bg-white text-[#173f32] transition-transform group-hover:translate-x-1"><ArrowRight className="h-4 w-4" /></div></div><div className="px-1 pt-5"><div className="flex items-start justify-between gap-4"><h3 className="text-2xl font-semibold leading-tight" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{listing.title}</h3><div className="shrink-0 font-semibold">{formatListingPrice(listing)}</div></div><div className="mt-3 flex items-center gap-4 text-xs text-[#738078]"><span>{listing.room_count} oda</span><span>{listing.m2} m²</span><span>{listing.features[0]}</span></div></div></Link>)}</div>
           </div>
         </section>
 
@@ -979,7 +989,7 @@ export function ListingDetailPage() {
       <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10"><Link to={`/site/${site.subdomain}`} className="text-sm font-bold uppercase tracking-[0.2em]" style={{ color: site.theme_config.primary }}>{agent.businessName}</Link><Button variant="ghost" onClick={() => navigate(`/site/${site.subdomain}`)} className="rounded-full text-[#536159]"><ArrowLeft className="mr-2 h-4 w-4" />Tüm portföyler</Button></header>
 
       <main className="mx-auto max-w-7xl px-5 pb-24 sm:px-8 lg:px-10">
-        <div className="mb-10 mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"><div><div className="flex flex-wrap gap-2"><Badge className="rounded-full px-3 py-1 text-white" style={{ backgroundColor: site.theme_config.primary }}>{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</Badge><Badge variant="outline" className="rounded-full border-[#173f32]/15 bg-white/50">{formatListingLocation(listing)}</Badge></div><h1 className="mt-5 max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{listing.title}</h1></div><div className="text-left lg:text-right"><div className="text-sm text-[#77827b]">Satış fiyatı</div><div className="mt-1 text-3xl font-semibold">{formatTRY(listing.price)}</div></div></div>
+        <div className="mb-10 mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"><div><div className="flex flex-wrap gap-2"><Badge className="rounded-full px-3 py-1 text-white" style={{ backgroundColor: site.theme_config.primary }}>{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</Badge><Badge variant="outline" className="rounded-full border-[#173f32]/15 bg-white/50">{formatListingLocation(listing)}</Badge></div><h1 className="mt-5 max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>{listing.title}</h1></div><div className="text-left lg:text-right"><div className="text-sm text-[#77827b]">Satış fiyatı</div><div className="mt-1 text-3xl font-semibold">{formatListingPrice(listing)}</div></div></div>
 
         <div className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]"><img src={listing.media[0]?.url} alt={listing.title} className="aspect-[16/10] h-full w-full rounded-[2.5rem] object-cover" /><div className="grid grid-cols-2 gap-4 lg:grid-cols-1">{listing.media.slice(1,3).map((item) => <img key={item.id} src={item.url} alt={item.alt} className="h-full min-h-0 w-full rounded-[2rem] object-cover" />)}<div className="flex min-h-[150px] flex-col justify-end rounded-[2rem] p-6 text-white" style={{ background: `linear-gradient(145deg, ${site.theme_config.primary}, ${site.theme_config.accent})` }}><div className="text-xs uppercase tracking-[0.18em] text-white/55">Konum</div><div className="mt-2 flex items-center gap-2 text-xl font-semibold"><MapPin className="h-5 w-5" />{formatListingLocation(listing)}, İstanbul</div></div></div></div>
 

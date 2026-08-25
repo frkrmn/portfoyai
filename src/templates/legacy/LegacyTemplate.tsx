@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Bath, BedDouble, Maximize2 } from "lucide-react"
 import type { CSSProperties } from "react";
 import type { Listing } from "@/portfoyai/types";
 import { formatListingLocation } from "@/portfoyai/listing-location";
+import { formatListingPrice } from "@/lib/listing-price";
 import type { SiteTemplateProps, TemplateConfig } from "../types";
 
 const styleFor = (config: TemplateConfig) => ({
@@ -13,19 +14,13 @@ const styleFor = (config: TemplateConfig) => ({
   backgroundColor: config.colors.background,
 }) as CSSProperties;
 
-const formatPrice = (listing: Listing) => new Intl.NumberFormat("tr-TR", {
-  style: "currency",
-  currency: listing.currency || "TRY",
-  maximumFractionDigits: 0,
-}).format(Number(listing.price));
-
 function LegacyHeader({ config }: SiteTemplateProps) {
   return <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-bold uppercase tracking-[0.18em] text-[var(--legacy-primary)]">{config.content.businessName}</Link><nav className="flex items-center gap-6 text-sm"><Link to={`/site/${config.slug}/listings`}>Portföyler</Link><a href="#iletisim">İletişim</a></nav></header>;
 }
 
 function LegacyCard({ config, listing }: { config: TemplateConfig; listing: Listing }) {
   const image = listing.media?.[0]?.url || listing.media?.[0]?.thumbUrl;
-  return <Link to={`/site/${config.slug}/listings/${listing.id}`} className="group"><div className="relative overflow-hidden rounded-[2rem] bg-black/5">{image ? <img src={image} alt={listing.title} className="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-105" /> : null}<span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs">{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</span></div><div className="pt-5"><div className="text-xs opacity-55">{formatListingLocation(listing)}</div><div className="mt-2 flex justify-between gap-4"><h2 className="text-xl font-semibold">{listing.title}</h2><strong className="whitespace-nowrap">{formatPrice(listing)}</strong></div><div className="mt-3 flex gap-4 text-xs opacity-60"><span>{listing.m2} m²</span><span>{listing.room_count}</span></div></div></Link>;
+  return <Link to={`/site/${config.slug}/listings/${listing.id}`} className="group"><div className="relative overflow-hidden rounded-[2rem] bg-black/5">{image ? <img src={image} alt={listing.title} className="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-105" /> : null}<span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs">{listing.listing_type === "sale" ? "Satılık" : "Kiralık"}</span></div><div className="pt-5"><div className="text-xs opacity-55">{formatListingLocation(listing)}</div><div className="mt-2 flex justify-between gap-4"><h2 className="text-xl font-semibold">{listing.title}</h2><strong className="whitespace-nowrap">{formatListingPrice(listing)}</strong></div><div className="mt-3 flex gap-4 text-xs opacity-60"><span>{listing.m2} m²</span><span>{listing.room_count}</span></div></div></Link>;
 }
 
 function LegacyFooter({ config }: SiteTemplateProps) {
@@ -46,5 +41,5 @@ export function LegacyDetail({ config }: SiteTemplateProps) {
   const listing = config.listing;
   if (!listing) return null;
   const image = listing.media?.[0]?.url;
-  return <div className="min-h-screen" style={styleFor(config)}><LegacyHeader config={config} /><main className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}/listings`} className="inline-flex items-center gap-2 text-sm"><ArrowLeft className="h-4 w-4" />Tüm portföyler</Link><div className="mt-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end"><div><div className="text-xs uppercase tracking-wider opacity-55">{formatListingLocation(listing)}</div><h1 className="mt-4 max-w-4xl text-5xl font-semibold" style={{ fontFamily: config.fonts.heading }}>{listing.title}</h1></div><strong className="text-2xl">{formatPrice(listing)}</strong></div>{image ? <img src={image} alt={listing.title} className="mt-10 aspect-[16/8] w-full rounded-[2.5rem] object-cover" /> : null}<div className="mt-10 grid gap-10 lg:grid-cols-[1fr_360px]"><div><div className="grid grid-cols-3 rounded-2xl border border-black/10 bg-white/50 p-6"><span className="flex items-center gap-2"><Maximize2 className="h-4 w-4" />{listing.m2} m²</span><span className="flex items-center gap-2"><BedDouble className="h-4 w-4" />{listing.room_count}</span><span className="flex items-center gap-2"><Bath className="h-4 w-4" />{listing.bathroom_count || 1}</span></div><p className="mt-10 text-base leading-8 opacity-70">{listing.description}</p></div><aside className="rounded-2xl bg-white p-7"><h2 className="text-2xl font-semibold" style={{ fontFamily: config.fonts.heading }}>{config.content.tourTitle}</h2><p className="mt-3 text-sm leading-6 opacity-60">{config.content.tourDescription}</p><a href={`tel:${config.content.phone}`} className="mt-6 block rounded-full bg-[var(--legacy-primary)] px-5 py-3 text-center text-sm text-white">{config.content.phone}</a></aside></div></main><LegacyFooter config={config} /></div>;
+  return <div className="min-h-screen" style={styleFor(config)}><LegacyHeader config={config} /><main className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}/listings`} className="inline-flex items-center gap-2 text-sm"><ArrowLeft className="h-4 w-4" />Tüm portföyler</Link><div className="mt-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end"><div><div className="text-xs uppercase tracking-wider opacity-55">{formatListingLocation(listing)}</div><h1 className="mt-4 max-w-4xl text-5xl font-semibold" style={{ fontFamily: config.fonts.heading }}>{listing.title}</h1></div><strong className="text-2xl">{formatListingPrice(listing)}</strong></div>{image ? <img src={image} alt={listing.title} className="mt-10 aspect-[16/8] w-full rounded-[2.5rem] object-cover" /> : null}<div className="mt-10 grid gap-10 lg:grid-cols-[1fr_360px]"><div><div className="grid grid-cols-3 rounded-2xl border border-black/10 bg-white/50 p-6"><span className="flex items-center gap-2"><Maximize2 className="h-4 w-4" />{listing.m2} m²</span><span className="flex items-center gap-2"><BedDouble className="h-4 w-4" />{listing.room_count}</span><span className="flex items-center gap-2"><Bath className="h-4 w-4" />{listing.bathroom_count || 1}</span></div><p className="mt-10 text-base leading-8 opacity-70">{listing.description}</p></div><aside className="rounded-2xl bg-white p-7"><h2 className="text-2xl font-semibold" style={{ fontFamily: config.fonts.heading }}>{config.content.tourTitle}</h2><p className="mt-3 text-sm leading-6 opacity-60">{config.content.tourDescription}</p><a href={`tel:${config.content.phone}`} className="mt-6 block rounded-full bg-[var(--legacy-primary)] px-5 py-3 text-center text-sm text-white">{config.content.phone}</a></aside></div></main><LegacyFooter config={config} /></div>;
 }

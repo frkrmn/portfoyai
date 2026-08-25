@@ -94,7 +94,7 @@ export type Listing = {
   title: string;
   description: string;
   price: number;
-  currency: "TRY" | "USD" | "EUR";
+  currency: "TRY" | "USD" | "GBP" | "EUR";
   m2: number;
   room_count: string;
   listing_type: "sale" | "rent";

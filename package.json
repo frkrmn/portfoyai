@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "seed:locations": "node server/seed-turkey-locations.mjs",
-    "test:locations": "node server/locations.e2e.mjs"
+    "test:locations": "node server/locations.e2e.mjs",
+    "test:currencies": "node server/listing-currency.e2e.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

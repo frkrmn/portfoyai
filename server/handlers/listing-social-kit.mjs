@@ -1,5 +1,6 @@
 import { ImageResponse } from "@vercel/og";
 import { createElement as h } from "react";
+import { formatListingPrice } from "../../src/lib/listing-price.js";
 import { getAuthenticatedUser, getOwnedSite, getSupabaseClient, handleKnownError, listingSelect, methodNotAllowed, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
 
 const placeholderImages = [
@@ -42,7 +43,6 @@ const readableText = (background) => {
   const [red, green, blue] = [1, 3, 5].map((index) => Number.parseInt(background.slice(index, index + 2), 16));
   return (red * 299 + green * 587 + blue * 114) / 1000 > 145 ? "#17211C" : "#FFFFFF";
 };
-const priceText = (listing) => `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(Number(listing.price))} ${listing.currency === "USD" ? "USD" : listing.currency === "EUR" ? "EUR" : "TL"}`;
 const locationText = (listing) => {
   const structured = [listing.province_name, listing.district_name || listing.district, listing.neighborhood_name].filter(Boolean);
   return structured.length > 1 ? structured.join(" / ") : listing.district;
@@ -68,7 +68,7 @@ function PostLayout({ listing, site, background, primary, accent, primaryText, a
       h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 30 } },
         h("div", { style: { display: "flex", flexDirection: "column", minWidth: 0 } },
           h("div", { style: { display: "flex", fontSize: 27, fontWeight: 600, opacity: 0.78 } }, locationText(listing)),
-          h("div", { style: { display: "flex", marginTop: 12, fontSize: 67, lineHeight: 1, fontWeight: 800, letterSpacing: -3 } }, priceText(listing)),
+          h("div", { style: { display: "flex", marginTop: 12, fontSize: 67, lineHeight: 1, fontWeight: 800, letterSpacing: -3 } }, formatListingPrice(listing)),
         ),
         h("div", { style: { display: "flex", gap: 12, flexShrink: 0 } }, badge(`${listing.m2} m²`, accent, accentText), badge(listing.room_count, accent, accentText)),
       ),
@@ -88,7 +88,7 @@ function StoryLayout({ listing, site, background, primary, accent, primaryText, 
     h("div", { style: { position: "absolute", left: 58, right: 58, bottom: 90, display: "flex", flexDirection: "column" } },
       h("div", { style: { display: "flex", color: accent, fontSize: 31, fontWeight: 700 } }, locationText(listing)),
       h("div", { style: { display: "flex", marginTop: 22, maxWidth: 900, fontSize: 61, lineHeight: 1.06, fontWeight: 700, letterSpacing: -2 } }, listing.title),
-      h("div", { style: { display: "flex", marginTop: 45, fontSize: 82, lineHeight: 1, fontWeight: 800, letterSpacing: -4 } }, priceText(listing)),
+      h("div", { style: { display: "flex", marginTop: 45, fontSize: 82, lineHeight: 1, fontWeight: 800, letterSpacing: -4 } }, formatListingPrice(listing)),
       h("div", { style: { display: "flex", gap: 14, marginTop: 36 } }, badge(`${listing.m2} m²`, accent, accentText, true), badge(listing.room_count, accent, accentText, true), badge(listing.listing_type === "sale" ? "Satılık" : "Kiralık", primaryText, primary, true)),
     ),
   );

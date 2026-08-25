@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { formatListingPrice, normalizeListingCurrency } from "../../src/lib/listing-price.js";
 import { getAuthenticatedUser, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
 
 export const listingCopyModel = "gemini-3.5-flash-lite";
@@ -31,7 +32,7 @@ export const listingFactsFromBody = (body) => {
   if (!Number.isFinite(m2) || m2 <= 0) throw new Error("VALIDATION:Geçerli bir alan (m²) gereklidir.");
   if (!Number.isFinite(price) || price <= 0) throw new Error("VALIDATION:Geçerli bir fiyat gereklidir.");
   if (!['sale', 'rent'].includes(listingType)) throw new Error("VALIDATION:İlan türü satılık veya kiralık olmalıdır.");
-  const currency = ["TRY", "USD", "EUR"].includes(body.currency) ? body.currency : "TRY";
+  const currency = normalizeListingCurrency(body.currency);
 
   return {
     title: cleanText(body.title, 200) || null,
@@ -41,7 +42,7 @@ export const listingFactsFromBody = (body) => {
     district,
     price,
     currency,
-    price_display: new Intl.NumberFormat("tr-TR", { style: "currency", currency, maximumFractionDigits: 0 }).format(price),
+    price_display: formatListingPrice({ currency, price }),
     features: Array.isArray(body.features) ? body.features.map((item) => cleanText(item, 100)).filter(Boolean).slice(0, 20) : [],
     address: cleanText(body.address, 300) || null,
     category: cleanText(body.category, 50) || null,
