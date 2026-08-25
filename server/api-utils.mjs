@@ -191,6 +191,10 @@ export const serializeListing = (listing) => {
     room_count: listing.room_count,
     listing_type: listing.listing_type,
     district: listing.district,
+    country_id: listing.country_id || null,
+    province_id: listing.province_id || null,
+    district_id: listing.district_id || null,
+    neighborhood_id: listing.neighborhood_id || null,
     lat: Number(listing.lat),
     lng: Number(listing.lng),
     media: Array.isArray(listing.media) ? listing.media : [],
@@ -211,7 +215,7 @@ export const serializeListing = (listing) => {
 export const getOwnedSite = async (userId, siteId) => {
   const { data, error } = await getSupabaseClient()
     .from("sites")
-    .select("id, slug, user_id, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, created_at")
+    .select("id, slug, user_id, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, country_id, province_id, district_id, neighborhood_id, created_at")
     .eq("id", siteId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -228,6 +232,10 @@ export const dashboardSite = (site) => ({
   accent_color: site.accent_color,
   headline: site.headline,
   theme_config: site.theme_config || {},
+  country_id: site.country_id || null,
+  province_id: site.province_id || null,
+  district_id: site.district_id || null,
+  neighborhood_id: site.neighborhood_id || null,
   can_undo: Boolean(site.previous_theme_config),
   status: site.status,
   created_at: site.created_at,
@@ -241,6 +249,12 @@ export const listingPayload = (body, siteId) => {
   const price = Number(body.price);
   const m2 = Number(body.m2);
   const priceReducedFrom = body.price_reduced_from == null || body.price_reduced_from === "" ? null : Number(body.price_reduced_from);
+  const locationIds = {};
+  for (const key of ["country_id", "province_id", "district_id", "neighborhood_id"]) {
+    const value = body[key] == null || body[key] === "" ? null : String(body[key]);
+    if (value && !uuidPattern.test(value)) throw new Error(`VALIDATION:${key} must be a valid id.`);
+    locationIds[key] = value;
+  }
   if (!title || title.length > 200) throw new Error("VALIDATION:Title is required and must be at most 200 characters.");
   if (!description || description.length > 5000) throw new Error("VALIDATION:Description is required and must be at most 5000 characters.");
   if (!district || district.length > 120) throw new Error("VALIDATION:District is required and must be at most 120 characters.");
@@ -266,6 +280,7 @@ export const listingPayload = (body, siteId) => {
     room_count: roomCount,
     listing_type: body.listing_type,
     district,
+    ...locationIds,
     lat: Number.isFinite(Number(body.lat)) ? Number(body.lat) : 41,
     lng: Number.isFinite(Number(body.lng)) ? Number(body.lng) : 29,
     media,

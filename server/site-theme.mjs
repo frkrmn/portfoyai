@@ -52,6 +52,12 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
     themeConfig.content[key] = value;
     appliedFields.push(key);
   }
+  if (patch.region_focus !== undefined) {
+    const value = String(patch.region_focus).trim();
+    if (value.length > 300) throw new Error("VALIDATION:Region focus must be at most 300 characters.");
+    themeConfig.content.regionFocus = value;
+    appliedFields.push("region_focus");
+  }
   for (const [field, colorKey] of [["primary_color", "primary"], ["accent_color", "accent"]]) {
     if (patch[field] === undefined) continue;
     if (!hexColorPattern.test(patch[field])) throw new Error(`VALIDATION:${field === "primary_color" ? "Primary" : "Accent"} color must be a six-digit hex color.`);

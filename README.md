@@ -48,4 +48,10 @@ Do not expose `SUPABASE_SERVICE_ROLE_KEY` through a `VITE_` variable.
 
 The Supabase schema and row-level-security policies are in `supabase/migrations`.
 
+Turkey's province, district and neighborhood hierarchy is created by
+`20260825000100_location_hierarchy.sql`. After applying that migration, seed the
+idempotent 500-row batches with `npm run seed:locations`. The seed reads the
+[bertugfahriozer/il_ilce_mahalle](https://github.com/bertugfahriozer/il_ilce_mahalle)
+dataset at runtime; the large source JSON is not duplicated in this repository.
+
 Set both server credentials (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) and browser-safe Auth credentials (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). Never expose the service-role key through a `VITE_` variable.

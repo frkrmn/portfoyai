@@ -43,6 +43,7 @@ import { usePortfoyAI } from "./store";
 import { useAuth } from "./auth";
 import type { GeneratedSiteConfig, Listing, ListingDraft, ThemeConfig } from "./types";
 import { getListingImage } from "@/templates/mediaFallbacks";
+import { LocationHierarchyFields } from "./location-fields";
 
 const getThemeStyles = (theme: Pick<ThemeConfig, "primary" | "accent" | "fontPairing">) =>
   ({
@@ -332,10 +333,7 @@ export function ListingForm({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>İlçe</Label>
-            <Input value={draft.district} onChange={(e) => onDraftChange({ district: e.target.value })} />
-          </div>
+          <LocationHierarchyFields idPrefix="listing-location" value={draft} legacyDistrict={draft.district} onChange={(selection, names) => onDraftChange({ ...selection, district: names.district })} />
           <div className="space-y-2 md:col-span-2">
             <Label>Özellikler</Label>
             <Input

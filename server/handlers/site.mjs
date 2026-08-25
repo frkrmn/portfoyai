@@ -3,7 +3,7 @@ import { mergeThemeConfig } from "../site-theme.mjs";
 
 const getSite = async (request, response, siteId) => {
   const user = await getAuthenticatedUser(request);
-  const { data: site, error } = await getSupabaseClient().from("sites").select("id, slug, user_id, theme_config, business_name, tone, primary_color, accent_color, headline, status, created_at").eq("id", siteId).eq("user_id", user.id).maybeSingle();
+  const { data: site, error } = await getSupabaseClient().from("sites").select("id, slug, user_id, theme_config, business_name, tone, primary_color, accent_color, headline, status, country_id, province_id, district_id, neighborhood_id, created_at").eq("id", siteId).eq("user_id", user.id).maybeSingle();
   if (error) throw new Error(`Failed to load site: ${error.message}`);
   if (!site) return sendJson(response, 404, { error: "Site not found." });
   return sendJson(response, 200, {
@@ -50,6 +50,13 @@ const updateSite = async (request, response, siteId) => {
       themePatch[key] = value;
     }
   }
+  if (body.region_focus !== undefined) themePatch.region_focus = body.region_focus;
+  for (const key of ["country_id", "province_id", "district_id", "neighborhood_id"]) {
+    if (body[key] === undefined) continue;
+    const value = body[key] == null || body[key] === "" ? null : String(body[key]);
+    if (value && !uuidPattern.test(value)) return sendJson(response, 400, { error: `${key} must be a valid id.` });
+    updates[key] = value;
+  }
   if (body.primary_color !== undefined) {
     if (!hexColorPattern.test(body.primary_color)) return sendJson(response, 400, { error: "Primary color must be a six-digit hex color." });
     themePatch.primary_color = body.primary_color;
@@ -76,7 +83,7 @@ const updateSite = async (request, response, siteId) => {
   if (Object.keys(updates).length === 0 && Object.keys(body).length === 0) return sendJson(response, 400, { error: "No site changes were supplied." });
   const { themeConfig, topLevel } = mergeThemeConfig(current.theme_config, themePatch);
   Object.assign(updates, topLevel, { theme_config: themeConfig });
-  const { data: site, error } = await getSupabaseClient().from("sites").update(updates).eq("id", siteId).eq("user_id", user.id).select("id, slug, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, created_at").maybeSingle();
+  const { data: site, error } = await getSupabaseClient().from("sites").update(updates).eq("id", siteId).eq("user_id", user.id).select("id, slug, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, country_id, province_id, district_id, neighborhood_id, created_at").maybeSingle();
   if (error) throw new Error(`Failed to update site: ${error.message}`);
   if (!site) return sendJson(response, 404, { error: "Owned site not found." });
   return sendJson(response, 200, { site: dashboardSite(site) });

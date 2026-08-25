@@ -99,6 +99,10 @@ export type Listing = {
   room_count: string;
   listing_type: "sale" | "rent";
   district: string;
+  country_id?: string | null;
+  province_id?: string | null;
+  district_id?: string | null;
+  neighborhood_id?: string | null;
   lat: number;
   lng: number;
   media: MediaItem[];

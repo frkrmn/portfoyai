@@ -116,6 +116,12 @@ try {
   const fonts = await json(await fetch(`${baseUrl}/api/fonts`, { headers: bearer }));
   assert.ok(fonts.fonts.length > 1500);
 
+  const provinces = await json(await fetch(`${baseUrl}/api/locations/provinces?country=TR`));
+  assert.equal(provinces.provinces.length, 81);
+  const istanbul = provinces.provinces.find((province) => province.name === "İSTANBUL");
+  const locationDistricts = await json(await fetch(`${baseUrl}/api/locations/districts?province=${istanbul.id}`));
+  assert.ok(locationDistricts.districts.some((district) => district.name === "KADIKÖY"));
+
   const refined = await json(await fetch(`${baseUrl}/api/sites/${siteId}/refine`, {
     method: "POST",
     headers: authenticatedJson,
