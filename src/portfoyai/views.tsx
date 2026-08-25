@@ -402,15 +402,33 @@ export function ListingForm({
 }
 
 export function LandingPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { state, setPrompt } = usePortfoyAI();
   usePageMeta(t("landing.meta.title"), t("landing.meta.description"));
   const prompt = state.onboardingPrompt;
-  const { profile, theme } = useMemo(() => generateThemeFromPrompt(prompt), [prompt]);
-  const previewListings = state.listings.slice(0, 3);
+  const { theme } = useMemo(() => generateThemeFromPrompt(prompt), [prompt]);
+  const previewListings = state.listings.slice(0, 3).map((listing, index) => ({
+    ...listing,
+    title: t(`landing.preview.listing${index + 1}`),
+    province_name: t("landing.preview.locationProvince"),
+    district_name: t("landing.preview.locationDistrict"),
+    neighborhood_name: t(`landing.preview.location${index + 1}`),
+  }));
+  const previewBusinessName = t("landing.preview.businessName");
+  const previewRegion = t("landing.preview.region");
   const demoSubdomain = state.sites[0]?.subdomain || "kaya-gayrimenkul";
+
+  useEffect(() => {
+    const translatedExamples = [
+      i18n.getFixedT("tr")("landing.hero.examplePrompt"),
+      i18n.getFixedT("en")("landing.hero.examplePrompt"),
+      "Kadıköy'de lüks daire satan modern ve güvenilir bir emlakçıyım",
+    ];
+    const nextExample = t("landing.hero.examplePrompt");
+    if (!prompt.trim() || translatedExamples.includes(prompt)) setPrompt(nextExample);
+  }, [i18n, i18n.resolvedLanguage, prompt, setPrompt, t]);
 
   const continueWithDesign = () => {
     const normalizedPrompt = prompt.trim();
@@ -478,7 +496,7 @@ export function LandingPage() {
                     value={prompt}
                     onChange={(event) => setPrompt(event.target.value)}
                     className="min-h-[108px] resize-none border-0 bg-transparent px-4 py-3 text-base leading-7 text-[#1d2f27] shadow-none placeholder:text-[#849087] focus-visible:ring-0"
-                    placeholder={t("landing.hero.promptPlaceholder")}
+                    placeholder={t("landing.hero.examplePrompt")}
                   />
                   <div className="flex flex-col gap-3 border-t border-[#173f32]/10 px-1 pt-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="px-3 text-xs leading-5 text-[#758078]">{t("landing.hero.promptHelp")}</div>
@@ -502,32 +520,32 @@ export function LandingPage() {
               <div className="relative overflow-hidden rounded-[2.1rem] border border-white/80 bg-white shadow-[0_35px_100px_rgba(40,55,47,0.20)]">
                 <div className="flex items-center justify-between border-b border-[#19372d]/10 bg-[#fbfaf7] px-5 py-3">
                   <div className="flex gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#e9a58b]" /><span className="h-2.5 w-2.5 rounded-full bg-[#e6cf86]" /><span className="h-2.5 w-2.5 rounded-full bg-[#9dc4a9]" /></div>
-                  <div className="rounded-full bg-[#eef0eb] px-4 py-1.5 text-[10px] font-medium text-[#69756e]">{profile.business_name.toLowerCase().replace(/\s+/g, "-")}.portfoyai.com</div>
+                  <div className="rounded-full bg-[#eef0eb] px-4 py-1.5 text-[10px] font-medium text-[#69756e]">{previewBusinessName.toLocaleLowerCase(i18n.resolvedLanguage).replace(/[^a-z0-9ğüşöçıİ\s-]/gi, "").replace(/\s+/g, "-")}.portfoyai.com</div>
                   <Badge className="rounded-full bg-[#e4f0e9] px-2.5 text-[10px] text-[#326049] hover:bg-[#e4f0e9]">{t("landing.management.live")}</Badge>
                 </div>
-                <div className="p-3 sm:p-4" style={getThemeStyles(theme)}>
-                  <div className="overflow-hidden rounded-[1.6rem] text-white" style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.accent})` }}>
-                    <div className="flex items-center justify-between px-5 py-4 text-[10px] sm:px-7">
-                      <span className="font-semibold tracking-[0.18em]">{profile.business_name.toUpperCase()}</span>
-                      <div className="hidden items-center gap-4 text-white/75 sm:flex"><span>{t("landing.preview.navListings")}</span><span>{t("landing.preview.navAbout")}</span><span>{t("landing.preview.navContact")}</span></div>
+                <div className="bg-[#f6efe6] p-3 sm:p-4" style={getThemeStyles(theme)}>
+                  <div className="relative min-h-[285px] overflow-hidden rounded-[1.6rem] bg-[#243b32] text-white">
+                    <img src="/images/agents/neighborhood-street-hero.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#17231e]/90 via-[#17231e]/45 to-transparent" />
+                    <div className="relative flex items-center justify-between px-5 py-4 text-[10px] sm:px-7">
+                      <span className="font-semibold tracking-[0.18em]">{previewBusinessName.toUpperCase()}</span>
+                      <div className="hidden items-center gap-4 text-white/80 sm:flex"><span>{t("landing.preview.navListings")}</span><span>{t("landing.preview.navAbout")}</span><span>{t("landing.preview.navContact")}</span></div>
                     </div>
-                    <div className="grid items-end gap-6 px-5 pb-6 pt-8 sm:grid-cols-[1fr_0.72fr] sm:px-7 sm:pb-8 sm:pt-12">
-                      <div>
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-white/65">{profile.region_focus}</div>
-                        <div className="mt-3 text-3xl font-semibold leading-[1.02] sm:text-4xl" style={{ fontFamily: theme.fontPairing.heading }}>{t("landing.preview.headline")}</div>
-                        <p className="mt-3 max-w-sm text-xs leading-5 text-white/75">{t("landing.preview.body")}</p>
-                      </div>
-                      <div className="rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur">
-                        <div className="text-[9px] uppercase tracking-[0.16em] text-white/60">{t("landing.preview.featured")}</div>
-                        <div className="mt-2 text-sm font-medium">{previewListings[0]?.title}</div>
-                        <div className="mt-1 text-xs text-white/70">{previewListings[0] && formatListingPrice(previewListings[0])}</div>
-                      </div>
+                    <div className="relative max-w-md px-5 pb-24 pt-7 sm:px-7 sm:pt-10">
+                      <div className="text-[9px] uppercase tracking-[0.22em] text-white/70">{previewRegion}</div>
+                      <div className="mt-3 text-3xl font-semibold leading-[1.02] sm:text-4xl" style={{ fontFamily: theme.fontPairing.heading }}>{t("landing.preview.headline")}</div>
+                      <p className="mt-3 max-w-sm text-xs leading-5 text-white/80">{t("landing.preview.body")}</p>
+                    </div>
+                    <div className="absolute inset-x-4 bottom-4 grid grid-cols-[1fr_1fr_auto] gap-2 rounded-2xl bg-[#fffaf3]/95 p-2.5 text-[#17231e] shadow-xl backdrop-blur sm:inset-x-7">
+                      <div className="rounded-xl bg-white px-3 py-2"><div className="text-[8px] uppercase tracking-[0.14em] text-[#8b776b]">{t("landing.preview.neighborhood")}</div><div className="mt-1 text-[10px] font-semibold">{t("landing.preview.neighborhoodValue")}</div></div>
+                      <div className="rounded-xl bg-white px-3 py-2"><div className="text-[8px] uppercase tracking-[0.14em] text-[#8b776b]">{t("landing.preview.feeling")}</div><div className="mt-1 text-[10px] font-semibold">{t("landing.preview.feelingValue")}</div></div>
+                      <div className="grid place-items-center rounded-xl bg-[#d86f45] px-4 text-[10px] font-semibold text-white">{t("landing.preview.match")}</div>
                     </div>
                   </div>
 
                   <div className="px-1 pb-2 pt-5">
                     <div className="mb-3 flex items-end justify-between">
-                      <div><div className="text-[9px] uppercase tracking-[0.18em] text-[#78847d]">{t("landing.preview.currentListings")}</div><div className="mt-1 text-lg font-semibold text-[#17231e]">{t("landing.preview.discover")}</div></div>
+                      <div><div className="text-[9px] uppercase tracking-[0.18em] text-[#a35f3d]">{t("landing.preview.matchEyebrow")}</div><div className="mt-1 text-lg font-semibold text-[#17231e]">{t("landing.preview.matchTitle")}</div></div>
                       <span className="text-[10px] font-medium text-[#5d6962]">{t("landing.preview.viewAll")} →</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2.5">
@@ -545,7 +563,7 @@ export function LandingPage() {
                 </div>
               </div>
               <div className="absolute -bottom-7 -left-5 hidden rounded-2xl border border-white bg-white/95 p-4 shadow-[0_18px_45px_rgba(39,55,47,0.18)] backdrop-blur sm:block">
-                <div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#e7efe8] text-[#315d4b]"><Sparkles className="h-4 w-4" /></div><div><div className="text-xs font-semibold">{t("landing.preview.ready")}</div><div className="mt-0.5 text-[10px] text-[#758078]">{t("landing.preview.tailored")} · {profile.region_focus}</div></div></div>
+                <div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#e7efe8] text-[#315d4b]"><Sparkles className="h-4 w-4" /></div><div><div className="text-xs font-semibold">{t("landing.preview.ready")}</div><div className="mt-0.5 text-[10px] text-[#758078]">{t("landing.preview.tailored")} · {previewRegion}</div></div></div>
               </div>
             </div>
           </div>
