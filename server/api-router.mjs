@@ -7,6 +7,7 @@ import listing from "./handlers/listing.mjs";
 import generateListingCopy from "./handlers/listing-copy.mjs";
 import socialKit from "./handlers/listing-social-kit.mjs";
 import publicSite from "./handlers/public-site.mjs";
+import renderPage from "./handlers/render-page.mjs";
 import site from "./handlers/site.mjs";
 import siteListings from "./handlers/site-listings.mjs";
 import refineSite from "./handlers/site-refine.mjs";
@@ -16,6 +17,7 @@ import { methodNotAllowed, sendJson } from "./api-utils.mjs";
 const uuidSource = "([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})";
 
 export const apiRouteInventory = [
+  { pattern: /^\/api\/render-page$/, methods: ["GET", "HEAD"], handler: renderPage },
   { pattern: /^\/api\/experiment$/, methods: ["POST"], handler: experiment },
   { pattern: /^\/api\/fonts$/, methods: ["GET"], handler: fonts },
   { pattern: /^\/api\/generate-theme$/, methods: ["POST"], handler: generateTheme },

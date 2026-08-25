@@ -7,10 +7,18 @@ export type PlatformLanguage = "tr" | "en";
 
 export const PLATFORM_LANGUAGE_STORAGE_KEY = "portfoyai_language";
 
+function storedLanguageCookie(): PlatformLanguage | null {
+  if (typeof document === "undefined") return null;
+  const value = document.cookie.split(";").map((item) => item.trim()).find((item) => item.startsWith(`${PLATFORM_LANGUAGE_STORAGE_KEY}=`))?.split("=")[1];
+  return value === "tr" || value === "en" ? value : null;
+}
+
 function detectInitialLanguage(): PlatformLanguage {
   if (typeof window === "undefined") return "tr";
   const stored = window.localStorage.getItem(PLATFORM_LANGUAGE_STORAGE_KEY);
   if (stored === "tr" || stored === "en") return stored;
+  const cookie = storedLanguageCookie();
+  if (cookie) return cookie;
   return window.navigator.language.toLowerCase().startsWith("en") ? "en" : "tr";
 }
 
@@ -32,6 +40,7 @@ i18n.on("languageChanged", updateDocumentLanguage);
 
 export async function setPlatformLanguage(language: PlatformLanguage) {
   window.localStorage.setItem(PLATFORM_LANGUAGE_STORAGE_KEY, language);
+  document.cookie = `${PLATFORM_LANGUAGE_STORAGE_KEY}=${language}; Path=/; Max-Age=31536000; SameSite=Lax`;
   await i18n.changeLanguage(language);
 }
 

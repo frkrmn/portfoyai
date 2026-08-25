@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { formatListingPrice, LISTING_CURRENCIES } from "@/lib/listing-price";
 import { clearPendingPrompt, getPendingPrompt, savePendingPrompt } from "@/lib/pending-prompt";
 import { readApiJson } from "@/lib/api";
+import { usePageMeta } from "@/lib/page-meta";
 import { toast } from "sonner";
 import { formatDateTR, generateThemeFromPrompt } from "./mock";
 import { usePortfoyAI } from "./store";
@@ -55,30 +56,6 @@ const getThemeStyles = (theme: Pick<ThemeConfig, "primary" | "accent" | "fontPai
     "--theme-accent": theme.accent,
     fontFamily: theme.fontPairing.body,
   }) as CSSProperties;
-
-const usePageMeta = (title: string, description: string) => {
-  useEffect(() => {
-    document.title = title;
-    const setMeta = (attribute: "name" | "property", key: string, content: string) => {
-      let tag = document.querySelector(`meta[${attribute}="${key}"]`) as HTMLMetaElement | null;
-      if (!tag) {
-        tag = document.createElement("meta");
-        tag.setAttribute(attribute, key);
-        document.head.appendChild(tag);
-      }
-      tag.content = content;
-    };
-
-    setMeta("name", "description", description);
-    setMeta("name", "author", "Fastate AI");
-    setMeta("property", "og:title", title);
-    setMeta("property", "og:description", description);
-    setMeta("property", "og:type", "website");
-    setMeta("name", "twitter:card", "summary_large_image");
-    setMeta("name", "twitter:title", title);
-    setMeta("name", "twitter:description", description);
-  }, [title, description]);
-};
 
 export function Shell({ children, actions, businessName, activeSection, onSectionChange, leadCount }: { children: ReactNode; actions?: ReactNode; businessName: string; activeSection: "overview" | "site" | "listings" | "leads"; onSectionChange: (section: "overview" | "site" | "listings" | "leads") => void; leadCount: number }) {
   const { t } = useTranslation();

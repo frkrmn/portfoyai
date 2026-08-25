@@ -3,7 +3,40 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "dist/index.html"
+    }
+  },
   "rewrites": [
+    {
+      "source": "/site/:pagePath*",
+      "destination": "/api?route=render-page&pagePath=site/:pagePath*"
+    },
+    {
+      "source": "/",
+      "destination": "/api?route=render-page"
+    },
+    {
+      "source": "/pricing",
+      "destination": "/api?route=render-page&pagePath=pricing"
+    },
+    {
+      "source": "/auth",
+      "destination": "/api?route=render-page&pagePath=auth"
+    },
+    {
+      "source": "/login",
+      "destination": "/api?route=render-page&pagePath=login"
+    },
+    {
+      "source": "/signup",
+      "destination": "/api?route=render-page&pagePath=signup"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/api?route=render-page&pagePath=dashboard"
+    },
     {
       "source": "/api/:route*",
       "destination": "/api"
