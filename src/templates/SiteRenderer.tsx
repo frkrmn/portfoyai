@@ -55,7 +55,12 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
   const config = createTemplateConfig(payload, view, listing);
   const family = getTemplateFamily(config.templateId);
   const Component = view === "home" ? family.Home : view === "listings" ? family.Listings : family.Detail;
-  return <><GoogleFontStylesheet fonts={config.fonts} /><Component config={config} /></>;
+  const closedLabel = listing?.listing_status === "sold"
+    ? (i18n.resolvedLanguage === "en" ? "Sold" : "Satıldı")
+    : listing?.listing_status === "rented"
+      ? (i18n.resolvedLanguage === "en" ? "Rented" : "Kiralandı")
+      : "";
+  return <><GoogleFontStylesheet fonts={config.fonts} />{closedLabel ? <div data-listing-status={listing?.listing_status} className="fixed right-5 top-5 z-[100] rounded-full bg-slate-950 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-xl">{closedLabel}</div> : null}<Component config={config} /></>;
 }
 
 export function TemplateNotFoundLink({ slug }: { slug: string }) {

@@ -140,6 +140,8 @@ export type TemplateConfig = {
   };
   layoutFineTune: LayoutFineTune;
   listings: Listing[];
+  closedListings: Listing[];
+  showClosedListings: boolean;
   listing?: Listing;
 };
 
@@ -164,6 +166,7 @@ export type PublicSitePayload = {
     theme_config?: Record<string, unknown> | null;
   };
   listings: Listing[];
+  show_closed_listings?: boolean;
 };
 
 type NestedThemeConfig = {
@@ -547,7 +550,9 @@ export function createTemplateConfig(
       showTestimonial: raw.layout?.show_testimonial === true,
     },
     layoutFineTune: raw.layout_fine_tune || {},
-    listings: payload.listings || [],
+    listings: (payload.listings || []).filter((item) => !item.listing_status || item.listing_status === "active"),
+    closedListings: (payload.listings || []).filter((item) => item.listing_status === "sold" || item.listing_status === "rented"),
+    showClosedListings: payload.show_closed_listings === true,
     listing,
   };
 }

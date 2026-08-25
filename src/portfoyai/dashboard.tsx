@@ -52,6 +52,7 @@ type DashboardSite = {
   district_id?: string | null;
   neighborhood_id?: string | null;
   status: "draft" | "published";
+  show_closed_listings: boolean;
   created_at: string;
 };
 
@@ -220,6 +221,7 @@ const blankListing = (siteId: string, district = ""): ListingDraft & { id?: stri
   lng: 29,
   media: [],
   status: "active",
+  listing_status: "active",
   features: [],
 });
 
@@ -253,6 +255,19 @@ function Metric({ label, value }: { label: string; value: string }) {
   return <Card className="rounded-[1.5rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardContent className="p-5"><div className="text-xs text-[#7a857e]">{label}</div><div className="mt-2 text-2xl font-semibold">{value}</div></CardContent></Card>;
 }
 
+function ListingManagementRow({ listing, selected, updating, onSelect, onToggle }: { listing: Listing; selected: boolean; updating: boolean; onSelect: () => void; onToggle: () => void }) {
+  const { t } = useTranslation();
+  const isClosed = listing.listing_status !== "active";
+  const statusLabel = listing.listing_status === "sold" ? t("dashboard.listings.sold") : listing.listing_status === "rented" ? t("dashboard.listings.rented") : t("dashboard.listings.available");
+  return <div className={cn("grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border p-3", selected ? "border-[#173f32] bg-[#edf1eb]" : "bg-white")}>
+    <button type="button" onClick={onSelect} className="grid min-w-0 grid-cols-[72px_1fr] items-center gap-4 text-left">
+      <img src={getListingImage(listing)} alt="" className={cn("h-16 w-[72px] rounded-xl object-cover", isClosed && "grayscale opacity-70")} />
+      <div className="min-w-0"><div className="truncate font-semibold">{listing.title}</div><div className="mt-1 text-xs text-[#7a857e]">{formatListingLocation(listing)} · {listing.room_count} · {listing.m2} m²</div><div className="mt-2 text-sm font-semibold">{formatListingPrice(listing)}</div></div>
+    </button>
+    <div className="flex flex-col items-end gap-2"><div className="flex flex-wrap justify-end gap-1.5"><Badge>{t(listing.listing_type === "sale" ? "common.sale" : "common.rent")}</Badge><Badge variant={isClosed ? "secondary" : "outline"}>{statusLabel}</Badge></div><Button type="button" size="sm" variant={isClosed ? "outline" : "secondary"} disabled={updating} onClick={onToggle}>{t(isClosed ? "dashboard.listings.markAvailable" : listing.listing_type === "sale" ? "dashboard.listings.markSold" : "dashboard.listings.markRented")}</Button></div>
+  </div>;
+}
+
 export function DashboardPage() {
   const { t, i18n } = useTranslation();
   const { session, user } = useAuth();
@@ -267,6 +282,7 @@ export function DashboardPage() {
   const [siteDraft, setSiteDraft] = useState<SiteDraft | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingListing, setSavingListing] = useState(false);
+  const [updatingListingStatusId, setUpdatingListingStatusId] = useState("");
   const [savingSite, setSavingSite] = useState(false);
   const [plan, setPlan] = useState<"free" | "pro">("free");
   const [openingPaywall, setOpeningPaywall] = useState(false);
@@ -394,7 +410,7 @@ export function DashboardPage() {
 
   const startNewListing = () => {
     if (!activeSite) return;
-    const activeCount = listings.filter((listing) => listing.status === "active").length;
+    const activeCount = listings.filter((listing) => listing.status === "active" && listing.listing_status === "active").length;
     if (plan === "free" && activeCount >= 5) {
       void openPaywall("listing_limit");
       return;
@@ -467,6 +483,28 @@ export function DashboardPage() {
     }
   };
 
+  const toggleListingAvailability = async (listing: Listing) => {
+    if (!session) return;
+    const nextStatus = listing.listing_status === "active" ? (listing.listing_type === "sale" ? "sold" : "rented") : "active";
+    setUpdatingListingStatusId(listing.id);
+    try {
+      const response = await fetch(`/api/listings/${listing.id}`, {
+        method: "PATCH",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ listing_status: nextStatus }),
+      });
+      const payload = await readApiJson<{ error?: string; listing?: Listing }>(response);
+      if (!response.ok || !payload.listing) throw new Error(payload.error || t("dashboard.listings.statusError"));
+      setListings((current) => current.map((item) => item.id === payload.listing!.id ? payload.listing! : item));
+      setDraft((current) => current.id === payload.listing!.id ? { ...payload.listing! } : current);
+      toast.success(t(nextStatus === "active" ? "dashboard.listings.reopened" : nextStatus === "sold" ? "dashboard.listings.markedSold" : "dashboard.listings.markedRented"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("dashboard.listings.statusError"));
+    } finally {
+      setUpdatingListingStatusId("");
+    }
+  };
+
   const patchSite = async (changes: Record<string, unknown>, success: string) => {
     if (!session || !activeSite) return false;
     setSavingSite(true);
@@ -488,6 +526,7 @@ export function DashboardPage() {
 
   const saveIdentity = () => siteDraft && patchSite({ business_name: siteDraft.business_name, headline: siteDraft.headline, tone: siteDraft.tone, phone: siteDraft.phone, email: siteDraft.email, address: siteDraft.address, region_focus: siteDraft.region_focus, country_id: siteDraft.country_id, province_id: siteDraft.province_id, district_id: siteDraft.district_id, neighborhood_id: siteDraft.neighborhood_id }, t("dashboard.site.saved"));
   const togglePublication = () => activeSite && patchSite({ status: activeSite.status === "published" ? "draft" : "published" }, t(activeSite.status === "published" ? "dashboard.site.unpublished" : "dashboard.site.published"));
+  const toggleClosedListings = () => activeSite && patchSite({ show_closed_listings: !activeSite.show_closed_listings }, t(!activeSite.show_closed_listings ? "dashboard.site.closedListingsShown" : "dashboard.site.closedListingsHidden"));
 
   const saveThemeSettings = async () => {
     if (!siteDraft) return;
@@ -566,7 +605,7 @@ export function DashboardPage() {
 
       {activeSite && activeTab === "overview" ? <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric label={t("dashboard.overview.listings")} value={String(listings.length)} /><Metric label={t("common.sale")} value={String(saleCount)} /><Metric label={t("common.rent")} value={String(rentCount)} /><Metric label={t("dashboard.overview.leads")} value={String(siteLeads.length)} /></div><div className="grid gap-6 xl:grid-cols-[1.4fr_.6fr]"><Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between"><div><CardTitle>{t("dashboard.overview.recent")}</CardTitle><CardDescription>{t("dashboard.overview.recentBody")}</CardDescription></div><Button variant="ghost" onClick={() => setActiveTab("listings")}>{t("dashboard.overview.all")} <ArrowRight className="ml-2 h-4 w-4" /></Button></CardHeader><CardContent className="grid gap-4 md:grid-cols-3">{listings.slice(0, 3).map((listing) => <button key={listing.id} onClick={() => { setDraft({ ...listing }); setActiveTab("listings"); }} className="overflow-hidden rounded-2xl border bg-white text-left"><img src={getListingImage(listing)} alt={listing.title} className="aspect-[4/3] w-full object-cover" /><div className="p-4"><div className="truncate font-semibold">{listing.title}</div><div className="mt-1 text-xs text-[#7a857e]">{formatListingLocation(listing)} · {listing.room_count} · {listing.m2} m²</div><div className="mt-3 font-semibold">{formatListingPrice(listing)}</div></div></button>)}</CardContent></Card><Card className="rounded-[2rem] border-0 bg-[#173f32] text-white"><CardContent className="p-7"><Badge className="bg-white/15 text-white">{t(activeSite.status === "published" ? "common.published" : "common.draft")}</Badge><h2 className="mt-8 text-3xl font-semibold">{activeSite.business_name}</h2><p className="mt-3 text-sm text-white/60">/site/{activeSite.slug}</p><Button onClick={togglePublication} disabled={savingSite} className="mt-7 w-full rounded-full bg-white text-[#173f32]">{t(activeSite.status === "published" ? "dashboard.site.unpublish" : "dashboard.site.publish")}</Button></CardContent></Card></div></> : null}
 
-      {activeSite && activeTab === "listings" ? <div className="grid gap-6 xl:grid-cols-[1fr_.9fr]"><Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between"><div><CardTitle>{t("dashboard.listings.title")}</CardTitle><CardDescription>{t("dashboard.listings.description", { count: listings.length })}</CardDescription></div><Button onClick={startNewListing} disabled={openingPaywall} className="rounded-full"><Plus className="mr-2 h-4 w-4" />{t("dashboard.listings.new")}</Button></CardHeader><CardContent className="space-y-3">{listings.map((listing) => <button key={listing.id} onClick={() => setDraft({ ...listing })} className={cn("grid w-full grid-cols-[72px_1fr_auto] items-center gap-4 rounded-2xl border p-3 text-left", draft.id === listing.id ? "border-[#173f32] bg-[#edf1eb]" : "bg-white")}><img src={getListingImage(listing)} alt="" className="h-16 w-[72px] rounded-xl object-cover" /><div className="min-w-0"><div className="truncate font-semibold">{listing.title}</div><div className="mt-1 text-xs text-[#7a857e]">{formatListingLocation(listing)} · {listing.room_count} · {listing.m2} m²</div><div className="mt-2 text-sm font-semibold">{formatListingPrice(listing)}</div></div><Badge>{t(listing.listing_type === "sale" ? "common.sale" : "common.rent")}</Badge></button>)}</CardContent></Card><ListingForm siteId={activeSite.id} draft={draft} onDraftChange={(patch) => setDraft((current) => ({ ...current, ...patch }))} onSave={() => void saveListing()} isSaving={savingListing} onGenerate={generateListingCopy} onLoadSocialKit={loadSocialKit} onReset={() => setDraft(blankListing(activeSite.id))} onDelete={() => void removeListing()} /></div> : null}
+      {activeSite && activeTab === "listings" ? <div className="grid gap-6 xl:grid-cols-[1fr_.9fr]"><Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between"><div><CardTitle>{t("dashboard.listings.title")}</CardTitle><CardDescription>{t("dashboard.listings.description", { count: listings.length })}</CardDescription></div><Button onClick={startNewListing} disabled={openingPaywall} className="rounded-full"><Plus className="mr-2 h-4 w-4" />{t("dashboard.listings.new")}</Button></CardHeader><CardContent className="space-y-3">{listings.map((listing) => <ListingManagementRow key={listing.id} listing={listing} selected={draft.id === listing.id} updating={updatingListingStatusId === listing.id} onSelect={() => setDraft({ ...listing })} onToggle={() => void toggleListingAvailability(listing)} />)}</CardContent></Card><ListingForm siteId={activeSite.id} draft={draft} onDraftChange={(patch) => setDraft((current) => ({ ...current, ...patch }))} onSave={() => void saveListing()} isSaving={savingListing} onGenerate={generateListingCopy} onLoadSocialKit={loadSocialKit} onReset={() => setDraft(blankListing(activeSite.id))} onDelete={() => void removeListing()} /></div> : null}
 
       {activeSite && activeTab === "leads" ? <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between gap-4"><div><CardTitle>{t("dashboard.leads.title")}</CardTitle><CardDescription>{t("dashboard.leads.description")}</CardDescription></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void loadLeads()}><RefreshCw className="mr-2 h-4 w-4" />{t("common.refresh")}</Button><Button variant="outline" disabled={openingPaywall} onClick={() => plan === "free" ? void openPaywall("lead_export") : toast.info(t("dashboard.leads.exporting"))}><Download className="mr-2 h-4 w-4" />{t("dashboard.leads.export")}{plan === "free" ? <Lock className="ml-2 h-3.5 w-3.5" /> : null}</Button></div></CardHeader><CardContent>{siteLeads.length ? <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left"><thead className="border-y text-xs text-[#7a857e]"><tr><th className="py-4">{t("dashboard.leads.name")}</th><th>{t("dashboard.leads.phone")}</th><th>{t("dashboard.leads.message")}</th><th>{t("dashboard.leads.date")}</th></tr></thead><tbody>{siteLeads.map((lead) => <tr key={lead.id} className="border-b"><td className="py-5 font-semibold">{lead.name}</td><td><a href={`tel:${lead.phone}`}>{lead.phone}</a></td><td className="max-w-sm text-sm">{lead.message || "—"}</td><td className="text-xs text-[#7a857e]">{new Intl.DateTimeFormat(i18n.resolvedLanguage === "en" ? "en-US" : "tr-TR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(lead.created_at))}</td></tr>)}</tbody></table></div> : <p className="p-5 text-sm text-[#69756e]">{t("dashboard.leads.empty")}</p>}</CardContent></Card> : null}
 
@@ -583,6 +622,10 @@ export function DashboardPage() {
               <div><Label>{t("dashboard.site.region")}</Label><p className="mt-1 text-xs text-[#69756e]">{t("dashboard.site.regionHelp")}</p></div>
               <LocationHierarchyFields idPrefix="site-region" value={siteDraft} onChange={(selection, names) => setSiteDraft({ ...siteDraft, ...selection, region_focus: [names.neighborhood, names.district, names.province].filter(Boolean).join(", ") })} />
               <div className="flex flex-wrap gap-2"><Button onClick={saveIdentity} disabled={savingSite}>{t("dashboard.site.save")}</Button><Button variant="outline" onClick={togglePublication} disabled={savingSite}>{t(activeSite.status === "published" ? "dashboard.site.unpublish" : "dashboard.site.publish")}</Button></div>
+              <div className="flex items-center justify-between gap-4 rounded-2xl border bg-white p-4">
+                <div><div className="font-semibold">{t("dashboard.site.showClosedListings")}</div><p className="mt-1 text-xs text-slate-500">{t("dashboard.site.showClosedListingsDescription")}</p></div>
+                <button type="button" role="switch" aria-checked={activeSite.show_closed_listings} aria-label={t("dashboard.site.showClosedListings")} disabled={savingSite} onClick={() => void toggleClosedListings()} className={cn("h-7 w-12 shrink-0 rounded-full p-1 transition", activeSite.show_closed_listings ? "bg-[#173f32]" : "bg-slate-200")}><span className={cn("block h-5 w-5 rounded-full bg-white shadow transition-transform", activeSite.show_closed_listings && "translate-x-5")} /></button>
+              </div>
               <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border bg-white p-4">
                 <div><div className="flex items-center gap-2 font-semibold">{t("dashboard.site.branding")} {plan === "free" ? <Lock className="h-3.5 w-3.5 text-slate-400" /> : null}</div><p className="mt-1 text-xs text-slate-500">{t("dashboard.site.brandingDescription")}</p></div>
                 {plan === "free" ? <Button variant="outline" disabled={openingPaywall} onClick={() => void openPaywall("branding_removal")} className="shrink-0 rounded-full">{t("dashboard.site.brandingFree")}</Button> : <button type="button" role="switch" aria-checked="false" aria-label={t("dashboard.site.branding")} className="h-7 w-12 rounded-full bg-slate-200 p-1"><span className="block h-5 w-5 rounded-full bg-white shadow" /></button>}

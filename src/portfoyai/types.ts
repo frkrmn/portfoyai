@@ -111,6 +111,7 @@ export type Listing = {
   lng: number;
   media: MediaItem[];
   status: "active" | "passive" | "sold";
+  listing_status: "active" | "sold" | "rented";
   created_at: string;
   features: string[];
   address?: string | null;

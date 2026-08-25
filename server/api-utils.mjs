@@ -159,7 +159,7 @@ export const countActiveListingsForUser = async (userId) => {
   if (sitesError) throw new Error(`Failed to load owned sites for listing limit: ${sitesError.message}`);
   const siteIds = (sites || []).map((site) => site.id);
   if (!siteIds.length) return 0;
-  const { count, error } = await getSupabaseClient().from("listings").select("id", { count: "exact", head: true }).in("site_id", siteIds).eq("status", "active");
+  const { count, error } = await getSupabaseClient().from("listings").select("id", { count: "exact", head: true }).in("site_id", siteIds).eq("status", "active").eq("listing_status", "active");
   if (error) throw new Error(`Failed to count active listings: ${error.message}`);
   return count || 0;
 };
@@ -210,6 +210,7 @@ export const serializeListing = (listing) => {
     lng: Number(listing.lng),
     media: Array.isArray(listing.media) ? listing.media : [],
     status: listing.status,
+    listing_status: ["active", "sold", "rented"].includes(listing.listing_status) ? listing.listing_status : "active",
     created_at: listing.created_at,
     features,
     address: listing.address || `${listing.district}, Türkiye`,
@@ -226,7 +227,7 @@ export const serializeListing = (listing) => {
 export const getOwnedSite = async (userId, siteId) => {
   const { data, error } = await getSupabaseClient()
     .from("sites")
-    .select("id, slug, user_id, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, country_id, province_id, district_id, neighborhood_id, created_at")
+    .select("id, slug, user_id, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, show_closed_listings, country_id, province_id, district_id, neighborhood_id, created_at")
     .eq("id", siteId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -249,6 +250,7 @@ export const dashboardSite = (site) => ({
   neighborhood_id: site.neighborhood_id || null,
   can_undo: Boolean(site.previous_theme_config),
   status: site.status,
+  show_closed_listings: site.show_closed_listings === true,
   created_at: site.created_at,
 });
 
@@ -275,6 +277,10 @@ export const listingPayload = (body, siteId) => {
   if (priceReducedFrom != null && (!Number.isFinite(priceReducedFrom) || priceReducedFrom <= price)) throw new Error("VALIDATION:Reduced-from price must be greater than the current price.");
   if (!["sale", "rent"].includes(body.listing_type)) throw new Error("VALIDATION:Listing type must be sale or rent.");
   if (body.status !== undefined && !["active", "passive", "sold"].includes(body.status)) throw new Error("VALIDATION:Invalid listing status.");
+  const listingStatus = body.listing_status || "active";
+  if (!["active", "sold", "rented"].includes(listingStatus)) throw new Error("VALIDATION:Invalid listing availability status.");
+  if (listingStatus === "sold" && body.listing_type !== "sale") throw new Error("VALIDATION:Only sale listings can be marked sold.");
+  if (listingStatus === "rented" && body.listing_type !== "rent") throw new Error("VALIDATION:Only rent listings can be marked rented.");
   const media = Array.isArray(body.media) ? body.media.slice(0, 10).map((item, index) => ({
     id: String(item?.id || `media-${index}`).slice(0, 100),
     url: String(item?.url || ""),
@@ -296,6 +302,7 @@ export const listingPayload = (body, siteId) => {
     lng: Number.isFinite(Number(body.lng)) ? Number(body.lng) : 29,
     media,
     status: body.status || "active",
+    listing_status: listingStatus,
     features: Array.isArray(body.features) ? body.features.map(String).map((value) => value.trim()).filter(Boolean).slice(0, 30) : [],
     price_reduced_from: priceReducedFrom,
     urgent_sale: body.urgent_sale === true,
