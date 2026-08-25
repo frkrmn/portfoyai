@@ -40,7 +40,7 @@ function Header({ config }: SiteTemplateProps) {
 
 function Footer({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <footer className="border-t border-[var(--ud-line)] bg-[var(--ud-primary)] px-5 py-12 text-[var(--ud-on-primary)] sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1380px] gap-8 md:grid-cols-[1fr_auto]"><div><div className="font-[family-name:var(--ud-heading)] text-2xl font-black">{c.businessName}</div><p className="mt-3 max-w-lg text-sm opacity-65">{c.tagline}</p></div><address className="space-y-2 text-sm not-italic opacity-70"><div>{c.phone}</div><div>{c.email}</div><div>{c.address}</div></address></div></footer>;
+  return <footer className="border-t border-[var(--ud-line)] bg-[var(--ud-primary)] px-5 py-12 text-[var(--ud-on-primary)] sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1380px] gap-8 md:grid-cols-[1fr_auto]"><div><div className="font-[family-name:var(--ud-heading)] text-2xl font-black">{c.businessName}</div><p className="mt-3 max-w-lg text-sm opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div><address className="space-y-2 text-sm not-italic opacity-70"><div>{c.phone}</div><div>{c.email}</div><div>{c.address}</div></address></div></footer>;
 }
 
 function UrgencyBadges({ config, listing, large = false }: { config: TemplateConfig; listing: Listing; large?: boolean }) {

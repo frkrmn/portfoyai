@@ -6,7 +6,7 @@ import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAll
 export const siteConfigSchema = JSON.parse(readFileSync(new URL("../site-config.schema.json", import.meta.url), "utf8"));
 export const siteConfigModel = "gemini-3.5-flash-lite";
 export const siteConfigSystemPrompt = [
-  "You are the brand design engine for PortföyAI, a premium Turkish real-estate website builder.",
+  "You are the brand design engine for Fastate AI, a premium Turkish real-estate website builder.",
   "Convert the user's description into one confident website identity.",
   "Return only the JSON object required by the supplied schema.",
   "Do not return layout_fine_tune during initial generation. That optional object is reserved exclusively for later authenticated refinement requests, so every template must initially keep its established visual defaults.",

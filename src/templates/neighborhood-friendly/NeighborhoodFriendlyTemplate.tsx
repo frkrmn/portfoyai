@@ -36,7 +36,7 @@ function Header({ config }: SiteTemplateProps) {
 
 function Footer({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <footer className="border-t border-[var(--nf-line)] bg-[var(--nf-soft)] px-5 py-12 sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1360px] gap-8 md:grid-cols-[1fr_auto]"><div><div className="font-[family-name:var(--nf-heading)] text-2xl font-extrabold">{c.agentName}</div><p className="mt-2 max-w-md text-sm opacity-65">{c.tagline}</p></div><address className="space-y-2 text-sm not-italic opacity-70"><div>{c.address}</div><div>{c.phone}</div><div>{c.email}</div></address></div></footer>;
+  return <footer className="border-t border-[var(--nf-line)] bg-[var(--nf-soft)] px-5 py-12 sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1360px] gap-8 md:grid-cols-[1fr_auto]"><div><div className="font-[family-name:var(--nf-heading)] text-2xl font-extrabold">{c.agentName}</div><p className="mt-2 max-w-md text-sm opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div><address className="space-y-2 text-sm not-italic opacity-70"><div>{c.address}</div><div>{c.phone}</div><div>{c.email}</div></address></div></footer>;
 }
 
 function Specs({ config, listing }: { config: TemplateConfig; listing: Listing }) {

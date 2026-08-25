@@ -4,7 +4,7 @@ export async function readApiJson<T = Record<string, unknown>>(response: Respons
   if (!contentType.includes("application/json")) {
     const receivedHtml = /^\s*</.test(text);
     throw new Error(receivedHtml
-      ? "API yerine uygulama HTML'i döndü. PortföyAI'yi doğrudan Vite ile değil `npm run dev` komutuyla çalıştırın ve sunucuyu yeniden başlatın."
+      ? "API yerine uygulama HTML'i döndü. Fastate AI'yi doğrudan Vite ile değil `npm run dev` komutuyla çalıştırın ve sunucuyu yeniden başlatın."
       : `API geçersiz bir yanıt döndürdü (${response.status}).`);
   }
   try {

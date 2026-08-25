@@ -83,7 +83,7 @@ export const generateThemeFromPrompt = (prompt: string): { profile: PromptProfil
           .split(/[.!?]/)[0]
           .replace(/\b(emlak|real estate|danışmanlık|brokerage)\b/gi, "")
           .trim()
-          .slice(0, 48) || "PortföyAI Demo Ofis",
+          .slice(0, 48) || "Fastate AI Demo Ofis",
       region_focus: regionFocus,
       tone: lower.includes("güven") ? "Trustworthy" : lower.includes("modern") ? "Modern" : "Warm",
       color_direction: theme.variant,
@@ -129,7 +129,7 @@ export const svgDataUri = (title: string, accent: string, index: number) => {
     <circle cx="980" cy="180" r="110" fill="white" fill-opacity="0.36"/>
     <rect x="148" y="530" width="430" height="34" rx="17" fill="white" fill-opacity="0.7"/>
     <rect x="148" y="580" width="280" height="22" rx="11" fill="white" fill-opacity="0.55"/>
-    <text x="150" y="250" font-size="42" font-family="Arial, sans-serif" fill="#0f172a" font-weight="700">PortföyAI</text>
+    <text x="150" y="250" font-size="42" font-family="Arial, sans-serif" fill="#0f172a" font-weight="700">Fastate AI</text>
     <text x="150" y="330" font-size="72" font-family="Arial, sans-serif" fill="#0f172a" font-weight="700">${safeTitle}</text>
     <text x="150" y="390" font-size="28" font-family="Arial, sans-serif" fill="#334155">İstanbul için seçkin gayrimenkul sunumu</text>
     <text x="150" y="640" font-size="24" font-family="Arial, sans-serif" fill="#0f172a">Demo görsel • ${index + 1}</text>
@@ -163,7 +163,7 @@ const demoTheme = generateThemeFromPrompt("Kadıköy'de lüks daire satan modern
 const demoAgent: Agent = {
   id: "agent_demo",
   name: "Demet Kaya",
-  email: "demet@portfoyai.com",
+  email: "demet@example.com",
   phone: "+90 532 555 00 10",
   region: "Kadıköy",
   plan: "free",
@@ -183,7 +183,7 @@ const demoSite: Site = {
   status: "published",
   created_at: now(),
   heroTitle: "Kadıköy'de seçkin yaşam alanları",
-  heroSubtitle: "PortföyAI ile saniyeler içinde canlı, markalı bir emlak sitesi.",
+  heroSubtitle: "Fastate AI ile saniyeler içinde canlı, markalı bir emlak sitesi.",
 };
 
 const demoListings: Listing[] = [
@@ -352,7 +352,7 @@ export const createAgentFromPrompt = (prompt: string, name: string, email: strin
     status: "published",
     created_at: now(),
     heroTitle: generatedConfig?.headline || `${profile.region_focus} için özel olarak hazırlanmış marka sitesi`,
-    heroSubtitle: `PortföyAI, ${profile.listing_types.join(" ve ")} ilanlarınızı temiz ve güvenilir bir vitrinle sunar.`,
+    heroSubtitle: `Fastate AI, ${profile.listing_types.join(" ve ")} ilanlarınızı temiz ve güvenilir bir vitrinle sunar.`,
   };
 
   const listings: Listing[] = Array.from({ length: 5 }).map((_, index) => {

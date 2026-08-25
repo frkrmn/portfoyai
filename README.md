@@ -1,6 +1,6 @@
-# PortföyAI
+# Fastate AI
 
-PortföyAI is an AI-assisted website builder and portfolio workspace for Turkish real-estate professionals.
+Fastate AI is an AI-assisted website builder and portfolio workspace for Turkish real-estate professionals.
 
 ## Local development
 

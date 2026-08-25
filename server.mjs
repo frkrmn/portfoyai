@@ -22,5 +22,5 @@ const server = createHttpServer(async (request, response) => {
 });
 
 server.listen(port, host, () => {
-  console.info(`PortföyAI dev server running at http://localhost:${port}`);
+  console.info(`Fastate AI dev server running at http://localhost:${port}`);
 });

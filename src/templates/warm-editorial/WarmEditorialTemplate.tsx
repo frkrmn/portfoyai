@@ -50,7 +50,7 @@ const labels = {
   categoryApartment: "Daire",
   categoryHouse: "Müstakil Ev",
   categoryDuplex: "Dubleks",
-  footerCredit: "PortföyAI ile hazırlandı",
+  footerCredit: "Fastate AI ile hazırlandı",
 } as const;
 
 const getBedroomCount = (listing: Listing) =>

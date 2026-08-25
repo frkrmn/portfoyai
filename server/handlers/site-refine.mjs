@@ -31,7 +31,7 @@ export const siteRefineSchema = {
 };
 
 const systemInstruction = [
-  "Sen PortföyAI için sınırları kesin bir Türkçe tema ince-ayar eşleyicisisin.",
+  "Sen Fastate AI için sınırları kesin bir Türkçe tema ince-ayar eşleyicisisin.",
   "Kullanıcı isteğini yalnızca verilen şemadaki alanlara eşleştir. Kod, CSS, yeni alan, içerik, görsel, logo ölçüsü veya yapısal bölüm değişikliği üretme.",
   "Sadece açıkça istenen alanları döndür; ilişkili görünse bile başka alanları tahmin ederek değiştirme.",
   "Daha yuvarlak butonlar buttonStyle=pill; köşesiz butonlar buttonStyle=sharp; menüyü ortalama navAlignment=center; gölgeyi kaldırma/sade kart cardStyle=flat; belirgin gölge cardStyle=shadow; çerçeveli kart cardStyle=bordered olarak eşlenir.",

@@ -59,15 +59,24 @@ const getThemeStyles = (theme: Pick<ThemeConfig, "primary" | "accent" | "fontPai
 const usePageMeta = (title: string, description: string) => {
   useEffect(() => {
     document.title = title;
-    const tag = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
-    if (!tag) {
-      const created = document.createElement("meta");
-      created.name = "description";
-      created.content = description;
-      document.head.appendChild(created);
-      return;
-    }
-    tag.content = description;
+    const setMeta = (attribute: "name" | "property", key: string, content: string) => {
+      let tag = document.querySelector(`meta[${attribute}="${key}"]`) as HTMLMetaElement | null;
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute(attribute, key);
+        document.head.appendChild(tag);
+      }
+      tag.content = content;
+    };
+
+    setMeta("name", "description", description);
+    setMeta("name", "author", "Fastate AI");
+    setMeta("property", "og:title", title);
+    setMeta("property", "og:description", description);
+    setMeta("property", "og:type", "website");
+    setMeta("name", "twitter:card", "summary_large_image");
+    setMeta("name", "twitter:title", title);
+    setMeta("name", "twitter:description", description);
   }, [title, description]);
 };
 
@@ -520,7 +529,7 @@ export function LandingPage() {
               <div className="relative overflow-hidden rounded-[2.1rem] border border-white/80 bg-white shadow-[0_35px_100px_rgba(40,55,47,0.20)]">
                 <div className="flex items-center justify-between border-b border-[#19372d]/10 bg-[#fbfaf7] px-5 py-3">
                   <div className="flex gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#e9a58b]" /><span className="h-2.5 w-2.5 rounded-full bg-[#e6cf86]" /><span className="h-2.5 w-2.5 rounded-full bg-[#9dc4a9]" /></div>
-                  <div className="rounded-full bg-[#eef0eb] px-4 py-1.5 text-[10px] font-medium text-[#69756e]">{previewBusinessName.toLocaleLowerCase(i18n.resolvedLanguage).replace(/[^a-z0-9ğüşöçıİ\s-]/gi, "").replace(/\s+/g, "-")}.portfoyai.com</div>
+                  <div className="rounded-full bg-[#eef0eb] px-4 py-1.5 text-[10px] font-medium text-[#69756e]">portfoyai.vercel.app/site/{previewBusinessName.toLocaleLowerCase(i18n.resolvedLanguage).replace(/[^a-z0-9ğüşöçıİ\s-]/gi, "").replace(/\s+/g, "-")}</div>
                   <Badge className="rounded-full bg-[#e4f0e9] px-2.5 text-[10px] text-[#326049] hover:bg-[#e4f0e9]">{t("landing.management.live")}</Badge>
                 </div>
                 <div className="bg-[#f6efe6] p-3 sm:p-4" style={getThemeStyles(theme)}>
@@ -765,7 +774,7 @@ export function GeneratedSitePreviewPage() {
 
   usePageMeta(
     config ? `${config.business_name} - Site Önizlemesi` : "Site önizlemesi yükleniyor",
-    config?.headline || "Kaydedilmiş PortföyAI site önizlemesi.",
+    config?.headline || "Kaydedilmiş Fastate AI site önizlemesi.",
   );
 
   useEffect(() => {
@@ -898,8 +907,8 @@ export function PublicSitePage() {
   const listings = state.listings.filter((listing) => listing.site_id === "site_demo" && listing.status !== "passive");
 
   usePageMeta(
-    site ? `${agent?.businessName || "PortföyAI"} - ${site.heroTitle}` : "PortföyAI - Site bulunamadı",
-    site?.heroSubtitle || "PortföyAI public site",
+    site ? `${agent?.businessName || "Fastate AI"} - ${site.heroTitle}` : "Fastate AI - Site bulunamadı",
+    site?.heroSubtitle || "Fastate AI public site",
   );
 
   const filteredListings = useMemo(
@@ -980,7 +989,7 @@ export function PublicSitePage() {
         <section id="iletisim" className="px-5 pb-20 sm:px-8 lg:px-10"><div className="mx-auto grid max-w-7xl gap-8 overflow-hidden rounded-[2.75rem] p-8 text-white sm:p-12 lg:grid-cols-[0.9fr_1.1fr] lg:p-16" style={{ backgroundColor: site.theme_config.primary }}><div><div className="text-xs uppercase tracking-[0.22em] text-white/55">İletişim</div><h2 className="mt-5 text-4xl font-semibold leading-tight sm:text-5xl" style={{ fontFamily: site.theme_config.fontPairing.heading }}>Yeni evinizi birlikte bulalım.</h2><p className="mt-4 max-w-md text-sm leading-7 text-white/65">Aradığınız portföyü tarif edin; size en kısa sürede kişisel olarak dönüş yapayım.</p></div><Card className="rounded-[2rem] border-0 bg-white text-[#17231e] shadow-none"><CardContent className="p-6 sm:p-7"><PublicContactForm siteId={site.id} /></CardContent></Card></div></section>
       </main>
 
-      <footer className="border-t border-[#173f32]/10 bg-[#ece8df]"><div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-10 text-sm text-[#69756e] sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10"><div><div className="font-bold uppercase tracking-[0.18em]" style={{ color: site.theme_config.primary }}>{agent.businessName}</div><div className="mt-2 text-xs">{agent.region} gayrimenkul danışmanlığı</div></div><div className="flex gap-6"><a href="#portfoyler">Portföyler</a><a href="#hakkimda">Hakkımda</a><a href="#iletisim">İletişim</a></div><div className="text-xs">PortföyAI ile hazırlandı</div></div></footer>
+      <footer className="border-t border-[#173f32]/10 bg-[#ece8df]"><div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-10 text-sm text-[#69756e] sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10"><div><div className="font-bold uppercase tracking-[0.18em]" style={{ color: site.theme_config.primary }}>{agent.businessName}</div><div className="mt-2 text-xs">{agent.region} gayrimenkul danışmanlığı</div></div><div className="flex gap-6"><a href="#portfoyler">Portföyler</a><a href="#hakkimda">Hakkımda</a><a href="#iletisim">İletişim</a></div><div className="text-xs">Fastate AI ile hazırlandı</div></div></footer>
     </div>
   );
 }
@@ -994,7 +1003,7 @@ export function ListingDetailPage() {
   const agent = state.agents.find((item) => item.id === site?.agent_id);
 
   usePageMeta(
-    listing ? `${listing.title} - PortföyAI` : "PortföyAI - İlan",
+    listing ? `${listing.title} - Fastate AI` : "Fastate AI - İlan",
     listing?.description || "İlan detay sayfası",
   );
 
@@ -1035,13 +1044,13 @@ export function ListingDetailPage() {
         </div>
       </main>
 
-      <footer className="border-t border-[#173f32]/10 bg-[#ece8df]"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-8 text-xs text-[#6f7b73] sm:px-8 lg:px-10"><span>{agent.businessName}</span><span>PortföyAI ile hazırlandı</span></div></footer>
+      <footer className="border-t border-[#173f32]/10 bg-[#ece8df]"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-8 text-xs text-[#6f7b73] sm:px-8 lg:px-10"><span>{agent.businessName}</span><span>Fastate AI ile hazırlandı</span></div></footer>
     </div>
   );
 }
 
 export function NotFoundPage() {
-  usePageMeta("PortföyAI - Sayfa bulunamadı", "İstediğiniz sayfa bulunamadı.");
+  usePageMeta("Fastate AI - Sayfa bulunamadı", "İstediğiniz sayfa bulunamadı.");
   return (
     <div className="grid min-h-screen place-items-center bg-slate-950 px-4 text-white">
       <Card className="max-w-lg border-white/10 bg-white/5 text-white">

@@ -24,7 +24,7 @@ function LegacyCard({ config, listing }: { config: TemplateConfig; listing: List
 }
 
 function LegacyFooter({ config }: SiteTemplateProps) {
-  return <footer className="mt-20 border-t border-black/10 px-5 py-10 text-sm sm:px-8 lg:px-10"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 md:flex-row"><strong>{config.content.businessName}</strong><span>{config.content.phone} · {config.content.email}</span><span>{config.content.address}</span></div></footer>;
+  return <footer className="mt-20 border-t border-black/10 px-5 py-10 text-sm sm:px-8 lg:px-10"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 md:flex-row"><strong>{config.content.businessName}</strong><span>{config.content.phone} · {config.content.email}</span><span>{config.content.address}</span><span className="opacity-50">Fastate AI ile hazırlandı</span></div></footer>;
 }
 
 export function LegacyHome({ config }: SiteTemplateProps) {
