@@ -212,6 +212,8 @@ const blankListing = (siteId: string, district = ""): ListingDraft & { id?: stri
   m2: 0,
   room_count: "2+1",
   listing_type: "sale",
+  property_category: "konut",
+  property_subtype: "daire",
   district,
   country_id: null,
   province_id: null,

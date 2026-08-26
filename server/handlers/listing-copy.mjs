@@ -39,6 +39,8 @@ export const listingFactsFromBody = (body) => {
     room_count: roomCount,
     m2,
     listing_type: listingType,
+    property_category: ["konut", "arsa", "isyeri"].includes(body.property_category) ? body.property_category : "konut",
+    property_subtype: body.property_category === "arsa" || body.property_category === "isyeri" ? null : (["daire", "mustakil_ev", "villa", "rezidans"].includes(body.property_subtype) ? body.property_subtype : "daire"),
     district,
     price,
     currency,

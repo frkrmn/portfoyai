@@ -114,6 +114,8 @@ export const buildStarterListings = (config, siteId) => {
       m2: item.m2,
       room_count: item.roomCount,
       listing_type: item.listingType,
+      property_category: "konut",
+      property_subtype: "daire",
       district,
       lat: 41.0082 + index * 0.006,
       lng: 28.9784 + index * 0.006,

@@ -57,7 +57,14 @@ export type TemplateContent = {
   findHomeDescription: string;
   keywordLabel: string;
   propertyTypeLabel: string;
+  allPropertyTypesLabel: string;
+  residentialLabel: string;
+  landLabel: string;
+  commercialLabel: string;
   apartmentLabel: string;
+  detachedHouseLabel: string;
+  villaLabel: string;
+  residenceLabel: string;
   houseLabel: string;
   duplexLabel: string;
   roomLabel: string;
@@ -267,7 +274,14 @@ export const warmEditorialFallbacks: TemplateContent = {
   findHomeDescription: "İhtiyacınıza uygun portföyleri kolayca filtreleyin.",
   keywordLabel: "Anahtar kelime",
   propertyTypeLabel: "Gayrimenkul türü",
+  allPropertyTypesLabel: "Tüm emlak türleri",
+  residentialLabel: "Konut",
+  landLabel: "Arsa",
+  commercialLabel: "İş Yeri",
   apartmentLabel: "Daire",
+  detachedHouseLabel: "Müstakil ev",
+  villaLabel: "Villa",
+  residenceLabel: "Rezidans",
   houseLabel: "Müstakil ev",
   duplexLabel: "Dubleks",
   roomLabel: "Oda sayısı",

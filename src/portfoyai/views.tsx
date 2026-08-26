@@ -215,7 +215,7 @@ export function ListingForm({
   const [socialKitLoading, setSocialKitLoading] = useState(false);
   const [socialKitError, setSocialKitError] = useState("");
   const [socialKitUrls, setSocialKitUrls] = useState<{ post: string; story: string } | null>(null);
-  const copyFactsSignature = JSON.stringify([draft.id, draft.title, draft.price, draft.currency, draft.m2, draft.room_count, draft.listing_type, draft.district, draft.features, draft.address, draft.category, draft.bedroom_count, draft.bathroom_count, draft.rental_yield_percent, draft.roi_notes, draft.urgent_sale, draft.price_reduced_from]);
+  const copyFactsSignature = JSON.stringify([draft.id, draft.title, draft.price, draft.currency, draft.m2, draft.room_count, draft.listing_type, draft.property_category, draft.property_subtype, draft.district, draft.features, draft.address, draft.category, draft.bedroom_count, draft.bathroom_count, draft.rental_yield_percent, draft.roi_notes, draft.urgent_sale, draft.price_reduced_from]);
 
   useEffect(() => {
     setGeneratedCopy(null);
@@ -340,6 +340,29 @@ export function ListingForm({
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-2">
+            <Label>{t("dashboard.listingForm.propertyCategory")}</Label>
+            <Select value={draft.property_category || "konut"} onValueChange={(value) => onDraftChange({ property_category: value as Listing["property_category"], property_subtype: value === "konut" ? (draft.property_subtype || "daire") : null })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="konut">{t("dashboard.listingForm.residential")}</SelectItem>
+                <SelectItem value="arsa">{t("dashboard.listingForm.land")}</SelectItem>
+                <SelectItem value="isyeri">{t("dashboard.listingForm.commercial")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {draft.property_category === "konut" ? <div className="space-y-2" data-property-subtype-field>
+            <Label>{t("dashboard.listingForm.propertySubtype")}</Label>
+            <Select value={draft.property_subtype || "daire"} onValueChange={(value) => onDraftChange({ property_subtype: value as NonNullable<Listing["property_subtype"]> })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daire">{t("dashboard.listingForm.apartment")}</SelectItem>
+                <SelectItem value="mustakil_ev">{t("dashboard.listingForm.detachedHouse")}</SelectItem>
+                <SelectItem value="villa">{t("dashboard.listingForm.villa")}</SelectItem>
+                <SelectItem value="rezidans">{t("dashboard.listingForm.residence")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div> : null}
           <LocationHierarchyFields idPrefix="listing-location" value={draft} legacyDistrict={draft.district} onChange={(selection, names) => onDraftChange({ ...selection, district: names.district })} />
           <div className="space-y-2 md:col-span-2">
             <Label>{t("dashboard.listingForm.features")}</Label>

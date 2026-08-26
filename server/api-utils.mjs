@@ -211,6 +211,8 @@ export const serializeListing = (listing) => {
     media: Array.isArray(listing.media) ? listing.media : [],
     status: listing.status,
     listing_status: ["active", "sold", "rented"].includes(listing.listing_status) ? listing.listing_status : "active",
+    property_category: ["konut", "arsa", "isyeri"].includes(listing.property_category) ? listing.property_category : "konut",
+    property_subtype: listing.property_category === "arsa" || listing.property_category === "isyeri" ? null : (["daire", "mustakil_ev", "villa", "rezidans"].includes(listing.property_subtype) ? listing.property_subtype : "daire"),
     created_at: listing.created_at,
     features,
     address: listing.address || `${listing.district}, Türkiye`,
@@ -276,6 +278,10 @@ export const listingPayload = (body, siteId) => {
   if (!Number.isFinite(m2) || m2 <= 0) throw new Error("VALIDATION:Area must be greater than zero.");
   if (priceReducedFrom != null && (!Number.isFinite(priceReducedFrom) || priceReducedFrom <= price)) throw new Error("VALIDATION:Reduced-from price must be greater than the current price.");
   if (!["sale", "rent"].includes(body.listing_type)) throw new Error("VALIDATION:Listing type must be sale or rent.");
+  const propertyCategory = body.property_category || "konut";
+  if (!["konut", "arsa", "isyeri"].includes(propertyCategory)) throw new Error("VALIDATION:Invalid property category.");
+  const propertySubtype = propertyCategory === "konut" ? (body.property_subtype || "daire") : null;
+  if (propertyCategory === "konut" && !["daire", "mustakil_ev", "villa", "rezidans"].includes(propertySubtype)) throw new Error("VALIDATION:Invalid residential property subtype.");
   if (body.status !== undefined && !["active", "passive", "sold"].includes(body.status)) throw new Error("VALIDATION:Invalid listing status.");
   const listingStatus = body.listing_status || "active";
   if (!["active", "sold", "rented"].includes(listingStatus)) throw new Error("VALIDATION:Invalid listing availability status.");
@@ -296,6 +302,8 @@ export const listingPayload = (body, siteId) => {
     m2,
     room_count: roomCount,
     listing_type: body.listing_type,
+    property_category: propertyCategory,
+    property_subtype: propertySubtype,
     district,
     ...locationIds,
     lat: Number.isFinite(Number(body.lat)) ? Number(body.lat) : 41,

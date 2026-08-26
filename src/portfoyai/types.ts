@@ -98,6 +98,8 @@ export type Listing = {
   m2: number;
   room_count: string;
   listing_type: "sale" | "rent";
+  property_category: "konut" | "arsa" | "isyeri";
+  property_subtype: "daire" | "mustakil_ev" | "villa" | "rezidans" | null;
   district: string;
   country_id?: string | null;
   province_id?: string | null;
