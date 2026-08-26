@@ -21,6 +21,7 @@ export const siteConfigSystemPrompt = [
   "- investment-focused: data-driven, analytical and professional; metrics-first layouts, rental yield, ROI, price trends and compact comparison tools take priority over lifestyle imagery. Prefer this for agents or consultants who primarily serve property investors rather than homebuyers.",
   "- urgent-deals: urgent, deal-focused and fast-scanning; high-contrast opportunity badges, price reductions and quick-sale signals take priority over lifestyle storytelling or investment-yield analysis. Prefer this for agents specializing in urgent sales, price-reduced listings, foreclosures or other time-sensitive opportunities aimed at bargain-focused buyers.",
   "- guided-match: warm, personal and guided-discovery-led; a short preference intake is the primary discovery mechanism instead of a standard filter bar, listing portal or neighborhood-card browser. Prefer this for thoughtful, patient agents who want to understand each client and guide them toward the right home like a personal matchmaker.",
+  "- land-plots: land/plot-focused, professional and consultancy-led; navy and muted-green restraint, generous whitespace, zoning/type-led portfolio cards and a visible expert team. Prefer this for agents or consultancies specializing in arsa, tarla, imarlı land or plot sales rather than residential housing.",
   "- tm_01: understated brand-led minimal; sparse presentation, ample whitespace and neutral colors. Use only when the user explicitly asks for a highly minimal, low-density identity rather than a practical listing-first experience.",
   "- tm_02: established traditional/classic; formal, dependable and heritage-oriented rather than editorial or boutique.",
   "- tm_03: polished contemporary prestige with a lighter presentation; use it only when the user wants premium positioning but not a dark, bold or architectural identity.",
@@ -28,6 +29,7 @@ export const siteConfigSystemPrompt = [
   "Select from the user's stated positioning; do not default to warm-editorial, bold-luxury, urgent-deals or guided-match. Distinguish guided-match (preference intake and personal guidance) from neighborhood-friendly (district-led browsing and local community expertise) and warm-editorial (curated lifestyle storytelling). Distinguish urgent-deals (speed, reduced prices, quick decisions) from investment-focused (yield, ROI, analytical returns). When the user explicitly says they have no special style preference or asks for a standard/general-purpose site, select clean-modern.",
   "When and only when neighborhood-friendly is selected, populate content.neighborhoods with 2 to 4 relevant Turkish neighborhood or district names and one short, friendly Turkish description for each. Every place explicitly named by the user must appear first and verbatim before adding nearby neighborhoods: never expand, rename or qualify it (for example, Kadıköy must remain exactly Kadıköy, not Kadıköy Merkez). If none are named, choose reasonable neighborhoods for the user's city.",
   "When and only when guided-match is selected, populate content.feelings with 3 to 5 short Turkish home-feeling preferences (for example sakin, enerjik, aile dostu) and content.timings with 3 to 5 short Turkish moving-time choices. These are private matching-intake options, not template names or neighborhood browsing cards.",
+  "When and only when land-plots is selected, populate content.services with exactly 4 concise Turkish land-consultancy services, content.teamMembers with 2 to 3 plausible Turkish team members (name, role, short bio and an empty photo_url when no real URL is known), and content.processSteps with exactly 3 concise Turkish consultancy steps based on the user's context.",
   "Do not inspect files, call tools, or modify anything.",
 ].join("\n");
 
@@ -44,6 +46,34 @@ const existingSiteResponse = (response, site) => sendJson(response, 409, {
   existing_site: { id: site.id, slug: site.slug },
   redirect_path: `/dashboard?site=${site.id}`,
 });
+
+export const ensureLandPlotsContent = (config) => {
+  if (config.template_id !== "land-plots") return config;
+  const businessName = config.business_name || "Arsa Danışmanlığı";
+  const content = config.content && typeof config.content === "object" ? config.content : {};
+  return {
+    ...config,
+    content: {
+      ...content,
+      services: Array.isArray(content.services) && content.services.length === 4 ? content.services : [
+        { title: "Arsa Alım-Satım Danışmanlığı", description: "Doğru araziyi doğru değer ve güvenli işlem koşullarıyla buluşturuyoruz." },
+        { title: "İmar ve Tapu Takibi", description: "İmar durumu, mülkiyet ve resmi süreçleri ayrıntılı biçimde inceliyoruz." },
+        { title: "Değerleme ve Pazarlama", description: "Araziyi konumu, niteliği ve gelişim potansiyeliyle doğru konumlandırıyoruz." },
+        { title: "Yatırım Danışmanlığı", description: "Bölgesel verilerle uzun vadeli yatırım kararlarını destekliyoruz." },
+      ],
+      teamMembers: Array.isArray(content.teamMembers) && content.teamMembers.length >= 2 ? content.teamMembers : [
+        { name: `${businessName} Kurucusu`, role: "Gayrimenkul Danışmanı", bio: "Arazi yatırımları, değerleme ve satış süreçlerinde müşterilere uçtan uca rehberlik eder.", photo_url: "" },
+        { name: "İmar ve Tapu Uzmanı", role: "Teknik Danışman", bio: "İmar, tapu ve resmi kayıtları inceleyerek karar sürecini güvenli hale getirir.", photo_url: "" },
+        { name: "Yatırım Danışmanı", role: "Portföy Uzmanı", bio: "Bölgesel potansiyeli ve piyasa verilerini analiz ederek uygun seçenekleri sunar.", photo_url: "" },
+      ],
+      processSteps: Array.isArray(content.processSteps) && content.processSteps.length === 3 ? content.processSteps : [
+        { title: "Dinliyoruz", description: "Yatırım hedefinizi ve beklentilerinizi netleştiriyoruz." },
+        { title: "Analiz Ediyoruz", description: "İmar, tapu, konum ve piyasa verilerini birlikte inceliyoruz." },
+        { title: "Sonuçlandırıyoruz", description: "Müzakere ve devir sürecini güvenle tamamlıyoruz." },
+      ],
+    },
+  };
+};
 
 export default async function handler(request, response) {
   if (request.method !== "POST") return methodNotAllowed(response, ["POST"]);
@@ -75,7 +105,7 @@ export default async function handler(request, response) {
       config: { systemInstruction: siteConfigSystemPrompt, responseMimeType: "application/json", responseSchema: siteConfigSchema },
     });
     if (!result.text) throw new Error("Gemini returned an empty response.");
-    const config = JSON.parse(result.text);
+    const config = ensureLandPlotsContent(JSON.parse(result.text));
     const model = result.modelVersion || siteConfigModel;
     console.info(`[generate-theme] Gemini structured response received in ${Date.now() - startedAt}ms; model=${model}`);
     let site;

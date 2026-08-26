@@ -50,6 +50,7 @@ export default function App() {
               <Route path="/site/:slug" element={<SiteRenderer view="home" />} />
               <Route path="/site/:slug/listings" element={<SiteRenderer view="listings" />} />
               <Route path="/site/:slug/listings/:listingId" element={<SiteRenderer view="detail" />} />
+              <Route path="/site/:slug/team" element={<SiteRenderer view="team" />} />
               <Route path="/home" element={<Navigate to="/" replace />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>

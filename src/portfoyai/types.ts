@@ -40,11 +40,14 @@ export type ThemeConfig = {
 
 export type GeneratedSiteConfig = {
   /** Opaque internal choice returned by generation; never render this in product UI. */
-  template_id?: "tm_01" | "tm_02" | "tm_03" | "tm_04" | "warm-editorial" | "bold-luxury" | "clean-modern" | "neighborhood-friendly" | "investment-focused" | "urgent-deals" | "guided-match";
+  template_id?: "tm_01" | "tm_02" | "tm_03" | "tm_04" | "warm-editorial" | "bold-luxury" | "clean-modern" | "neighborhood-friendly" | "investment-focused" | "urgent-deals" | "guided-match" | "land-plots";
   content?: {
     neighborhoods?: Array<{ name: string; description: string }>;
     feelings?: string[];
     timings?: string[];
+    teamMembers?: Array<{ name: string; role: string; bio: string; photo_url: string }>;
+    processSteps?: Array<{ title: string; description: string }>;
+    services?: Array<{ title: string; description: string }>;
   };
   business_name: string;
   tone: string;
@@ -99,7 +102,7 @@ export type Listing = {
   room_count: string;
   listing_type: "sale" | "rent";
   property_category: "konut" | "arsa" | "isyeri";
-  property_subtype: "daire" | "mustakil_ev" | "villa" | "rezidans" | null;
+  property_subtype: "daire" | "mustakil_ev" | "villa" | "rezidans" | "konut_imarli" | "ticari_imarli" | "tarla_tarimsal" | "villa_imarli" | "kentsel_donusum" | null;
   district: string;
   country_id?: string | null;
   province_id?: string | null;

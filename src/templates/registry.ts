@@ -11,6 +11,7 @@ import { NeighborhoodFriendlyDetail, NeighborhoodFriendlyHome, NeighborhoodFrien
 import { InvestmentFocusedDetail, InvestmentFocusedHome, InvestmentFocusedListings } from "./investment-focused/InvestmentFocusedTemplate";
 import { UrgentDealsDetail, UrgentDealsHome, UrgentDealsListings } from "./urgent-deals/UrgentDealsTemplate";
 import { GuidedMatchDetail, GuidedMatchHome, GuidedMatchListings } from "./guided-match/GuidedMatchTemplate";
+import { LandPlotsDetail, LandPlotsHome, LandPlotsListings, LandPlotsTeam } from "./land-plots/LandPlotsTemplate";
 
 export const defaultTemplateId = "tm_01";
 
@@ -62,6 +63,13 @@ const guidedMatchFamily: TemplateFamily = {
   Detail: GuidedMatchDetail,
 };
 
+const landPlotsFamily: TemplateFamily = {
+  Home: LandPlotsHome,
+  Listings: LandPlotsListings,
+  Detail: LandPlotsDetail,
+  Team: LandPlotsTeam,
+};
+
 export const templates: Record<string, TemplateFamily> = {
   "warm-editorial": warmEditorialFamily,
   "bold-luxury": boldLuxuryFamily,
@@ -70,6 +78,7 @@ export const templates: Record<string, TemplateFamily> = {
   "investment-focused": investmentFocusedFamily,
   "urgent-deals": urgentDealsFamily,
   "guided-match": guidedMatchFamily,
+  "land-plots": landPlotsFamily,
   tm_01: legacyFamily,
   tm_02: legacyFamily,
   tm_03: legacyFamily,

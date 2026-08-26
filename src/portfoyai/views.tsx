@@ -215,6 +215,7 @@ export function ListingForm({
   const [socialKitLoading, setSocialKitLoading] = useState(false);
   const [socialKitError, setSocialKitError] = useState("");
   const [socialKitUrls, setSocialKitUrls] = useState<{ post: string; story: string } | null>(null);
+  const [featureInput, setFeatureInput] = useState("");
   const copyFactsSignature = JSON.stringify([draft.id, draft.title, draft.price, draft.currency, draft.m2, draft.room_count, draft.listing_type, draft.property_category, draft.property_subtype, draft.district, draft.features, draft.address, draft.category, draft.bedroom_count, draft.bathroom_count, draft.rental_yield_percent, draft.roi_notes, draft.urgent_sale, draft.price_reduced_from]);
 
   useEffect(() => {
@@ -342,7 +343,7 @@ export function ListingForm({
           </div>
           <div className="space-y-2">
             <Label>{t("dashboard.listingForm.propertyCategory")}</Label>
-            <Select value={draft.property_category || "konut"} onValueChange={(value) => onDraftChange({ property_category: value as Listing["property_category"], property_subtype: value === "konut" ? (draft.property_subtype || "daire") : null })}>
+            <Select value={draft.property_category || "konut"} onValueChange={(value) => onDraftChange({ property_category: value as Listing["property_category"], property_subtype: value === "konut" ? "daire" : value === "arsa" ? "konut_imarli" : null })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="konut">{t("dashboard.listingForm.residential")}</SelectItem>
@@ -351,26 +352,31 @@ export function ListingForm({
               </SelectContent>
             </Select>
           </div>
-          {draft.property_category === "konut" ? <div className="space-y-2" data-property-subtype-field>
-            <Label>{t("dashboard.listingForm.propertySubtype")}</Label>
-            <Select value={draft.property_subtype || "daire"} onValueChange={(value) => onDraftChange({ property_subtype: value as NonNullable<Listing["property_subtype"]> })}>
+          {draft.property_category === "konut" || draft.property_category === "arsa" ? <div className="space-y-2" data-property-subtype-field>
+            <Label>{t(draft.property_category === "arsa" ? "dashboard.listingTaxonomy.landSubtype" : "dashboard.listingTaxonomy.residentialSubtype")}</Label>
+            <Select value={draft.property_subtype || (draft.property_category === "arsa" ? "konut_imarli" : "daire")} onValueChange={(value) => onDraftChange({ property_subtype: value as NonNullable<Listing["property_subtype"]> })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="daire">{t("dashboard.listingForm.apartment")}</SelectItem>
-                <SelectItem value="mustakil_ev">{t("dashboard.listingForm.detachedHouse")}</SelectItem>
-                <SelectItem value="villa">{t("dashboard.listingForm.villa")}</SelectItem>
-                <SelectItem value="rezidans">{t("dashboard.listingForm.residence")}</SelectItem>
+                {draft.property_category === "konut" ? <>
+                  <SelectItem value="daire">{t("dashboard.listingForm.apartment")}</SelectItem>
+                  <SelectItem value="mustakil_ev">{t("dashboard.listingForm.detachedHouse")}</SelectItem>
+                  <SelectItem value="villa">{t("dashboard.listingForm.villa")}</SelectItem>
+                  <SelectItem value="rezidans">{t("dashboard.listingForm.residence")}</SelectItem>
+                </> : <>
+                  <SelectItem value="konut_imarli">{t("dashboard.listingTaxonomy.residentialZoned")}</SelectItem>
+                  <SelectItem value="ticari_imarli">{t("dashboard.listingTaxonomy.commercialZoned")}</SelectItem>
+                  <SelectItem value="tarla_tarimsal">{t("dashboard.listingTaxonomy.agriculturalField")}</SelectItem>
+                  <SelectItem value="villa_imarli">{t("dashboard.listingTaxonomy.villaZoned")}</SelectItem>
+                  <SelectItem value="kentsel_donusum">{t("dashboard.listingTaxonomy.urbanRenewal")}</SelectItem>
+                </>}
               </SelectContent>
             </Select>
           </div> : null}
           <LocationHierarchyFields idPrefix="listing-location" value={draft} legacyDistrict={draft.district} onChange={(selection, names) => onDraftChange({ ...selection, district: names.district })} />
           <div className="space-y-2 md:col-span-2">
             <Label>{t("dashboard.listingForm.features")}</Label>
-            <Input
-              value={draft.features.join(", ")}
-              onChange={(e) => onDraftChange({ features: e.target.value.split(",").map((item) => item.trim()).filter(Boolean) })}
-              placeholder={t("dashboard.listingForm.featuresPlaceholder")}
-            />
+            <div className="flex flex-wrap gap-2">{draft.features.map((feature) => <span key={feature} className="inline-flex items-center gap-2 rounded-full bg-[#173f32]/8 px-3 py-1.5 text-xs font-medium text-[#173f32]">{feature}<button type="button" aria-label={`${feature} ${t("dashboard.listingForm.removePhoto")}`} onClick={() => onDraftChange({ features: draft.features.filter((item) => item !== feature) })}><X className="h-3 w-3" /></button></span>)}</div>
+            <Input value={featureInput} onChange={(event) => setFeatureInput(event.target.value)} onKeyDown={(event) => { if (event.key !== "Enter" && event.key !== ",") return; event.preventDefault(); const feature = featureInput.trim().replace(/,$/, ""); if (feature && !draft.features.includes(feature)) onDraftChange({ features: [...draft.features, feature] }); setFeatureInput(""); }} placeholder={t("dashboard.listingTaxonomy.featureHint")} />
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label>{t("dashboard.listingForm.photo")}</Label>

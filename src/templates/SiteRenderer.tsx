@@ -54,7 +54,7 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
 
   const config = createTemplateConfig(payload, view, listing);
   const family = getTemplateFamily(config.templateId);
-  const Component = view === "home" ? family.Home : view === "listings" ? family.Listings : family.Detail;
+  const Component = view === "home" ? family.Home : view === "listings" ? family.Listings : view === "team" ? (family.Team || family.Home) : family.Detail;
   const closedLabel = listing?.listing_status === "sold"
     ? (i18n.resolvedLanguage === "en" ? "Sold" : "Satıldı")
     : listing?.listing_status === "rented"

@@ -1,7 +1,7 @@
 import type { ComponentType } from "react";
 import type { LayoutFineTune, Listing, ThemeConfig } from "@/portfoyai/types";
 
-export type TemplateView = "home" | "listings" | "detail";
+export type TemplateView = "home" | "listings" | "detail" | "team";
 
 export type TemplateContent = {
   businessName: string;
@@ -65,6 +65,11 @@ export type TemplateContent = {
   detachedHouseLabel: string;
   villaLabel: string;
   residenceLabel: string;
+  residentialZonedLabel: string;
+  commercialZonedLabel: string;
+  agriculturalFieldLabel: string;
+  villaZonedLabel: string;
+  urbanRenewalLabel: string;
   houseLabel: string;
   duplexLabel: string;
   roomLabel: string;
@@ -115,6 +120,17 @@ export type TemplateContent = {
   timings: string[];
   guideTitle: string;
   guideQuote: string;
+  servicesTitle: string;
+  servicesDescription: string;
+  services: Array<{ title: string; description: string }>;
+  teamTitle: string;
+  teamDescription: string;
+  teamMembers: Array<{ name: string; role: string; bio: string; photo_url: string }>;
+  processTitle: string;
+  processSteps: Array<{ title: string; description: string }>;
+  navTeam: string;
+  usageLabel: string;
+  contactActionLabel: string;
 };
 
 export type TemplateConfig = {
@@ -158,6 +174,7 @@ export type TemplateFamily = {
   Home: ComponentType<SiteTemplateProps>;
   Listings: ComponentType<SiteTemplateProps>;
   Detail: ComponentType<SiteTemplateProps>;
+  Team?: ComponentType<SiteTemplateProps>;
 };
 
 export type PublicSitePayload = {
@@ -282,6 +299,11 @@ export const warmEditorialFallbacks: TemplateContent = {
   detachedHouseLabel: "Müstakil ev",
   villaLabel: "Villa",
   residenceLabel: "Rezidans",
+  residentialZonedLabel: "Konut İmarlı",
+  commercialZonedLabel: "Ticari İmarlı",
+  agriculturalFieldLabel: "Tarla / Tarımsal",
+  villaZonedLabel: "Villa İmarlı",
+  urbanRenewalLabel: "Kentsel Dönüşüm",
   houseLabel: "Müstakil ev",
   duplexLabel: "Dubleks",
   roomLabel: "Oda sayısı",
@@ -332,6 +354,51 @@ export const warmEditorialFallbacks: TemplateContent = {
   timings: ["Hemen", "1–3 ay içinde", "3–6 ay içinde", "Henüz araştırıyorum"],
   guideTitle: "Evinizi birlikte bulalım",
   guideQuote: "Önce sizi dinliyorum; sonra yalnızca gerçekten uyan evleri gösteriyorum.",
+  servicesTitle: "Hizmetlerimiz",
+  servicesDescription: "Gayrimenkul kararlarınızı uzmanlık ve şeffaflıkla yönetiyoruz.",
+  services: [
+    { title: "Alım-Satım Danışmanlığı", description: "Doğru portföyü doğru koşullarla buluşturuyoruz." },
+    { title: "İmar ve Tapu Takibi", description: "Teknik ve hukuki süreci dikkatle inceliyoruz." },
+    { title: "Değerleme ve Pazarlama", description: "Portföyün gerçek değerini güçlü biçimde konumlandırıyoruz." },
+    { title: "Yatırım Danışmanlığı", description: "Potansiyeli verilerle değerlendirip yol haritası sunuyoruz." },
+  ],
+  teamTitle: "Ekibimiz",
+  teamDescription: "Arsa ve gayrimenkul süreçlerinde uzman ekibimizle yanınızdayız.",
+  teamMembers: [],
+  processTitle: "Nasıl Çalışıyoruz?",
+  processSteps: [],
+  navTeam: "Ekibimiz",
+  usageLabel: "Kullanım",
+  contactActionLabel: "İletişime Geç",
+};
+
+export const landPlotsFallbacks: TemplateContent = {
+  ...warmEditorialFallbacks,
+  eyebrow: "Arsa & Emlak Danışmanlığı",
+  headline: "Toprağın değerini",
+  headlineAccent: "uzmanlıkla geleceğe taşıyoruz.",
+  bio: "Arsa, tarla ve imarlı gayrimenkullerde güvenilir analiz, doğru değerleme ve uçtan uca danışmanlık.",
+  tagline: "Arazi yatırımlarında yerel bilgi, teknik inceleme ve güvenilir süreç yönetimi.",
+  ctaText: "Portföyü İncele",
+  featuredEyebrow: "Seçili portföyler",
+  featuredTitle: "Geleceğe değer katan araziler",
+  listingsTitle: "Portföyümüz",
+  listingsDescription: "Arsa ve arazi portföylerini kullanım türüne göre inceleyin.",
+  navAbout: "Hizmetlerimiz",
+  navTeam: "Ekibimiz",
+  tourTitle: "Bu ilan hakkında bilgi alın",
+  tourDescription: "Portföyün imar, tapu ve yatırım detaylarını ekibimizle değerlendirin.",
+  contactActionLabel: "İletişime Geç",
+  teamMembers: [
+    { name: "Mert Erta", role: "Kurucu Gayrimenkul Danışmanı", bio: "Arazi yatırımları ve bölgesel değerleme alanında danışmanlık sunar.", photo_url: "" },
+    { name: "Selin Kaya", role: "İmar ve Tapu Uzmanı", bio: "Teknik inceleme ve resmi süreçleri anlaşılır biçimde yönetir.", photo_url: "" },
+    { name: "Emre Yalçın", role: "Yatırım Danışmanı", bio: "Portföyleri gelişim potansiyeli ve piyasa verileriyle değerlendirir.", photo_url: "" },
+  ],
+  processSteps: [
+    { title: "Dinliyoruz", description: "Hedefinizi, bütçenizi ve yatırım beklentinizi netleştiriyoruz." },
+    { title: "Analiz Ediyoruz", description: "İmar, tapu, konum ve değer verilerini birlikte inceliyoruz." },
+    { title: "Sonuçlandırıyoruz", description: "Müzakere ve devir sürecini güvenle tamamlıyoruz." },
+  ],
 };
 
 export const boldLuxuryFallbacks: TemplateContent = {
@@ -503,6 +570,8 @@ export function createTemplateConfig(
             ? urgentDealsFallbacks
             : payload.config.template_id === "guided-match"
               ? guidedMatchFallbacks
+              : payload.config.template_id === "land-plots"
+                ? landPlotsFallbacks
       : warmEditorialFallbacks;
   const isBoldLuxury = payload.config.template_id === "bold-luxury";
   const isCleanModern = payload.config.template_id === "clean-modern";
@@ -510,6 +579,7 @@ export function createTemplateConfig(
   const isInvestmentFocused = payload.config.template_id === "investment-focused";
   const isUrgentDeals = payload.config.template_id === "urgent-deals";
   const isGuidedMatch = payload.config.template_id === "guided-match";
+  const isLandPlots = payload.config.template_id === "land-plots";
   const legacyTheme: Pick<ThemeConfig, "primary" | "accent" | "fontPairing"> = {
     primary: payload.config.primary_color,
     accent: payload.config.accent_color,
@@ -533,10 +603,10 @@ export function createTemplateConfig(
     siteId: payload.id,
     slug: payload.slug,
     colors: {
-      background: raw.colors?.background || (isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#FFFFFF" : isNeighborhoodFriendly || isGuidedMatch ? "#FFF8F1" : "#F1EADF"),
+      background: raw.colors?.background || (isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals || isLandPlots ? "#FFFFFF" : isNeighborhoodFriendly || isGuidedMatch ? "#FFF8F1" : "#F1EADF"),
       primary,
       accent,
-      text: raw.colors?.text || (isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#17211C" : isNeighborhoodFriendly || isGuidedMatch ? "#352B25" : "#25231F"),
+      text: raw.colors?.text || (isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals || isLandPlots ? "#17211C" : isNeighborhoodFriendly || isGuidedMatch ? "#352B25" : "#25231F"),
       buttonColorSource,
       buttonColorCustom: customButton,
       button,
@@ -558,6 +628,9 @@ export function createTemplateConfig(
       neighborhoods: content.neighborhoods?.length ? content.neighborhoods : defaults.neighborhoods,
       feelings: content.feelings?.length ? content.feelings : defaults.feelings,
       timings: content.timings?.length ? content.timings : defaults.timings,
+      teamMembers: content.teamMembers?.length ? content.teamMembers : defaults.teamMembers,
+      processSteps: content.processSteps?.length ? content.processSteps : defaults.processSteps,
+      services: content.services?.length ? content.services : defaults.services,
     },
     layout: {
       showCategories: raw.layout?.show_categories !== false,

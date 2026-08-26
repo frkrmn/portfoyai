@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { loadEnv } from "vite";
-import { siteConfigModel, siteConfigSchema, siteConfigSystemPrompt } from "./handlers/generate-theme.mjs";
+import { ensureLandPlotsContent, siteConfigModel, siteConfigSchema, siteConfigSystemPrompt } from "./handlers/generate-theme.mjs";
 
 const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
 if (!env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is required.");
@@ -13,6 +13,7 @@ const prompts = {
   "clean-modern": "Ankara'da genel amaçlı, orta segment konut ve daire alım-satımı yapan bir emlakçıyım, standart bir web sitesi yeterli, özel bir tarz beklentim yok.",
   "neighborhood-friendly": "Sadece Kadıköy ve Moda'da çalışan, mahallemi çok iyi tanıyan bir emlakçıyım, komşu gibi güvenilir ve samimi bir izlenim istiyorum, büyük bir ajans gibi görünmek istemiyorum.",
   "investment-focused": "Yatırım amaçlı gayrimenkul konusunda uzmanlaşmış bir danışmanım, müşterilerim genelde kira getirisi ve değer artışı potansiyeline bakan yatırımcılar, duygusal değil veri odaklı bir site istiyorum.",
+  "land-plots": "Ağırlıklı olarak arsa ve imarlı gayrimenkul üzerine çalışan, 3 kişilik uzman bir ekiple hizmet veren bir danışmanlığız, profesyonel ve güven veren bir site istiyoruz.",
 };
 
 const gemini = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
@@ -26,7 +27,7 @@ const results = await Promise.all(Object.entries(prompts).map(async ([expected, 
       responseSchema: siteConfigSchema,
     },
   });
-  const config = JSON.parse(response.text || "{}");
+  const config = ensureLandPlotsContent(JSON.parse(response.text || "{}"));
   return { expected, returned: config.template_id, match: config.template_id === expected };
 }));
 

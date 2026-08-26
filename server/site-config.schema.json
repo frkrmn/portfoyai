@@ -5,7 +5,7 @@
   "properties": {
     "template_id": {
       "type": "string",
-      "enum": ["tm_01", "tm_02", "tm_03", "tm_04", "warm-editorial", "bold-luxury", "clean-modern", "neighborhood-friendly", "investment-focused", "urgent-deals", "guided-match"]
+      "enum": ["tm_01", "tm_02", "tm_03", "tm_04", "warm-editorial", "bold-luxury", "clean-modern", "neighborhood-friendly", "investment-focused", "urgent-deals", "guided-match", "land-plots"]
     },
     "business_name": {
       "type": "string"
@@ -68,6 +68,50 @@
           "minItems": 3,
           "maxItems": 5,
           "items": { "type": "string" }
+        },
+        "teamMembers": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "role": { "type": "string" },
+              "bio": { "type": "string" },
+              "photo_url": { "type": "string" }
+            },
+            "required": ["name", "role", "bio", "photo_url"]
+          }
+        },
+        "services": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "required": ["title", "description"]
+          }
+        },
+        "processSteps": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "required": ["title", "description"]
+          }
         }
       }
     }

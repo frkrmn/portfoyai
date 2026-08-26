@@ -40,7 +40,7 @@ export const listingFactsFromBody = (body) => {
     m2,
     listing_type: listingType,
     property_category: ["konut", "arsa", "isyeri"].includes(body.property_category) ? body.property_category : "konut",
-    property_subtype: body.property_category === "arsa" || body.property_category === "isyeri" ? null : (["daire", "mustakil_ev", "villa", "rezidans"].includes(body.property_subtype) ? body.property_subtype : "daire"),
+    property_subtype: body.property_category === "isyeri" ? null : (["daire", "mustakil_ev", "villa", "rezidans", "konut_imarli", "ticari_imarli", "tarla_tarimsal", "villa_imarli", "kentsel_donusum"].includes(body.property_subtype) ? body.property_subtype : body.property_category === "arsa" ? "konut_imarli" : "daire"),
     district,
     price,
     currency,

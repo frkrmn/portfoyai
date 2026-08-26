@@ -24,14 +24,15 @@ const buildThemeConfig = (config) => {
   const isInvestmentFocused = config.template_id === "investment-focused";
   const isUrgentDeals = config.template_id === "urgent-deals";
   const isGuidedMatch = config.template_id === "guided-match";
+  const isLandPlots = config.template_id === "land-plots";
   return {
     template_id: config.template_id,
     colors: {
-      background: isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#FFFFFF" : isNeighborhoodFriendly || isGuidedMatch ? "#FFF8F1" : "#F1EADF",
+      background: isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals || isLandPlots ? "#FFFFFF" : isNeighborhoodFriendly || isGuidedMatch ? "#FFF8F1" : "#F1EADF",
       primary: config.primary_color,
       accent: config.accent_color,
       buttonColorSource: "accent",
-      text: isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals ? "#17211C" : isNeighborhoodFriendly || isGuidedMatch ? "#352B25" : "#25231F",
+      text: isBoldLuxury ? "#F5F1E8" : isCleanModern || isInvestmentFocused || isUrgentDeals || isLandPlots ? "#17211C" : isNeighborhoodFriendly || isGuidedMatch ? "#352B25" : "#25231F",
     },
     fonts: {
       heading: isCleanModern || isNeighborhoodFriendly || isInvestmentFocused || isUrgentDeals ? "Manrope, Inter, Arial, sans-serif" : "Cormorant Garamond, Georgia, serif",
@@ -45,6 +46,9 @@ const buildThemeConfig = (config) => {
       neighborhoods: config.content?.neighborhoods,
       feelings: config.content?.feelings,
       timings: config.content?.timings,
+      teamMembers: config.content?.teamMembers,
+      processSteps: config.content?.processSteps,
+      services: config.content?.services,
       tagline: isBoldLuxury
         ? "Ayrıcalıklı yaşamlar için seçkin bir gayrimenkul deneyimi."
         : isInvestmentFocused
@@ -57,10 +61,12 @@ const buildThemeConfig = (config) => {
             ? "Güncel fiyat avantajlarını net bilgi ve hızlı iletişimle yakalayın."
           : isGuidedMatch
             ? "Sizi dinleyen, tercihlerinizi anlayan ve doğru eve yönlendiren kişisel danışmanlık."
+          : isLandPlots
+            ? "Arazi yatırımlarında yerel bilgi, teknik inceleme ve güvenilir süreç yönetimi."
           : "Yaşam alanlarını kişisel bir seçkiyle buluşturuyoruz.",
     },
     layout: {
-      show_categories: !isBoldLuxury && !isCleanModern && !isNeighborhoodFriendly && !isInvestmentFocused && !isUrgentDeals && !isGuidedMatch,
+      show_categories: !isBoldLuxury && !isCleanModern && !isNeighborhoodFriendly && !isInvestmentFocused && !isUrgentDeals && !isGuidedMatch && !isLandPlots,
       show_testimonial: isBoldLuxury || isCleanModern,
     },
     ...(config.layout_fine_tune ? { layout_fine_tune: config.layout_fine_tune } : {}),
@@ -101,21 +107,23 @@ export const buildStarterListings = (config, siteId) => {
   const districts = normalizeDistricts(config);
   const investmentFocused = config.template_id === "investment-focused";
   const urgentDeals = config.template_id === "urgent-deals";
+  const landPlots = config.template_id === "land-plots";
+  const landSubtypes = ["konut_imarli", "ticari_imarli", "tarla_tarimsal", "villa_imarli", "kentsel_donusum"];
 
   return listingBlueprints.map((item, index) => {
     const district = districts[index % districts.length];
     const rentalYieldPercent = investmentFocused ? investmentYields[index] : null;
     return {
       site_id: siteId,
-      title: `${district} · ${item.title}`,
-      description: `${district} bölgesinde, ${item.m2} m² kullanım alanına sahip ${item.roomCount} portföy. Gün ışığı alan planı, ulaşım olanaklarına yakınlığı ve bakımlı yaşam alanlarıyla öne çıkıyor.`,
-      price: item.price,
+      title: landPlots ? `${district} · Yatırıma Uygun Arsa` : `${district} · ${item.title}`,
+      description: landPlots ? `${district} bölgesinde yatırım ve geliştirme potansiyeli taşıyan, erişimi kolay ve tapu süreci incelenmiş arsa portföyü.` : `${district} bölgesinde, ${item.m2} m² kullanım alanına sahip ${item.roomCount} portföy. Gün ışığı alan planı, ulaşım olanaklarına yakınlığı ve bakımlı yaşam alanlarıyla öne çıkıyor.`,
+      price: landPlots ? item.price * 2 : item.price,
       currency: "TRY",
-      m2: item.m2,
-      room_count: item.roomCount,
+      m2: landPlots ? 750 + index * 425 : item.m2,
+      room_count: landPlots ? "-" : item.roomCount,
       listing_type: item.listingType,
-      property_category: "konut",
-      property_subtype: "daire",
+      property_category: landPlots ? "arsa" : "konut",
+      property_subtype: landPlots ? landSubtypes[index % landSubtypes.length] : "daire",
       district,
       lat: 41.0082 + index * 0.006,
       lng: 28.9784 + index * 0.006,
@@ -124,7 +132,7 @@ export const buildStarterListings = (config, siteId) => {
       // free allowance. The final starter remains editable and can be activated
       // after another listing is made passive/deleted or the plan becomes Pro.
       status: index === listingBlueprints.length - 1 ? "passive" : "active",
-      features: ["Merkezi konum", "Ferah plan", "Gün ışığı"],
+      features: landPlots ? [["Yola Cephe", "Tapu Teslimatı Hazır", "Hisseli Değil"], ["Elektrik/Su Yakını", "İmar Uygunluğu", "Kolay Ulaşım"], ["Yeraltı Suyu Mevcut", "Tarım Yoluna Cephe", "Tek Tapu"]][index % 3] : ["Merkezi konum", "Ferah plan", "Gün ışığı"],
       ...(investmentFocused ? {
         rental_yield_percent: rentalYieldPercent,
         roi_notes: `%${rentalYieldPercent} tahmini yıllık brüt kira getirisi potansiyeli.`,

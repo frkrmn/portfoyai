@@ -212,7 +212,7 @@ export const serializeListing = (listing) => {
     status: listing.status,
     listing_status: ["active", "sold", "rented"].includes(listing.listing_status) ? listing.listing_status : "active",
     property_category: ["konut", "arsa", "isyeri"].includes(listing.property_category) ? listing.property_category : "konut",
-    property_subtype: listing.property_category === "arsa" || listing.property_category === "isyeri" ? null : (["daire", "mustakil_ev", "villa", "rezidans"].includes(listing.property_subtype) ? listing.property_subtype : "daire"),
+    property_subtype: listing.property_category === "isyeri" ? null : (["daire", "mustakil_ev", "villa", "rezidans", "konut_imarli", "ticari_imarli", "tarla_tarimsal", "villa_imarli", "kentsel_donusum"].includes(listing.property_subtype) ? listing.property_subtype : listing.property_category === "arsa" ? "konut_imarli" : "daire"),
     created_at: listing.created_at,
     features,
     address: listing.address || `${listing.district}, Türkiye`,
@@ -280,8 +280,11 @@ export const listingPayload = (body, siteId) => {
   if (!["sale", "rent"].includes(body.listing_type)) throw new Error("VALIDATION:Listing type must be sale or rent.");
   const propertyCategory = body.property_category || "konut";
   if (!["konut", "arsa", "isyeri"].includes(propertyCategory)) throw new Error("VALIDATION:Invalid property category.");
-  const propertySubtype = propertyCategory === "konut" ? (body.property_subtype || "daire") : null;
-  if (propertyCategory === "konut" && !["daire", "mustakil_ev", "villa", "rezidans"].includes(propertySubtype)) throw new Error("VALIDATION:Invalid residential property subtype.");
+  const residentialSubtypes = ["daire", "mustakil_ev", "villa", "rezidans"];
+  const landSubtypes = ["konut_imarli", "ticari_imarli", "tarla_tarimsal", "villa_imarli", "kentsel_donusum"];
+  const propertySubtype = propertyCategory === "konut" ? (body.property_subtype || "daire") : propertyCategory === "arsa" ? (body.property_subtype || "konut_imarli") : null;
+  if (propertyCategory === "konut" && !residentialSubtypes.includes(propertySubtype)) throw new Error("VALIDATION:Invalid residential property subtype.");
+  if (propertyCategory === "arsa" && !landSubtypes.includes(propertySubtype)) throw new Error("VALIDATION:Invalid land property subtype.");
   if (body.status !== undefined && !["active", "passive", "sold"].includes(body.status)) throw new Error("VALIDATION:Invalid listing status.");
   const listingStatus = body.listing_status || "active";
   if (!["active", "sold", "rented"].includes(listingStatus)) throw new Error("VALIDATION:Invalid listing availability status.");
