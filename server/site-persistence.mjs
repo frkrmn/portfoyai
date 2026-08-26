@@ -46,7 +46,6 @@ const buildThemeConfig = (config) => {
       neighborhoods: config.content?.neighborhoods,
       feelings: config.content?.feelings,
       timings: config.content?.timings,
-      teamMembers: config.content?.teamMembers,
       processSteps: config.content?.processSteps,
       services: config.content?.services,
       tagline: isBoldLuxury
@@ -162,6 +161,7 @@ export const insertGeneratedSite = async (supabase, config, userId, { siteLimitE
         accent_color: config.accent_color,
         headline: config.headline,
         theme_config: buildThemeConfig(config),
+        show_team_section: config.template_id === "land-plots",
         status: "draft",
       })
       .select("id, slug")
@@ -188,7 +188,29 @@ export const insertGeneratedSite = async (supabase, config, userId, { siteLimitE
         metricsStorage = "features-compat";
       }
 
-      if (!listingsError) return { ...site, starterListingsCount: starterListings.length, metricsStorage };
+      if (!listingsError) {
+        let starterTeamMembersCount = 0;
+        if (config.template_id === "land-plots") {
+          const starterMembers = (config.content?.teamMembers || []).map((member, index) => ({
+            site_id: site.id,
+            name: member.name,
+            role: member.role,
+            bio: member.bio || null,
+            photo_url: member.photo_url || null,
+            sort_order: index,
+          }));
+          if (starterMembers.length) {
+            const { error: teamError } = await supabase.from("team_members").insert(starterMembers);
+            if (teamError) {
+              const { error: cleanupError } = await supabase.from("sites").delete().eq("id", site.id);
+              const cleanupMessage = cleanupError ? ` Cleanup also failed: ${cleanupError.message}` : "";
+              throw new Error(`Failed to save starter team members: ${teamError.message}.${cleanupMessage}`);
+            }
+            starterTeamMembersCount = starterMembers.length;
+          }
+        }
+        return { ...site, starterListingsCount: starterListings.length, starterTeamMembersCount, metricsStorage };
+      }
 
       const { error: cleanupError } = await supabase.from("sites").delete().eq("id", site.id);
       const cleanupMessage = cleanupError ? ` Cleanup also failed: ${cleanupError.message}` : "";

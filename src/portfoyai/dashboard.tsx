@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Check, ChevronDown, Download, Globe, Home, Lock, Plus, RefreshCw, Search, Users } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, Check, ChevronDown, Download, Globe, Home, Lock, Pencil, Plus, RefreshCw, Search, Trash2, Users } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -12,10 +12,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { readApiJson } from "@/lib/api";
 import { trackExperimentEvent } from "@/lib/experiment";
-import { getListingImage } from "@/templates/mediaFallbacks";
+import { getAgentImage, getListingImage } from "@/templates/mediaFallbacks";
 import { GoogleFontStylesheet } from "@/templates/GoogleFontStylesheet";
 import { useAuth } from "./auth";
-import type { Listing, ListingDraft } from "./types";
+import type { Listing, ListingDraft, TeamMember } from "./types";
 import { formatListingLocation } from "./listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { ListingForm, Shell } from "./views";
@@ -53,6 +53,8 @@ type DashboardSite = {
   neighborhood_id?: string | null;
   status: "draft" | "published";
   show_closed_listings: boolean;
+  show_team_section: boolean;
+  team_section_label: string | null;
   created_at: string;
 };
 
@@ -90,6 +92,8 @@ type SiteDraft = {
 };
 
 type GoogleFont = { family: string; variants: string[] };
+type TeamDraft = { id?: string; name: string; role: string; bio: string; photo_url: string };
+const blankTeamMember = (): TeamDraft => ({ name: "", role: "", bio: "", photo_url: "" });
 
 const variantWeight = (variant: string) => Number.parseInt(variant, 10) || 400;
 const weightsFor = (font: GoogleFont | undefined, italic: boolean) => {
@@ -278,6 +282,10 @@ export function DashboardPage() {
   const [sites, setSites] = useState<DashboardSite[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [leads, setLeads] = useState<DashboardLead[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamDraft, setTeamDraft] = useState<TeamDraft>(blankTeamMember);
+  const [teamLabel, setTeamLabel] = useState("");
+  const [savingTeam, setSavingTeam] = useState(false);
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
   const [selectedSiteId, setSelectedSiteId] = useState(requestedSiteId);
   const [draft, setDraft] = useState<ListingDraft & { id?: string }>(() => blankListing(""));
@@ -359,6 +367,7 @@ export function DashboardPage() {
   useEffect(() => {
     if (!activeSite || !session) {
       setListings([]);
+      setTeamMembers([]);
       setSiteDraft(null);
       siteDraftSiteId.current = "";
       return;
@@ -366,10 +375,18 @@ export function DashboardPage() {
     const controller = new AbortController();
     const loadListings = async () => {
       try {
-        const response = await fetch(`/api/sites/${activeSite.id}/listings`, { headers: authHeaders, signal: controller.signal });
+        const [response, teamResponse] = await Promise.all([
+          fetch(`/api/sites/${activeSite.id}/listings`, { headers: authHeaders, signal: controller.signal }),
+          fetch(`/api/sites/${activeSite.id}/team-members`, { headers: authHeaders, signal: controller.signal }),
+        ]);
         const payload = await readApiJson<{ error?: string; listings?: Listing[] }>(response);
+        const teamPayload = await readApiJson<{ error?: string; team_members?: TeamMember[] }>(teamResponse);
         if (!response.ok) throw new Error(payload.error || t("dashboard.listings.loadError"));
+        if (!teamResponse.ok) throw new Error(teamPayload.error || t("dashboard.team.loadError"));
         setListings(payload.listings || []);
+        setTeamMembers(teamPayload.team_members || []);
+        setTeamDraft(blankTeamMember());
+        setTeamLabel(activeSite.team_section_label || "");
         setDraft(blankListing(activeSite.id));
         if (siteDraftSiteId.current !== activeSite.id) {
           siteDraftSiteId.current = activeSite.id;
@@ -529,6 +546,59 @@ export function DashboardPage() {
   const saveIdentity = () => siteDraft && patchSite({ business_name: siteDraft.business_name, headline: siteDraft.headline, tone: siteDraft.tone, phone: siteDraft.phone, email: siteDraft.email, address: siteDraft.address, region_focus: siteDraft.region_focus, country_id: siteDraft.country_id, province_id: siteDraft.province_id, district_id: siteDraft.district_id, neighborhood_id: siteDraft.neighborhood_id }, t("dashboard.site.saved"));
   const togglePublication = () => activeSite && patchSite({ status: activeSite.status === "published" ? "draft" : "published" }, t(activeSite.status === "published" ? "dashboard.site.unpublished" : "dashboard.site.published"));
   const toggleClosedListings = () => activeSite && patchSite({ show_closed_listings: !activeSite.show_closed_listings }, t(!activeSite.show_closed_listings ? "dashboard.site.closedListingsShown" : "dashboard.site.closedListingsHidden"));
+  const toggleTeamSection = () => activeSite && patchSite({ show_team_section: !activeSite.show_team_section }, t(!activeSite.show_team_section ? "dashboard.team.shown" : "dashboard.team.hidden"));
+  const saveTeamLabel = () => patchSite({ team_section_label: teamLabel.trim() || null }, t("dashboard.team.labelSaved"));
+
+  const saveTeamMember = async () => {
+    if (!session || !activeSite || !teamDraft.name.trim() || !teamDraft.role.trim()) return;
+    setSavingTeam(true);
+    try {
+      const editing = Boolean(teamDraft.id);
+      const response = await fetch(editing ? `/api/team-members/${teamDraft.id}` : `/api/sites/${activeSite.id}/team-members`, {
+        method: editing ? "PATCH" : "POST",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ ...teamDraft, sort_order: editing ? undefined : teamMembers.length }),
+      });
+      const payload = await readApiJson<{ error?: string; team_member?: TeamMember }>(response);
+      if (!response.ok || !payload.team_member) throw new Error(payload.error || t("dashboard.team.saveError"));
+      setTeamMembers((current) => editing ? current.map((member) => member.id === payload.team_member!.id ? payload.team_member! : member) : [...current, payload.team_member!]);
+      setTeamDraft(blankTeamMember());
+      toast.success(t(editing ? "dashboard.team.updated" : "dashboard.team.added"));
+      setPreviewVersion((value) => value + 1);
+    } catch (error) { toast.error(error instanceof Error ? error.message : t("dashboard.team.saveError")); }
+    finally { setSavingTeam(false); }
+  };
+
+  const deleteTeamMember = async (member: TeamMember) => {
+    if (!session || !window.confirm(t("dashboard.team.deleteConfirm"))) return;
+    const response = await fetch(`/api/team-members/${member.id}`, { method: "DELETE", headers: authHeaders });
+    const payload = await readApiJson<{ error?: string }>(response);
+    if (!response.ok) return toast.error(payload.error || t("dashboard.team.deleteError"));
+    setTeamMembers((current) => current.filter((item) => item.id !== member.id));
+    if (teamDraft.id === member.id) setTeamDraft(blankTeamMember());
+    toast.success(t("dashboard.team.deleted"));
+    setPreviewVersion((value) => value + 1);
+  };
+
+  const moveTeamMember = async (index: number, direction: -1 | 1) => {
+    const otherIndex = index + direction;
+    if (!session || otherIndex < 0 || otherIndex >= teamMembers.length) return;
+    const next = [...teamMembers];
+    [next[index], next[otherIndex]] = [next[otherIndex], next[index]];
+    setTeamMembers(next);
+    try {
+      await Promise.all([next[index], next[otherIndex]].map((member, orderIndex) => fetch(`/api/team-members/${member.id}`, { method: "PATCH", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ sort_order: orderIndex === 0 ? index : otherIndex }) }).then(async (response) => { if (!response.ok) throw new Error((await readApiJson<{ error?: string }>(response)).error); })));
+      setPreviewVersion((value) => value + 1);
+    } catch { setTeamMembers(teamMembers); toast.error(t("dashboard.team.reorderError")); }
+  };
+
+  const loadTeamPhoto = (file?: File) => {
+    if (!file) return;
+    if (file.size > 1_500_000) return toast.error(t("dashboard.team.photoTooLarge"));
+    const reader = new FileReader();
+    reader.onload = () => setTeamDraft((current) => ({ ...current, photo_url: String(reader.result || "") }));
+    reader.readAsDataURL(file);
+  };
 
   const saveThemeSettings = async () => {
     if (!siteDraft) return;
@@ -632,6 +702,15 @@ export function DashboardPage() {
                 <div><div className="flex items-center gap-2 font-semibold">{t("dashboard.site.branding")} {plan === "free" ? <Lock className="h-3.5 w-3.5 text-slate-400" /> : null}</div><p className="mt-1 text-xs text-slate-500">{t("dashboard.site.brandingDescription")}</p></div>
                 {plan === "free" ? <Button variant="outline" disabled={openingPaywall} onClick={() => void openPaywall("branding_removal")} className="shrink-0 rounded-full">{t("dashboard.site.brandingFree")}</Button> : <button type="button" role="switch" aria-checked="false" aria-label={t("dashboard.site.branding")} className="h-7 w-12 rounded-full bg-slate-200 p-1"><span className="block h-5 w-5 rounded-full bg-white shadow" /></button>}
               </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
+            <CardHeader><CardTitle>{t("dashboard.team.title")}</CardTitle><CardDescription>{t("dashboard.team.description")}</CardDescription></CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between gap-4 rounded-2xl border bg-white p-4"><div><div className="font-semibold">{t("dashboard.team.show")}</div><p className="mt-1 text-xs text-slate-500">{t("dashboard.team.showDescription")}</p></div><button type="button" role="switch" aria-checked={activeSite.show_team_section} disabled={savingSite} onClick={() => void toggleTeamSection()} className={cn("h-7 w-12 shrink-0 rounded-full p-1 transition", activeSite.show_team_section ? "bg-[#173f32]" : "bg-slate-200")}><span className={cn("block h-5 w-5 rounded-full bg-white shadow transition-transform", activeSite.show_team_section && "translate-x-5")} /></button></div>
+              <div><Label>{t("dashboard.team.label")}</Label><div className="mt-2 flex gap-2"><Input value={teamLabel} onChange={(event) => setTeamLabel(event.target.value)} placeholder={t("dashboard.team.labelPlaceholder")} /><Button variant="outline" onClick={() => void saveTeamLabel()} disabled={savingSite}>{t("common.save")}</Button></div></div>
+              <div className="space-y-3">{teamMembers.map((member, index) => <div key={member.id} className="flex items-center gap-3 rounded-2xl border bg-white p-3"><img src={getAgentImage(`${activeSite.id}-${member.id}`, member.photo_url)} alt={member.name} className="h-14 w-14 rounded-xl object-cover" /><div className="min-w-0 flex-1"><div className="truncate font-semibold">{member.name}</div><div className="truncate text-xs text-slate-500">{member.role}</div></div><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => void moveTeamMember(index, -1)} aria-label={t("dashboard.team.up")}><ArrowUp className="h-4 w-4" /></Button><Button type="button" variant="ghost" size="icon" disabled={index === teamMembers.length - 1} onClick={() => void moveTeamMember(index, 1)} aria-label={t("dashboard.team.down")}><ArrowDown className="h-4 w-4" /></Button><Button type="button" variant="ghost" size="icon" onClick={() => setTeamDraft({ id: member.id, name: member.name, role: member.role, bio: member.bio || "", photo_url: member.photo_url || "" })} aria-label={t("common.edit")}><Pencil className="h-4 w-4" /></Button><Button type="button" variant="ghost" size="icon" onClick={() => void deleteTeamMember(member)} aria-label={t("common.delete")}><Trash2 className="h-4 w-4" /></Button></div></div>)}</div>
+              <div className="space-y-3 rounded-2xl border bg-white p-4"><div className="font-semibold">{t(teamDraft.id ? "dashboard.team.editTitle" : "dashboard.team.addTitle")}</div><div className="grid gap-3 sm:grid-cols-2"><div><Label>{t("dashboard.team.name")}</Label><Input value={teamDraft.name} onChange={(event) => setTeamDraft({ ...teamDraft, name: event.target.value })} /></div><div><Label>{t("dashboard.team.role")}</Label><Input value={teamDraft.role} onChange={(event) => setTeamDraft({ ...teamDraft, role: event.target.value })} /></div></div><div><Label>{t("dashboard.team.bio")}</Label><Textarea value={teamDraft.bio} onChange={(event) => setTeamDraft({ ...teamDraft, bio: event.target.value })} /></div><div><Label>{t("dashboard.team.photo")}</Label><Input type="file" accept="image/*" className="mt-2" onChange={(event) => loadTeamPhoto(event.target.files?.[0])} /></div>{teamDraft.photo_url ? <img src={teamDraft.photo_url} alt="" className="h-28 w-28 rounded-2xl object-cover" /> : null}<div className="flex gap-2"><Button onClick={() => void saveTeamMember()} disabled={savingTeam || !teamDraft.name.trim() || !teamDraft.role.trim()}>{t(teamDraft.id ? "dashboard.team.save" : "dashboard.team.add")}</Button>{teamDraft.id ? <Button variant="outline" onClick={() => setTeamDraft(blankTeamMember())}>{t("common.cancel")}</Button> : null}</div></div>
             </CardContent>
           </Card>
           <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">

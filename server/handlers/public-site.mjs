@@ -2,13 +2,19 @@ import { getSupabaseClient, listingSelect, methodNotAllowed, routeParam, sendJso
 
 export async function loadPublicSite(slug) {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error("VALIDATION:A valid slug is required.");
-  const { data: site, error } = await getSupabaseClient().from("sites").select("id, slug, theme_config, business_name, tone, primary_color, accent_color, headline, status, show_closed_listings, created_at").eq("slug", slug).maybeSingle();
+  const { data: site, error } = await getSupabaseClient().from("sites").select("id, slug, theme_config, business_name, tone, primary_color, accent_color, headline, status, show_closed_listings, show_team_section, team_section_label, created_at").eq("slug", slug).maybeSingle();
   if (error) throw new Error(`Failed to load public site: ${error.message}`);
   if (!site) return null;
   let listingsQuery = getSupabaseClient().from("listings").select(listingSelect).eq("site_id", site.id).in("status", ["active", "sold"]);
   if (!site.show_closed_listings) listingsQuery = listingsQuery.eq("listing_status", "active");
   const { data: listings, error: listingsError } = await listingsQuery.order("created_at", { ascending: false });
   if (listingsError) throw new Error(`Failed to load public listings: ${listingsError.message}`);
+  let teamMembers = [];
+  if (site.show_team_section) {
+    const { data, error: teamError } = await getSupabaseClient().from("team_members").select("id, site_id, name, role, bio, photo_url, sort_order, created_at").eq("site_id", site.id).order("sort_order").order("created_at");
+    if (teamError) throw new Error(`Failed to load public team members: ${teamError.message}`);
+    teamMembers = data || [];
+  }
   return {
     id: site.id,
     slug: site.slug,
@@ -16,6 +22,9 @@ export async function loadPublicSite(slug) {
     listings: (listings || []).map(serializeListing),
     status: site.status,
     show_closed_listings: site.show_closed_listings === true,
+    show_team_section: site.show_team_section === true,
+    team_section_label: site.team_section_label || null,
+    team_members: teamMembers,
     created_at: site.created_at,
   };
 }

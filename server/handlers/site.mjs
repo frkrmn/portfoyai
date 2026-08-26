@@ -3,7 +3,7 @@ import { mergeThemeConfig } from "../site-theme.mjs";
 
 const getSite = async (request, response, siteId) => {
   const user = await getAuthenticatedUser(request);
-  const { data: site, error } = await getSupabaseClient().from("sites").select("id, slug, user_id, theme_config, business_name, tone, primary_color, accent_color, headline, status, show_closed_listings, country_id, province_id, district_id, neighborhood_id, created_at").eq("id", siteId).eq("user_id", user.id).maybeSingle();
+  const { data: site, error } = await getSupabaseClient().from("sites").select("id, slug, user_id, theme_config, business_name, tone, primary_color, accent_color, headline, status, show_closed_listings, show_team_section, team_section_label, country_id, province_id, district_id, neighborhood_id, created_at").eq("id", siteId).eq("user_id", user.id).maybeSingle();
   if (error) throw new Error(`Failed to load site: ${error.message}`);
   if (!site) return sendJson(response, 404, { error: "Site not found." });
   return sendJson(response, 200, {
@@ -12,6 +12,8 @@ const getSite = async (request, response, siteId) => {
     config: { template_id: site.theme_config?.template_id, business_name: site.business_name, tone: site.tone, primary_color: site.primary_color, accent_color: site.accent_color, headline: site.headline },
     status: site.status,
     show_closed_listings: site.show_closed_listings === true,
+    show_team_section: site.show_team_section === true,
+    team_section_label: site.team_section_label || null,
     is_owner: Boolean(user && site.user_id === user.id),
     created_at: site.created_at,
   });
@@ -32,6 +34,15 @@ const updateSite = async (request, response, siteId) => {
   if (body.show_closed_listings !== undefined) {
     if (typeof body.show_closed_listings !== "boolean") return sendJson(response, 400, { error: "show_closed_listings must be boolean." });
     updates.show_closed_listings = body.show_closed_listings;
+  }
+  if (body.show_team_section !== undefined) {
+    if (typeof body.show_team_section !== "boolean") return sendJson(response, 400, { error: "show_team_section must be boolean." });
+    updates.show_team_section = body.show_team_section;
+  }
+  if (body.team_section_label !== undefined) {
+    const value = String(body.team_section_label || "").trim();
+    if (value.length > 120) return sendJson(response, 400, { error: "Team section label must be at most 120 characters." });
+    updates.team_section_label = value || null;
   }
   if (body.business_name !== undefined) {
     const value = String(body.business_name).trim();
@@ -88,7 +99,7 @@ const updateSite = async (request, response, siteId) => {
   if (Object.keys(updates).length === 0 && Object.keys(body).length === 0) return sendJson(response, 400, { error: "No site changes were supplied." });
   const { themeConfig, topLevel } = mergeThemeConfig(current.theme_config, themePatch);
   Object.assign(updates, topLevel, { theme_config: themeConfig });
-  const { data: site, error } = await getSupabaseClient().from("sites").update(updates).eq("id", siteId).eq("user_id", user.id).select("id, slug, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, show_closed_listings, country_id, province_id, district_id, neighborhood_id, created_at").maybeSingle();
+  const { data: site, error } = await getSupabaseClient().from("sites").update(updates).eq("id", siteId).eq("user_id", user.id).select("id, slug, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, show_closed_listings, show_team_section, team_section_label, country_id, province_id, district_id, neighborhood_id, created_at").maybeSingle();
   if (error) throw new Error(`Failed to update site: ${error.message}`);
   if (!site) return sendJson(response, 404, { error: "Owned site not found." });
   return sendJson(response, 200, { site: dashboardSite(site) });

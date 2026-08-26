@@ -12,6 +12,7 @@ import site from "./handlers/site.mjs";
 import siteListings from "./handlers/site-listings.mjs";
 import refineSite from "./handlers/site-refine.mjs";
 import sites from "./handlers/sites.mjs";
+import teamMembers from "./handlers/team-members.mjs";
 import { methodNotAllowed, sendJson } from "./api-utils.mjs";
 
 const uuidSource = "([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})";
@@ -28,6 +29,8 @@ export const apiRouteInventory = [
   { pattern: new RegExp(`^/api/listings/${uuidSource}$`, "i"), methods: ["PATCH", "DELETE"], params: ["id"], handler: listing },
   { pattern: /^\/api\/public-sites\/([a-z0-9]+(?:-[a-z0-9]+)*)$/, methods: ["GET"], params: ["slug"], handler: publicSite },
   { pattern: new RegExp(`^/api/sites/${uuidSource}/listings$`, "i"), methods: ["GET", "POST"], params: ["id"], handler: siteListings },
+  { pattern: new RegExp(`^/api/sites/${uuidSource}/team-members$`, "i"), methods: ["GET", "POST"], params: ["siteId"], handler: teamMembers },
+  { pattern: new RegExp(`^/api/team-members/${uuidSource}$`, "i"), methods: ["PATCH", "DELETE"], params: ["memberId"], handler: teamMembers },
   { pattern: new RegExp(`^/api/sites/${uuidSource}/refine$`, "i"), methods: ["POST"], params: ["id"], handler: refineSite },
   { pattern: new RegExp(`^/api/sites/${uuidSource}$`, "i"), methods: ["GET", "PATCH"], params: ["id"], handler: site },
   { pattern: /^\/api\/sites$/, methods: ["GET"], handler: sites },

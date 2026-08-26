@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { LayoutFineTune, Listing, ThemeConfig } from "@/portfoyai/types";
+import type { LayoutFineTune, Listing, TeamMember, ThemeConfig } from "@/portfoyai/types";
 
 export type TemplateView = "home" | "listings" | "detail" | "team";
 
@@ -165,6 +165,9 @@ export type TemplateConfig = {
   listings: Listing[];
   closedListings: Listing[];
   showClosedListings: boolean;
+  showTeamSection: boolean;
+  teamSectionLabel: string;
+  teamMembers: TeamMember[];
   listing?: Listing;
 };
 
@@ -174,7 +177,6 @@ export type TemplateFamily = {
   Home: ComponentType<SiteTemplateProps>;
   Listings: ComponentType<SiteTemplateProps>;
   Detail: ComponentType<SiteTemplateProps>;
-  Team?: ComponentType<SiteTemplateProps>;
 };
 
 export type PublicSitePayload = {
@@ -191,6 +193,9 @@ export type PublicSitePayload = {
   };
   listings: Listing[];
   show_closed_listings?: boolean;
+  show_team_section?: boolean;
+  team_section_label?: string | null;
+  team_members?: TeamMember[];
 };
 
 type NestedThemeConfig = {
@@ -640,6 +645,9 @@ export function createTemplateConfig(
     listings: (payload.listings || []).filter((item) => !item.listing_status || item.listing_status === "active"),
     closedListings: (payload.listings || []).filter((item) => item.listing_status === "sold" || item.listing_status === "rented"),
     showClosedListings: payload.show_closed_listings === true,
+    showTeamSection: payload.show_team_section === true,
+    teamSectionLabel: payload.team_section_label?.trim() || ((payload.team_members || []).length === 1 ? "Danışmanımız" : "Ekibimiz"),
+    teamMembers: payload.team_members || [],
     listing,
   };
 }

@@ -6,7 +6,7 @@ export default async function handler(request, response) {
     const user = await getAuthenticatedUser(request);
     const { data, error } = await getSupabaseClient()
       .from("sites")
-      .select("id, slug, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, show_closed_listings, country_id, province_id, district_id, neighborhood_id, created_at")
+      .select("id, slug, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, show_closed_listings, show_team_section, team_section_label, country_id, province_id, district_id, neighborhood_id, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) throw new Error(`Failed to load owned sites: ${error.message}`);

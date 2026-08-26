@@ -32,12 +32,14 @@ console.error = (...args) => {
 try {
   const types = await vite.ssrLoadModule("/src/templates/types.ts");
   const template = await vite.ssrLoadModule("/src/templates/land-plots/LandPlotsTemplate.tsx");
-  const payload = { id: "land-plots-e2e-site", slug: "erta-arsa", config: { ...generated, theme_config: { template_id: "land-plots", colors: { background: "#fff", primary: generated.primary_color, accent: generated.accent_color, text: "#17211c" }, fonts: { heading: "Georgia, serif", body: "Arial, sans-serif" }, content: generated.content } }, listings };
+  const sharedTeam = await vite.ssrLoadModule("/src/templates/SharedTeamPage.tsx");
+  const teamMembers = generated.content.teamMembers.map((member, index) => ({ ...member, id: `member-${index}`, site_id: "land-plots-e2e-site", sort_order: index, created_at: new Date().toISOString() }));
+  const payload = { id: "land-plots-e2e-site", slug: "erta-arsa", config: { ...generated, theme_config: { template_id: "land-plots", colors: { background: "#fff", primary: generated.primary_color, accent: generated.accent_color, text: "#17211c" }, fonts: { heading: "Georgia, serif", body: "Arial, sans-serif" }, content: generated.content } }, listings, show_team_section: true, team_members: teamMembers };
   const render = (Component, view, listing) => renderToString(React.createElement(MemoryRouter, null, React.createElement(Component, { config: types.createTemplateConfig(payload, view, listing) })));
   const home = render(template.LandPlotsHome, "home");
   const grid = render(template.LandPlotsListings, "listings");
   const detail = render(template.LandPlotsDetail, "detail", listings[0]);
-  const team = render(template.LandPlotsTeam, "team");
+  const team = render(sharedTeam.SharedTeamPage, "team");
   assert.match(home, /Hizmetlerimiz/);
   assert.match(grid, /Konut İmarlı/);
   assert.match(grid, /Ticari İmarlı/);

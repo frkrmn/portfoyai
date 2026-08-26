@@ -6,6 +6,7 @@ import { publicSitePageMetadata } from "@/lib/site-metadata.js";
 import { createTemplateConfig, type PublicSitePayload, type TemplateView } from "./types";
 import { getTemplateFamily } from "./registry";
 import { GoogleFontStylesheet } from "./GoogleFontStylesheet";
+import { SharedTeamNavLink, SharedTeamPage } from "./SharedTeamPage";
 
 function RendererMessage({ children }: { children: string }) {
   return <div className="grid min-h-screen place-items-center bg-[#f1eadf] px-5 text-center text-sm text-[#25231f]">{children}</div>;
@@ -54,13 +55,14 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
 
   const config = createTemplateConfig(payload, view, listing);
   const family = getTemplateFamily(config.templateId);
-  const Component = view === "home" ? family.Home : view === "listings" ? family.Listings : view === "team" ? (family.Team || family.Home) : family.Detail;
+  if (view === "team" && (!config.showTeamSection || !config.teamMembers.length)) return <RendererMessage>Sayfa bulunamadı.</RendererMessage>;
+  const Component = view === "home" ? family.Home : view === "listings" ? family.Listings : view === "team" ? SharedTeamPage : family.Detail;
   const closedLabel = listing?.listing_status === "sold"
     ? (i18n.resolvedLanguage === "en" ? "Sold" : "Satıldı")
     : listing?.listing_status === "rented"
       ? (i18n.resolvedLanguage === "en" ? "Rented" : "Kiralandı")
       : "";
-  return <><GoogleFontStylesheet fonts={config.fonts} />{closedLabel ? <div data-listing-status={listing?.listing_status} className="fixed right-5 top-5 z-[100] rounded-full bg-slate-950 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-xl">{closedLabel}</div> : null}<Component config={config} /></>;
+  return <><GoogleFontStylesheet fonts={config.fonts} />{view !== "team" ? <SharedTeamNavLink config={config} /> : null}{closedLabel ? <div data-listing-status={listing?.listing_status} className="fixed right-5 top-5 z-[100] rounded-full bg-slate-950 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-xl">{closedLabel}</div> : null}<Component config={config} /></>;
 }
 
 export function TemplateNotFoundLink({ slug }: { slug: string }) {

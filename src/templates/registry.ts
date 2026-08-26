@@ -11,7 +11,7 @@ import { NeighborhoodFriendlyDetail, NeighborhoodFriendlyHome, NeighborhoodFrien
 import { InvestmentFocusedDetail, InvestmentFocusedHome, InvestmentFocusedListings } from "./investment-focused/InvestmentFocusedTemplate";
 import { UrgentDealsDetail, UrgentDealsHome, UrgentDealsListings } from "./urgent-deals/UrgentDealsTemplate";
 import { GuidedMatchDetail, GuidedMatchHome, GuidedMatchListings } from "./guided-match/GuidedMatchTemplate";
-import { LandPlotsDetail, LandPlotsHome, LandPlotsListings, LandPlotsTeam } from "./land-plots/LandPlotsTemplate";
+import { LandPlotsDetail, LandPlotsHome, LandPlotsListings } from "./land-plots/LandPlotsTemplate";
 
 export const defaultTemplateId = "tm_01";
 
@@ -67,7 +67,6 @@ const landPlotsFamily: TemplateFamily = {
   Home: LandPlotsHome,
   Listings: LandPlotsListings,
   Detail: LandPlotsDetail,
-  Team: LandPlotsTeam,
 };
 
 export const templates: Record<string, TemplateFamily> = {

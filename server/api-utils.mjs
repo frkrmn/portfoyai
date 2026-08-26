@@ -229,7 +229,7 @@ export const serializeListing = (listing) => {
 export const getOwnedSite = async (userId, siteId) => {
   const { data, error } = await getSupabaseClient()
     .from("sites")
-    .select("id, slug, user_id, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, show_closed_listings, country_id, province_id, district_id, neighborhood_id, created_at")
+    .select("id, slug, user_id, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, show_closed_listings, show_team_section, team_section_label, country_id, province_id, district_id, neighborhood_id, created_at")
     .eq("id", siteId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -253,6 +253,8 @@ export const dashboardSite = (site) => ({
   can_undo: Boolean(site.previous_theme_config),
   status: site.status,
   show_closed_listings: site.show_closed_listings === true,
+  show_team_section: site.show_team_section === true,
+  team_section_label: site.team_section_label || null,
   created_at: site.created_at,
 });
 

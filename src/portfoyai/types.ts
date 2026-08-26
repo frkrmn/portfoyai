@@ -72,6 +72,17 @@ export type Agent = {
   bio: string;
 };
 
+export type TeamMember = {
+  id: string;
+  site_id: string;
+  name: string;
+  role: string;
+  bio: string;
+  photo_url: string;
+  sort_order: number;
+  created_at: string;
+};
+
 export type Site = {
   id: string;
   agent_id: string;
