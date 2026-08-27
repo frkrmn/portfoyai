@@ -49,7 +49,7 @@ function Specs({ config, listing }: { config: TemplateConfig; listing: Listing }
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="border-l-2 border-[var(--if-accent)] bg-[var(--if-metric)] px-5 py-4"><div className="text-[10px] font-bold uppercase tracking-[0.13em] opacity-55">{label}</div><div className="mt-1 font-[family-name:var(--if-heading)] text-2xl font-extrabold text-[var(--if-accent)]">{value}</div></div>;
+  return <div className="border-l-2 border-[var(--if-accent)] bg-[var(--if-metric)] px-5 py-4 text-[var(--if-text)]"><div className="text-[10px] font-bold uppercase tracking-[0.13em] opacity-70">{label}</div><div className="mt-1 font-[family-name:var(--if-heading)] text-2xl font-extrabold text-[var(--if-accent)]">{value}</div></div>;
 }
 
 function InvestmentCard({ config, listing }: { config: TemplateConfig; listing: Listing }) {

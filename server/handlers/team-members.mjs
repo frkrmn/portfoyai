@@ -42,7 +42,7 @@ export default async function handler(request, response) {
         if (error) throw new Error(`Failed to load team members: ${error.message}`);
         return sendJson(response, 200, { team_members: (data || []).map(cleanMember) });
       }
-      const body = await readJsonBody(request);
+      const body = await readJsonBody(request, 3 * 1024 * 1024);
       const payload = memberPayload(body);
       const { data, error } = await supabase.from("team_members").insert({ site_id: siteId, ...payload, sort_order: body.sort_order ?? 0 }).select().single();
       if (error) throw new Error(`Failed to add team member: ${error.message}`);
@@ -57,13 +57,14 @@ export default async function handler(request, response) {
       if (error) throw new Error(`Failed to delete team member: ${error.message}`);
       return sendJson(response, 200, { deleted: true });
     }
-    const body = await readJsonBody(request);
+    const body = await readJsonBody(request, 3 * 1024 * 1024);
     const payload = memberPayload(body, true);
     if (!Object.keys(payload).length) return sendJson(response, 400, { error: "No team member changes supplied." });
     const { data, error } = await supabase.from("team_members").update(payload).eq("id", memberId).select().single();
     if (error) throw new Error(`Failed to update team member: ${error.message}`);
     return sendJson(response, 200, { team_member: cleanMember(data) });
   } catch (error) {
+    if (error instanceof Error && error.message === "Request body is too large") return sendJson(response, 413, { error: "Fotoğraf dahil istek boyutu en fazla 3 MB olabilir." });
     if (error instanceof Error && error.message.startsWith("VALIDATION:")) return sendJson(response, 400, { error: error.message.slice(11) });
     return handleKnownError(response, error, "[team-members] Request failed");
   }
