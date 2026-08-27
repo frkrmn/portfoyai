@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Check, MapPin, X } from "lucide-react";
 import type { Listing } from "@/portfoyai/types";
 import { formatListingPrice } from "@/lib/listing-price";
 import { formatListingLocation } from "@/portfoyai/listing-location";
+import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { getListingImage } from "../mediaFallbacks";
 import { propertySubtypeFor, propertyTaxonomyLabel } from "../PropertyTaxonomy";
@@ -29,7 +30,7 @@ function Header({ config }: SiteTemplateProps) {
 
 function Footer({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <footer id="iletisim" className="bg-[var(--lp-primary)] px-5 py-14 text-white sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1400px] gap-10 md:grid-cols-[1fr_auto_auto]"><div><div className="font-[family-name:var(--lp-heading)] text-3xl font-bold">{c.businessName}</div><p className="mt-3 max-w-md text-sm leading-7 opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-40">Fastate AI ile hazırlandı</div></div><nav className="space-y-3 text-sm opacity-75"><Link className="block" to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a className="block" href={`/site/${config.slug}#hizmetler`}>{c.navAbout}</a></nav><address className="space-y-2 text-sm not-italic opacity-75"><div>{c.address}</div><div>{c.phone}</div><div>{c.email}</div></address></div></footer>;
+  return <><SharedTeamSection config={config} /><footer id="iletisim" className="bg-[var(--lp-primary)] px-5 py-14 text-white sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1400px] gap-10 md:grid-cols-[1fr_auto_auto]"><div><div className="font-[family-name:var(--lp-heading)] text-3xl font-bold">{c.businessName}</div><p className="mt-3 max-w-md text-sm leading-7 opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-40">Fastate AI ile hazırlandı</div></div><nav className="space-y-3 text-sm opacity-75"><Link className="block" to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a className="block" href={`/site/${config.slug}#hizmetler`}>{c.navAbout}</a></nav><address className="space-y-2 text-sm not-italic opacity-75"><div>{c.address}</div><div>{c.phone}</div><div>{c.email}</div></address></div><SharedTeamFooterLink config={config} /></footer></>;
 }
 
 function FeatureList({ listing, compact = false }: { listing: Listing; compact?: boolean }) {

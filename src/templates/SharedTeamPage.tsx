@@ -4,9 +4,15 @@ import type { CSSProperties } from "react";
 import { getAgentImage } from "./mediaFallbacks";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps } from "./types";
 
-export function SharedTeamNavLink({ config }: SiteTemplateProps) {
+export function SharedTeamFooterLink({ config }: SiteTemplateProps) {
   if (!config.showTeamSection || !config.teamMembers.length) return null;
-  return <nav aria-label={config.teamSectionLabel} className="fixed bottom-5 right-5 z-[80]"><Link data-site-button to={`/site/${config.slug}/team`} className="inline-flex border border-white/20 bg-[var(--site-button)] px-5 py-3 text-xs font-bold text-[var(--site-button-text)] shadow-xl">{config.teamSectionLabel}</Link></nav>;
+  const href = config.view === "home" ? "#ekibimiz" : `/site/${config.slug}#ekibimiz`;
+  return <a href={href} className="mt-5 inline-flex border-b border-current/30 pb-1 text-sm font-semibold">{config.teamSectionLabel}</a>;
+}
+
+export function SharedTeamSection({ config, force = false }: SiteTemplateProps & { force?: boolean }) {
+  if (!config.showTeamSection || !config.teamMembers.length || (!force && config.view !== "home")) return null;
+  return <section id="ekibimiz" data-team-section className="border-y border-current/10 px-5 py-20 sm:px-8 lg:px-10" style={{ background: `color-mix(in srgb, ${config.colors.accent} 8%, ${config.colors.background})`, color: config.colors.text }}><div className="mx-auto max-w-[1400px]"><div className="text-xs font-bold uppercase tracking-[.2em]" style={{ color: config.colors.accent }}>{config.content.eyebrow}</div><h2 className="mt-4 text-5xl font-bold" style={{ fontFamily: config.fonts.heading }}>{config.teamSectionLabel}</h2><p className="mt-4 max-w-2xl leading-7 opacity-65">{config.content.teamDescription}</p><div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">{config.teamMembers.map((member, index) => <article key={member.id} data-team-member className="overflow-hidden border border-current/10" style={{ background: config.colors.background }}><img src={getAgentImage(`${config.siteId}-${member.id}-${index}`, member.photo_url)} alt={member.name} className="aspect-[4/3] w-full object-cover" /><div className="p-6"><h3 className="text-3xl font-bold" style={{ fontFamily: config.fonts.heading }}>{member.name}</h3><div className="mt-2 text-xs font-bold uppercase tracking-wider" style={{ color: config.colors.accent }}>{member.role}</div>{member.bio ? <p className="mt-4 text-sm leading-7 opacity-65">{member.bio}</p> : null}</div></article>)}</div>{config.templateId === "land-plots" && config.content.processSteps.length ? <div className="mt-20 border-t border-current/10 pt-16"><h3 className="text-4xl font-bold" style={{ fontFamily: config.fonts.heading }}>{config.content.processTitle}</h3><div className="mt-9 grid gap-6 md:grid-cols-3">{config.content.processSteps.map((step, index) => <article key={`${step.title}-${index}`} className="border-t border-current/15 pt-5"><div className="text-sm font-bold" style={{ color: config.colors.accent }}>{String(index + 1).padStart(2, "0")}</div><h4 className="mt-3 text-2xl font-bold" style={{ fontFamily: config.fonts.heading }}>{step.title}</h4><p className="mt-3 text-sm leading-7 opacity-65">{step.description}</p></article>)}</div></div> : null}</div></section>;
 }
 
 export function SharedTeamPage({ config }: SiteTemplateProps) {

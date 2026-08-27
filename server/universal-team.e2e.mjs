@@ -7,7 +7,8 @@ import { createServer } from "vite";
 const vite = await createServer({ server: { middlewareMode: true }, appType: "custom", logLevel: "silent" });
 try {
   const { createTemplateConfig } = await vite.ssrLoadModule("/src/templates/types.ts");
-  const { SharedTeamNavLink, SharedTeamPage } = await vite.ssrLoadModule("/src/templates/SharedTeamPage.tsx");
+  const { SharedTeamFooterLink, SharedTeamPage, SharedTeamSection } = await vite.ssrLoadModule("/src/templates/SharedTeamPage.tsx");
+  const { getTemplateFamily } = await vite.ssrLoadModule("/src/templates/registry.ts");
   const base = {
     id: "warm-team-site",
     slug: "sicak-ekip",
@@ -26,10 +27,11 @@ try {
   const member = (id, name) => ({ id, site_id: base.id, name, role: "Gayrimenkul Danışmanı", bio: "Bölgesinde uzman kişisel danışman.", photo_url: "", sort_order: 0, created_at: new Date().toISOString() });
   const render = (Component, config) => renderToString(React.createElement(MemoryRouter, null, React.createElement(Component, { config })));
 
-  const one = createTemplateConfig({ ...base, team_members: [member("one", "Deniz Kaya")] }, "team");
+  const one = createTemplateConfig({ ...base, team_members: [member("one", "Deniz Kaya")] }, "home");
   assert.equal(one.teamSectionLabel, "Danışmanımız");
   assert.match(render(SharedTeamPage, one), /Deniz Kaya/);
-  assert.match(render(SharedTeamNavLink, one), /Danışmanımız/);
+  assert.match(render(SharedTeamFooterLink, one), /#ekibimiz/);
+  assert.match(render(SharedTeamSection, one), /data-team-section/);
 
   const two = createTemplateConfig({ ...base, team_members: [member("one", "Deniz Kaya"), member("two", "Ece Akın")] }, "team");
   assert.equal(two.teamSectionLabel, "Ekibimiz");
@@ -39,9 +41,18 @@ try {
   assert.equal(custom.teamSectionLabel, "Danışmanlarımız");
 
   const hidden = createTemplateConfig({ ...base, show_team_section: false, team_members: [member("one", "Deniz Kaya")] }, "home");
-  assert.equal(render(SharedTeamNavLink, hidden), "");
+  assert.equal(render(SharedTeamFooterLink, hidden), "");
+  assert.equal(render(SharedTeamSection, hidden), "");
 
-  console.info(JSON.stringify({ one_member_label: one.teamSectionLabel, two_member_label: two.teamSectionLabel, custom_label: custom.teamSectionLabel, hidden_nav: false, placeholder_photo: true }, null, 2));
+  const templateIds = ["warm-editorial", "bold-luxury", "clean-modern", "neighborhood-friendly", "investment-focused", "urgent-deals", "guided-match", "land-plots"];
+  for (const templateId of templateIds) {
+    const config = createTemplateConfig({ ...base, config: { ...base.config, template_id: templateId, theme_config: { ...base.config.theme_config, template_id: templateId } }, team_members: [member("one", "Deniz Kaya")] }, "home");
+    const html = render(getTemplateFamily(templateId).Home, config);
+    assert.match(html, /data-team-section/, `${templateId} must render the team inside the landing flow`);
+    assert.match(html, /href="#ekibimiz"/, `${templateId} footer must link to the inline team section`);
+  }
+
+  console.info(JSON.stringify({ one_member_label: one.teamSectionLabel, two_member_label: two.teamSectionLabel, custom_label: custom.teamSectionLabel, hidden_nav: false, placeholder_photo: true, inline_templates: templateIds }, null, 2));
 } finally {
   await vite.close();
 }

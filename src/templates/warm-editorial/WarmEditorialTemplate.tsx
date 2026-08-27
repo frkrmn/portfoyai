@@ -18,6 +18,7 @@ import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getHeroImage, getListingImage } from "../mediaFallbacks";
+import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 
@@ -96,7 +97,7 @@ function Header({ config }: SiteTemplateProps) {
 
 function Footer({ config }: SiteTemplateProps) {
   return (
-    <footer className="border-t border-[color:color-mix(in_srgb,var(--we-text)_14%,transparent)] px-5 py-12 sm:px-8 lg:px-12">
+    <><SharedTeamSection config={config} /><footer className="border-t border-[color:color-mix(in_srgb,var(--we-text)_14%,transparent)] px-5 py-12 sm:px-8 lg:px-12">
       <div className="mx-auto grid max-w-[1380px] gap-8 text-sm md:grid-cols-[1fr_auto_auto] md:items-end">
         <div>
           <div className="font-[family-name:var(--we-heading)] text-2xl font-semibold">{config.content.businessName}</div>
@@ -106,8 +107,8 @@ function Footer({ config }: SiteTemplateProps) {
           <div>{config.content.agentName}</div><div>{config.content.phone}</div><div>{config.content.email}</div><div>{config.content.address}</div>
         </address>
         <div className="text-xs opacity-45">{labels.footerCredit}</div>
-      </div>
-    </footer>
+      </div><SharedTeamFooterLink config={config} />
+    </footer></>
   );
 }
 
