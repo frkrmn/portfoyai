@@ -10,6 +10,14 @@ import { getAgentImage, getHeroImage, getListingImage } from "../mediaFallbacks"
 import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
+import { contentFields, objectArrayField, stringArrayField } from "../content-schema";
+
+export const contentSchema = [
+  ...contentFields(["agentName", "eyebrow", "headlineAccent", "tagline", "ctaText", "navAbout", "navListings", "matchEyebrow", "matchTitle", "matchDescription", "locationLabel", "feelingLabel", "budgetMinLabel", "budgetMaxLabel", "timingLabel", "matchSubmitLabel", "matchResultsTitle", "matchResultsDescription", "featuredEyebrow", "featuredTitle", "guideTitle", "guideQuote", "aboutTitle", "aboutDescription", "directContactLabel", "listingsTitle", "listingsDescription", "allLabel", "saleLabel", "rentLabel", "emptyListings", "backLabel", "areaLabel", "bedLabel", "bathLabel", "listingAboutLabel", "listingFeaturesLabel", "tourTitle", "tourDescription", "fullNameLabel", "phoneLabel", "messageLabel", "formSubmit", "formSubmitting", "formSuccess", "formError", "teamDescription"], ["tagline", "matchDescription", "matchResultsDescription", "guideQuote", "aboutDescription", "listingsDescription", "tourDescription", "formSuccess", "formError", "teamDescription"]),
+  stringArrayField("feelings", "His seçenekleri", "His"),
+  stringArrayField("timings", "Taşınma zamanı seçenekleri", "Zamanlama"),
+  objectArrayField("stats", "Hero istatistikleri", [["value", "Değer"], ["label", "Etiket"]]),
+];
 
 const normalize = (value: string) => value.toLocaleLowerCase("tr-TR");
 const bedroomsFor = (listing: Listing) => listing.bedroom_count ?? (Number.parseInt(listing.room_count, 10) || 1);

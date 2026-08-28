@@ -21,6 +21,9 @@ import { getHeroImage, getListingImage } from "../mediaFallbacks";
 import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
+import { contentFields } from "../content-schema";
+
+export const contentSchema = contentFields(["agentName", "eyebrow", "headlineAccent", "ctaText", "featuredEyebrow", "featuredTitle", "categoriesEyebrow", "categoriesTitle", "tourTitle", "tourDescription", "teamDescription"], ["tourDescription", "teamDescription"]);
 
 const labels = {
   navListings: "Portföyler",

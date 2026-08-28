@@ -10,6 +10,12 @@ import { getAgentImage, getHeroImage, getListingImage } from "../mediaFallbacks"
 import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
+import { contentFields, objectArrayField } from "../content-schema";
+
+export const contentSchema = [
+  ...contentFields(["agentName", "eyebrow", "tagline", "ctaText", "navAbout", "navContact", "navListings", "searchLabel", "locationLabel", "propertyTypeLabel", "typeLabel", "saleLabel", "rentLabel", "allLabel", "neighborhoodsTitle", "neighborhoodsDescription", "neighborhoodListingLabel", "featuredEyebrow", "featuredStripTitle", "aboutTitle", "aboutDescription", "directContactLabel", "listingsTitle", "listingsDescription", "emptyListings", "backLabel", "areaLabel", "bedLabel", "bathLabel", "listingAboutLabel", "listingFeaturesLabel", "tourTitle", "tourDescription", "fullNameLabel", "phoneLabel", "messageLabel", "formSubmit", "formSubmitting", "formSuccess", "formError", "teamDescription"], ["tagline", "neighborhoodsDescription", "aboutDescription", "listingsDescription", "tourDescription", "formSuccess", "formError", "teamDescription"]),
+  objectArrayField("neighborhoods", "Mahalleler", [["name", "Mahalle adı"], ["description", "Kısa açıklama", "textarea"]]),
+];
 
 const normalize = (value: string) => value.toLocaleLowerCase("tr-TR");
 const locationText = (listing: Listing) => `${formatListingLocation(listing)} ${listing.address || ""} ${listing.title}`;

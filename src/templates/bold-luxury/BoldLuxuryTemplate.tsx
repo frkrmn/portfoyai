@@ -10,6 +10,13 @@ import { getHeroImage, getListingImage } from "../mediaFallbacks";
 import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
+import { contentFields, objectArrayField } from "../content-schema";
+
+export const contentSchema = [
+  ...contentFields(["eyebrow", "tagline", "navAbout", "navContact", "navListings", "featuredEyebrow", "showcaseEyebrow", "showcaseTitle", "whyEyebrow", "whyTitle", "listingsTitle", "listingsDescription", "searchLabel", "typeLabel", "locationLabel", "allLabel", "saleLabel", "rentLabel", "emptyListings", "backLabel", "listingAboutLabel", "listingFeaturesLabel", "tourTitle", "tourDescription", "fullNameLabel", "emailLabel", "phoneLabel", "messageLabel", "formSubmit", "formSubmitting", "formSuccess", "formError", "testimonialQuote", "testimonialAuthor", "teamDescription"], ["tagline", "listingsDescription", "tourDescription", "formSuccess", "formError", "testimonialQuote", "teamDescription"]),
+  objectArrayField("stats", "İstatistikler", [["value", "Değer"], ["label", "Etiket"]]),
+  objectArrayField("whyItems", "Neden biz maddeleri", [["title", "Başlık"], ["description", "Açıklama", "textarea"]]),
+];
 
 const luxuryStyle = (config: TemplateConfig) => ({
   ...themeStyleVariables(config),

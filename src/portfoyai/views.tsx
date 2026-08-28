@@ -57,13 +57,14 @@ const getThemeStyles = (theme: Pick<ThemeConfig, "primary" | "accent" | "fontPai
     fontFamily: theme.fontPairing.body,
   }) as CSSProperties;
 
-export function Shell({ children, actions, businessName, activeSection, onSectionChange, leadCount }: { children: ReactNode; actions?: ReactNode; businessName: string; activeSection: "overview" | "site" | "listings" | "leads"; onSectionChange: (section: "overview" | "site" | "listings" | "leads") => void; leadCount: number }) {
+export function Shell({ children, actions, businessName, activeSection, onSectionChange, leadCount }: { children: ReactNode; actions?: ReactNode; businessName: string; activeSection: "overview" | "site" | "content" | "listings" | "leads"; onSectionChange: (section: "overview" | "site" | "content" | "listings" | "leads") => void; leadCount: number }) {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const identity = businessName || user?.email || t("common.brand");
   const navigation = [
     { id: "overview" as const, icon: LayoutDashboard, label: t("dashboard.shell.overview") },
     { id: "listings" as const, icon: Home, label: t("dashboard.shell.listings") },
+    { id: "content" as const, icon: FileText, label: t("dashboard.shell.content") },
     { id: "leads" as const, icon: Users, label: t("dashboard.shell.leads") },
     { id: "site" as const, icon: Palette, label: t("dashboard.shell.siteSettings") },
   ];

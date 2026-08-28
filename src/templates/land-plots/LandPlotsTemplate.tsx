@@ -9,6 +9,13 @@ import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { getListingImage } from "../mediaFallbacks";
 import { propertySubtypeFor, propertyTaxonomyLabel } from "../PropertyTaxonomy";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
+import { contentFields, objectArrayField } from "../content-schema";
+
+export const contentSchema = [
+  ...contentFields(["eyebrow", "headlineAccent", "tagline", "ctaText", "navAbout", "navContact", "navListings", "servicesTitle", "servicesDescription", "featuredEyebrow", "featuredTitle", "listingsTitle", "listingsDescription", "allLabel", "saleLabel", "rentLabel", "landLabel", "detailsLabel", "emptyListings", "backLabel", "priceRangeLabel", "areaLabel", "locationLabel", "usageLabel", "listingFeaturesLabel", "tourTitle", "tourDescription", "contactActionLabel", "fullNameLabel", "phoneLabel", "messageLabel", "formSubmit", "formSubmitting", "formSuccess", "formError", "teamDescription", "processTitle"], ["tagline", "servicesDescription", "listingsDescription", "tourDescription", "formSuccess", "formError", "teamDescription"]),
+  objectArrayField("services", "Hizmetlerimiz", [["title", "Başlık"], ["description", "Açıklama", "textarea"]]),
+  objectArrayField("processSteps", "Nasıl Çalışıyoruz adımları", [["title", "Başlık"], ["description", "Açıklama", "textarea"]]),
+];
 
 const landStyle = (config: TemplateConfig) => ({
   ...themeStyleVariables(config),

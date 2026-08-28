@@ -10,6 +10,12 @@ import { getListingImage } from "../mediaFallbacks";
 import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, propertyTaxonomyLabel, PropertyTaxonomySelect } from "../PropertyTaxonomy";
+import { contentFields, objectArrayField } from "../content-schema";
+
+export const contentSchema = [
+  ...contentFields(["agentName", "eyebrow", "tagline", "ctaText", "navAbout", "navContact", "navListings", "averageYieldLabel", "regionalGrowthLabel", "activePortfolioLabel", "featuredEyebrow", "featuredTitle", "investmentWhyTitle", "listingsTitle", "listingsDescription", "searchLabel", "locationLabel", "allLabel", "saleLabel", "rentLabel", "cardViewLabel", "comparisonViewLabel", "detailsLabel", "priceRangeLabel", "pricePerM2Label", "rentalYieldLabel", "areaLabel", "bedLabel", "bathLabel", "emptyListings", "backLabel", "roiLabel", "listingAboutLabel", "listingFeaturesLabel", "tourTitle", "tourDescription", "fullNameLabel", "phoneLabel", "messageLabel", "formSubmit", "formSubmitting", "formSuccess", "formError", "teamDescription"], ["tagline", "listingsDescription", "tourDescription", "formSuccess", "formError", "teamDescription"]),
+  objectArrayField("whyItems", "Yatırım yaklaşımı maddeleri", [["title", "Başlık"], ["description", "Açıklama", "textarea"]]),
+];
 
 const normalize = (value: string) => value.toLocaleLowerCase("tr-TR");
 const bedroomsFor = (listing: Listing) => listing.bedroom_count ?? (Number.parseInt(listing.room_count, 10) || 1);

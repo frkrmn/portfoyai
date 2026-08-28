@@ -10,6 +10,9 @@ import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type T
 import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
+import { contentFields } from "../content-schema";
+
+export const contentSchema = contentFields(["eyebrow", "tagline", "ctaText", "navAbout", "navContact", "navListings", "searchLabel", "locationLabel", "priceRangeLabel", "opportunityLabel", "dealsSectionTitle", "dealsSectionDescription", "featuredEyebrow", "urgentSaleLabel", "priceDroppedLabel", "originalPriceLabel", "daysOnlineLabel", "listingsTitle", "listingsDescription", "allLabel", "saleLabel", "rentLabel", "emptyListings", "backLabel", "areaLabel", "bedLabel", "bathLabel", "listingAboutLabel", "listingFeaturesLabel", "tourTitle", "tourDescription", "fullNameLabel", "phoneLabel", "messageLabel", "formSubmit", "formSubmitting", "formSuccess", "formError", "teamDescription"], ["tagline", "dealsSectionDescription", "listingsDescription", "tourDescription", "formSuccess", "formError", "teamDescription"]);
 
 const normalize = (value: string) => value.toLocaleLowerCase("tr-TR");
 const daysOnline = (createdAt: string) => Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000));

@@ -12,7 +12,8 @@
     "test:locations": "node server/locations.e2e.mjs",
     "test:currencies": "node server/listing-currency.e2e.mjs",
     "test:i18n-audit": "node server/platform-i18n-audit.mjs",
-    "test:i18n-browser": "node server/platform-i18n.browser.e2e.mjs"
+    "test:i18n-browser": "node server/platform-i18n.browser.e2e.mjs",
+    "test:content-schema": "node server/content-schema-audit.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

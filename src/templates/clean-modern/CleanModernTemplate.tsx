@@ -10,6 +10,9 @@ import { getHeroImage, getListingImage } from "../mediaFallbacks";
 import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, propertyTaxonomyLabel, PropertyTaxonomySelect } from "../PropertyTaxonomy";
+import { contentFields } from "../content-schema";
+
+export const contentSchema = contentFields(["eyebrow", "tagline", "ctaText", "navAbout", "navContact", "navListings", "featuredEyebrow", "findHomeTitle", "findHomeDescription", "keywordLabel", "locationLabel", "roomLabel", "priceRangeLabel", "searchLabel", "saleLabel", "rentLabel", "allLabel", "rentSectionTitle", "saleSectionTitle", "listingsTitle", "listingsDescription", "emptyListings", "detailsLabel", "backLabel", "areaLabel", "bedLabel", "bathLabel", "listingAboutLabel", "listingFeaturesLabel", "tourTitle", "tourDescription", "fullNameLabel", "phoneLabel", "messageLabel", "formSubmit", "formSubmitting", "formSuccess", "formError", "testimonialQuote", "testimonialAuthor", "testimonialRole", "teamDescription"], ["tagline", "findHomeDescription", "listingsDescription", "tourDescription", "formSuccess", "formError", "testimonialQuote", "teamDescription"]);
 
 const bedroomsFor = (listing: Listing) => listing.bedroom_count ?? (Number.parseInt(listing.room_count, 10) || 1);
 const bathroomsFor = (listing: Listing) => listing.bathroom_count ?? (bedroomsFor(listing) > 3 ? 2 : 1);

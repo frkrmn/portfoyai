@@ -18,6 +18,35 @@ const textValue = (value, field, max) => {
   return text;
 };
 
+const sanitizeContent = (value, path = "content", depth = 0) => {
+  if (depth > 5) throw new Error(`VALIDATION:${path} is nested too deeply.`);
+  if (typeof value === "string") {
+    if (value.length > 5000) throw new Error(`VALIDATION:${path} is too long.`);
+    return value.trim();
+  }
+  if (Array.isArray(value)) {
+    if (value.length > 50) throw new Error(`VALIDATION:${path} has too many items.`);
+    return value.map((item, index) => sanitizeContent(item, `${path}.${index}`, depth + 1));
+  }
+  if (!value || typeof value !== "object") throw new Error(`VALIDATION:${path} must contain text, objects or arrays.`);
+  const entries = Object.entries(value);
+  if (entries.length > 100) throw new Error(`VALIDATION:${path} has too many fields.`);
+  return Object.fromEntries(entries.map(([key, item]) => {
+    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(key)) throw new Error(`VALIDATION:${path} contains an invalid field.`);
+    return [key, sanitizeContent(item, `${path}.${key}`, depth + 1)];
+  }));
+};
+
+const mergeContent = (current, patch) => {
+  const result = clone(current);
+  for (const [key, value] of Object.entries(patch)) {
+    result[key] = value && typeof value === "object" && !Array.isArray(value)
+      ? mergeContent(result[key], value)
+      : value;
+  }
+  return result;
+};
+
 export const mergeThemeConfig = (currentThemeConfig, patch) => {
   const themeConfig = clone(currentThemeConfig);
   themeConfig.colors ||= {};
@@ -104,6 +133,12 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
       themeConfig.layout_fine_tune[field] = value;
       appliedFields.push(`layout_fine_tune.${field}`);
     }
+  }
+  if (patch.content !== undefined) {
+    if (!patch.content || typeof patch.content !== "object" || Array.isArray(patch.content)) throw new Error("VALIDATION:content must be an object.");
+    const sanitized = sanitizeContent(patch.content);
+    themeConfig.content = mergeContent(themeConfig.content, sanitized);
+    appliedFields.push(...Object.keys(sanitized).map((key) => `content.${key}`));
   }
 
   return { themeConfig, topLevel, appliedFields };

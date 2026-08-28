@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import type { LayoutFineTune, Listing, TeamMember, ThemeConfig } from "@/portfoyai/types";
+import type { ContentFieldDescriptor } from "./content-schema";
 
 export type TemplateView = "home" | "listings" | "detail" | "team";
 
@@ -177,6 +178,7 @@ export type TemplateFamily = {
   Home: ComponentType<SiteTemplateProps>;
   Listings: ComponentType<SiteTemplateProps>;
   Detail: ComponentType<SiteTemplateProps>;
+  contentSchema: ContentFieldDescriptor[];
 };
 
 export type PublicSitePayload = {
