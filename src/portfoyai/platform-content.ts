@@ -1,4 +1,5 @@
-export type PlatformContent = Record<string, unknown> & { heroImageUrl?: string };
+export type PlatformValue = string | PlatformContent | PlatformValue[];
+export type PlatformContent = { [key: string]: PlatformValue; heroImageUrl?: string };
 
 export const mergePlatformContent = (fallback: PlatformContent, stored?: PlatformContent | null): PlatformContent => {
   if (!stored) return structuredClone(fallback);
