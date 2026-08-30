@@ -8,7 +8,14 @@ const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
 const baseUrl = process.env.PLATFORM_CONTENT_E2E_URL || "http://127.0.0.1:4175";
 const auth = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 const service = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-const adminSession = await auth.auth.signInWithPassword({ email: "user@portfoyai.com", password: "123456" });
+let adminSession;
+if (process.env.ADMIN_E2E_MAGIC_EMAIL) {
+  const link = await service.auth.admin.generateLink({ type: "magiclink", email: process.env.ADMIN_E2E_MAGIC_EMAIL });
+  if (link.error) throw link.error;
+  adminSession = await auth.auth.verifyOtp({ token_hash: link.data.properties.hashed_token, type: "magiclink" });
+} else {
+  adminSession = await auth.auth.signInWithPassword({ email: "user@portfoyai.com", password: "123456" });
+}
 if (adminSession.error) throw adminSession.error;
 const nonAdminSession = await auth.auth.signInWithPassword({ email: "cms-nonadmin@portfoyai.test", password: "CmsNonAdmin123!" });
 if (nonAdminSession.error) throw nonAdminSession.error;
