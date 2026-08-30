@@ -15,7 +15,7 @@ const host = hostArgIndex >= 0 ? process.argv[hostArgIndex + 1] : "0.0.0.0";
 
 const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
 const sourceHtml = await readFile(new URL("./index.html", import.meta.url), "utf8");
-const platformHtmlPaths = new Set(["/", "/pricing", "/auth", "/login", "/signup", "/dashboard"]);
+const platformHtmlPaths = new Set(["/", "/pricing", "/auth", "/login", "/signup", "/dashboard", "/admin/landing-content"]);
 
 const server = createHttpServer(async (request, response) => {
   const pathname = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`).pathname;

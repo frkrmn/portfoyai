@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { GoogleGenAI } from "@google/genai";
+import { adminEmails } from "../admin-auth.mjs";
 import { insertGeneratedSite } from "../site-persistence.mjs";
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
 
@@ -32,13 +33,6 @@ export const siteConfigSystemPrompt = [
   "When and only when land-plots is selected, populate content.services with exactly 4 concise Turkish land-consultancy services, content.teamMembers with 2 to 3 plausible Turkish team members (name, role, short bio and an empty photo_url when no real URL is known), and content.processSteps with exactly 3 concise Turkish consultancy steps based on the user's context.",
   "Do not inspect files, call tools, or modify anything.",
 ].join("\n");
-
-const adminEmails = () => new Set(
-  String(process.env.ADMIN_EMAILS || "")
-    .split(",")
-    .map((email) => email.trim().toLocaleLowerCase("en-US"))
-    .filter(Boolean),
-);
 
 const existingSiteResponse = (response, site) => sendJson(response, 409, {
   error: "Zaten bir siteniz var, buradan düzenleyebilirsiniz.",

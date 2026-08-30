@@ -58,7 +58,7 @@ const getThemeStyles = (theme: Pick<ThemeConfig, "primary" | "accent" | "fontPai
     fontFamily: theme.fontPairing.body,
   }) as CSSProperties;
 
-export function Shell({ children, actions, businessName, activeSection, onSectionChange, leadCount }: { children: ReactNode; actions?: ReactNode; businessName: string; activeSection: "overview" | "site" | "content" | "images" | "listings" | "leads"; onSectionChange: (section: "overview" | "site" | "content" | "images" | "listings" | "leads") => void; leadCount: number }) {
+export function Shell({ children, actions, businessName, activeSection, onSectionChange, leadCount, isAdmin = false }: { children: ReactNode; actions?: ReactNode; businessName: string; activeSection: "overview" | "site" | "content" | "images" | "listings" | "leads"; onSectionChange: (section: "overview" | "site" | "content" | "images" | "listings" | "leads") => void; leadCount: number; isAdmin?: boolean }) {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const identity = businessName || user?.email || t("common.brand");
@@ -84,6 +84,7 @@ export function Shell({ children, actions, businessName, activeSection, onSectio
               <Icon className="h-[18px] w-[18px]" /><span>{label}</span>{id === "leads" && leadCount > 0 ? <span className="ml-auto rounded-full bg-[#d86f45] px-2 py-0.5 text-[10px] text-white">{leadCount}</span> : null}
             </button>
           ))}
+          {isAdmin ? <Link to="/admin/landing-content" className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-white/65 hover:bg-white/8 hover:text-white"><FileText className="h-[18px] w-[18px]" /><span>Platform Landing CMS</span></Link> : null}
         </nav>
         <div className="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-[#dbe5d2] font-semibold text-[#173f32]">{identity.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</div><div className="min-w-0"><div className="truncate text-sm font-semibold">{identity}</div><div className="truncate text-xs text-white/45">{user?.email}</div></div></div>
@@ -424,6 +425,8 @@ export function LandingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { state, setPrompt } = usePortfoyAI();
+  const [platformHeroImage, setPlatformHeroImage] = useState("/images/agents/neighborhood-street-hero.png");
+  const [, setPlatformContentVersion] = useState(0);
   usePageMeta(t("landing.meta.title"), t("landing.meta.description"));
   const prompt = state.onboardingPrompt;
   const { theme } = useMemo(() => generateThemeFromPrompt(prompt), [prompt]);
@@ -437,6 +440,22 @@ export function LandingPage() {
   const previewBusinessName = t("landing.preview.businessName");
   const previewRegion = t("landing.preview.region");
   const demoSubdomain = state.sites[0]?.subdomain || "kaya-gayrimenkul";
+
+  useEffect(() => {
+    const locale = i18n.resolvedLanguage === "en" ? "en" : "tr";
+    const controller = new AbortController();
+    fetch(`/api/platform-content?locale=${locale}`, { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : null)
+      .then((body) => {
+        if (!body?.content) return;
+        const { heroImageUrl, ...landing } = body.content;
+        i18n.addResourceBundle(locale, "common", { landing }, true, true);
+        if (typeof heroImageUrl === "string" && heroImageUrl) setPlatformHeroImage(heroImageUrl);
+        setPlatformContentVersion((value) => value + 1);
+      })
+      .catch((error) => { if (error.name !== "AbortError") console.error("Platform content could not be loaded", error); });
+    return () => controller.abort();
+  }, [i18n, i18n.resolvedLanguage]);
 
   useEffect(() => {
     const translatedExamples = [
@@ -543,7 +562,7 @@ export function LandingPage() {
                 </div>
                 <div className="bg-[#f6efe6] p-3 sm:p-4" style={getThemeStyles(theme)}>
                   <div className="relative min-h-[285px] overflow-hidden rounded-[1.6rem] bg-[#243b32] text-white">
-                    <img src="/images/agents/neighborhood-street-hero.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+                    <img data-platform-image="heroImageUrl" src={platformHeroImage} alt="" className="absolute inset-0 h-full w-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#17231e]/90 via-[#17231e]/45 to-transparent" />
                     <div className="relative flex items-center justify-between px-5 py-4 text-[10px] sm:px-7">
                       <span className="font-semibold tracking-[0.18em]">{previewBusinessName.toUpperCase()}</span>

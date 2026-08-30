@@ -16,6 +16,7 @@ import {
 } from "./portfoyai/views";
 import { DashboardPage } from "./portfoyai/dashboard";
 import { PricingPage } from "./portfoyai/pricing";
+import { PlatformContentAdminPage } from "./portfoyai/platform-content-admin";
 import { SiteRenderer } from "./templates/SiteRenderer";
 import { useTranslation } from "react-i18next";
 
@@ -45,6 +46,7 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
+              <Route path="/admin/landing-content" element={<RequireAuth><PlatformContentAdminPage /></RequireAuth>} />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/preview/:siteId" element={<RequireAuth><GeneratedSitePreviewPage /></RequireAuth>} />
               <Route path="/site/:slug" element={<SiteRenderer view="home" />} />

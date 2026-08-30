@@ -16,7 +16,8 @@
     "test:content-schema": "node server/content-schema-audit.mjs",
     "test:content-visual": "node server/content-visual-editor.browser.e2e.mjs"
     ,"test:image-editor": "node server/image-editor.browser.e2e.mjs",
-    "test:image-schema": "node server/image-schema-audit.mjs"
+    "test:image-schema": "node server/image-schema-audit.mjs",
+    "test:platform-content": "node server/platform-content.browser.e2e.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",
