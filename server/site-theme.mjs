@@ -47,6 +47,25 @@ const mergeContent = (current, patch) => {
   return result;
 };
 
+const sanitizeMedia = (value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("VALIDATION:media must be an object.");
+  const entries = Object.entries(value);
+  if (entries.length > 30) throw new Error("VALIDATION:media has too many slots.");
+  const cleanUrl = (url, path) => {
+    if (typeof url !== "string" || url.length > 2_200_000) throw new Error(`VALIDATION:${path} is invalid.`);
+    if (url && !url.startsWith("data:image/") && !url.startsWith("https://") && !url.startsWith("http://") && !url.startsWith("/")) throw new Error(`VALIDATION:${path} is invalid.`);
+    return url;
+  };
+  return Object.fromEntries(entries.map(([key, item]) => {
+    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(key)) throw new Error("VALIDATION:media contains an invalid slot.");
+    if (Array.isArray(item)) {
+      if (item.length > 10) throw new Error(`VALIDATION:media.${key} has too many images.`);
+      return [key, item.map((url, index) => cleanUrl(url, `media.${key}.${index}`))];
+    }
+    return [key, cleanUrl(item, `media.${key}`)];
+  }));
+};
+
 export const mergeThemeConfig = (currentThemeConfig, patch) => {
   const themeConfig = clone(currentThemeConfig);
   themeConfig.colors ||= {};
@@ -139,6 +158,10 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
     const sanitized = sanitizeContent(patch.content);
     themeConfig.content = mergeContent(themeConfig.content, sanitized);
     appliedFields.push(...Object.keys(sanitized).map((key) => `content.${key}`));
+  }
+  if (patch.media !== undefined) {
+    themeConfig.media = sanitizeMedia(patch.media);
+    appliedFields.push(...Object.keys(themeConfig.media).map((key) => `media.${key}`));
   }
 
   return { themeConfig, topLevel, appliedFields };

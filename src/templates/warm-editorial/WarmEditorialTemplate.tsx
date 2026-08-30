@@ -22,6 +22,12 @@ import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields } from "../content-schema";
+import { imageSlots } from "../image-schema";
+
+export const imageSchema = imageSlots([
+  { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
+  { key: "media.contactImage", label: "İletişim Bölümü Görseli", type: "single", recommendedSize: "1600x900" },
+]);
 
 export const contentSchema = contentFields(["agentName", "eyebrow", "headlineAccent", "ctaText", "featuredEyebrow", "featuredTitle", "categoriesEyebrow", "categoriesTitle", "tourTitle", "tourDescription", "teamDescription"], ["tourDescription", "teamDescription"]);
 
@@ -199,7 +205,7 @@ function ContactSection({ config, listing }: { config: TemplateConfig; listing?:
   const contactListing = config.listings[1] || config.listings[0];
   const image = listing
     ? getListingImage(listing, 1)
-    : getHeroImage(config.siteId, config.content.heroImage || (contactListing?.media?.length ? getListingImage(contactListing, 1) : undefined));
+    : getHeroImage(config.siteId, String(config.media.contactImage || config.content.heroImage || (contactListing?.media?.length ? getListingImage(contactListing, 1) : undefined)));
   return (
     <section id="iletisim" className="mx-auto max-w-[1380px] px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
       <div className="relative min-h-[650px] overflow-hidden bg-[color:color-mix(in_srgb,var(--we-accent)_20%,var(--we-bg))] lg:min-h-[690px]">
@@ -235,13 +241,13 @@ function CategoryExplorer({ config }: SiteTemplateProps) {
 
 export function WarmEditorialHome({ config }: SiteTemplateProps) {
   const featured = config.listings.slice(0, 6);
-  const heroImage = getHeroImage(config.siteId, config.content.heroImage || (featured[0]?.media?.length ? getListingImage(featured[0]) : undefined));
+  const heroImage = getHeroImage(config.siteId, String(config.media.heroImage || config.content.heroImage || (featured[0]?.media?.length ? getListingImage(featured[0]) : undefined)));
   return (
     <div {...fineTuneAttributes(config)} style={templateStyle(config)}>
       <Header config={config} />
       <main>
         <section className="relative min-h-[760px] overflow-visible bg-[color:color-mix(in_srgb,var(--we-accent)_24%,var(--we-bg))] lg:min-h-[820px]">
-          {heroImage ? <img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover" /> : null}
+          {heroImage ? <img data-image-slot="heroImage" src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover" /> : null}
           <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/22 to-transparent" />
           <div className="relative mx-auto max-w-[1380px] px-5 pb-28 pt-36 text-white sm:px-8 lg:px-12 lg:pt-44">
             <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/75">{config.content.eyebrow}</div>

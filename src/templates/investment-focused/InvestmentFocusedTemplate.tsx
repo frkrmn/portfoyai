@@ -11,6 +11,9 @@ import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, propertyTaxonomyLabel, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField } from "../content-schema";
+import { imageSlots } from "../image-schema";
+
+export const imageSchema = imageSlots([]);
 
 export const contentSchema = [
   ...contentFields(["agentName", "eyebrow", "tagline", "ctaText", "navAbout", "navContact", "navListings", "averageYieldLabel", "regionalGrowthLabel", "activePortfolioLabel", "featuredEyebrow", "featuredTitle", "investmentWhyTitle", "listingsTitle", "listingsDescription", "searchLabel", "locationLabel", "allLabel", "saleLabel", "rentLabel", "cardViewLabel", "comparisonViewLabel", "detailsLabel", "priceRangeLabel", "pricePerM2Label", "rentalYieldLabel", "areaLabel", "bedLabel", "bathLabel", "emptyListings", "backLabel", "roiLabel", "listingAboutLabel", "listingFeaturesLabel", "tourTitle", "tourDescription", "fullNameLabel", "phoneLabel", "messageLabel", "formSubmit", "formSubmitting", "formSuccess", "formError", "teamDescription"], ["tagline", "listingsDescription", "tourDescription", "formSuccess", "formError", "teamDescription"]),

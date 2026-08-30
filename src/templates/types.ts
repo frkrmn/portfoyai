@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { LayoutFineTune, Listing, TeamMember, ThemeConfig } from "@/portfoyai/types";
 import type { ContentFieldDescriptor } from "./content-schema";
+import type { ImageSlotDescriptor } from "./image-schema";
 
 export type TemplateView = "home" | "listings" | "detail" | "team";
 
@@ -158,6 +159,7 @@ export type TemplateConfig = {
     bodyItalic?: boolean;
   };
   content: TemplateContent;
+  media: Record<string, string | string[]>;
   layout: {
     showCategories: boolean;
     showTestimonial: boolean;
@@ -179,6 +181,7 @@ export type TemplateFamily = {
   Listings: ComponentType<SiteTemplateProps>;
   Detail: ComponentType<SiteTemplateProps>;
   contentSchema: ContentFieldDescriptor[];
+  imageSchema: ImageSlotDescriptor[];
 };
 
 export type PublicSitePayload = {
@@ -204,6 +207,7 @@ type NestedThemeConfig = {
   colors?: Partial<TemplateConfig["colors"]>;
   fonts?: Partial<TemplateConfig["fonts"]>;
   content?: Partial<TemplateContent>;
+  media?: Record<string, string | string[]>;
   layout?: { show_categories?: boolean; show_testimonial?: boolean };
   layout_fine_tune?: LayoutFineTune;
 };
@@ -639,6 +643,7 @@ export function createTemplateConfig(
       processSteps: content.processSteps?.length ? content.processSteps : defaults.processSteps,
       services: content.services?.length ? content.services : defaults.services,
     },
+    media: raw.media || {},
     layout: {
       showCategories: raw.layout?.show_categories !== false,
       showTestimonial: raw.layout?.show_testimonial === true,

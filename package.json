@@ -13,7 +13,10 @@
     "test:currencies": "node server/listing-currency.e2e.mjs",
     "test:i18n-audit": "node server/platform-i18n-audit.mjs",
     "test:i18n-browser": "node server/platform-i18n.browser.e2e.mjs",
-    "test:content-schema": "node server/content-schema-audit.mjs"
+    "test:content-schema": "node server/content-schema-audit.mjs",
+    "test:content-visual": "node server/content-visual-editor.browser.e2e.mjs"
+    ,"test:image-editor": "node server/image-editor.browser.e2e.mjs",
+    "test:image-schema": "node server/image-schema-audit.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

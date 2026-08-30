@@ -23,8 +23,9 @@ import { LocationHierarchyFields } from "./location-fields";
 import { useTranslation } from "react-i18next";
 import { getTemplateFamily } from "@/templates/registry";
 import { ContentEditor, type ContentRecord } from "./content-editor";
+import { ImageEditor, type SiteMedia } from "./image-editor";
 
-type DashboardTab = "overview" | "site" | "content" | "listings" | "leads";
+type DashboardTab = "overview" | "site" | "content" | "images" | "listings" | "leads";
 
 type DashboardSite = {
   id: string;
@@ -39,6 +40,7 @@ type DashboardSite = {
     colors?: { background?: string; primary?: string; accent?: string; text?: string; buttonColorSource?: "accent" | "primary" | "custom"; buttonColorCustom?: string };
     fonts?: { heading?: string; body?: string; headingWeight?: number; headingItalic?: boolean; bodyWeight?: number; bodyItalic?: boolean };
     content?: ContentRecord;
+    media?: SiteMedia;
     layout?: Record<string, unknown>;
     layout_fine_tune?: {
       buttonStyle?: "solid" | "outline" | "pill" | "sharp";
@@ -294,6 +296,8 @@ export function DashboardPage() {
   const [siteDraft, setSiteDraft] = useState<SiteDraft | null>(null);
   const [contentDraft, setContentDraft] = useState<ContentRecord>({});
   const [persistedContent, setPersistedContent] = useState<ContentRecord>({});
+  const [mediaDraft, setMediaDraft] = useState<SiteMedia>({});
+  const [persistedMedia, setPersistedMedia] = useState<SiteMedia>({});
   const [loading, setLoading] = useState(true);
   const [savingListing, setSavingListing] = useState(false);
   const [updatingListingStatusId, setUpdatingListingStatusId] = useState("");
@@ -318,7 +322,9 @@ export function DashboardPage() {
   const persistedSiteDraft = activeSite ? siteDraftFrom(activeSite) : null;
   const themeDirty = Boolean(siteDraft && persistedSiteDraft && themeFields.some((field) => siteDraft[field] !== persistedSiteDraft[field]));
   const contentSchema = activeSite ? getTemplateFamily(activeSite.theme_config?.template_id).contentSchema : [];
+  const imageSchema = activeSite ? getTemplateFamily(activeSite.theme_config?.template_id).imageSchema : [];
   const contentDirty = JSON.stringify(contentDraft) !== JSON.stringify(persistedContent);
+  const mediaDirty = JSON.stringify(mediaDraft) !== JSON.stringify(persistedMedia);
 
   const loadLeads = useCallback(async (signal?: AbortSignal) => {
     if (!session) return;
@@ -407,6 +413,9 @@ export function DashboardPage() {
           const content = structuredClone(activeSite.theme_config?.content || {}) as ContentRecord;
           setContentDraft(content);
           setPersistedContent(content);
+          const media = structuredClone(activeSite.theme_config?.media || {}) as SiteMedia;
+          setMediaDraft(media);
+          setPersistedMedia(media);
         }
       } catch (error) {
         if (!(error instanceof DOMException && error.name === "AbortError")) toast.error(error instanceof Error ? error.message : t("dashboard.listings.loadError"));
@@ -651,6 +660,14 @@ export function DashboardPage() {
     }
   };
 
+  const saveMedia = async () => {
+    const saved = await patchSite({ media: mediaDraft }, t("dashboard.images.saved"));
+    if (saved) {
+      setPersistedMedia(structuredClone(mediaDraft));
+      setPreviewVersion((value) => value + 1);
+    }
+  };
+
   const resetThemeSettings = () => {
     if (!siteDraft || !persistedSiteDraft) return;
     const next = { ...siteDraft };
@@ -705,7 +722,7 @@ export function DashboardPage() {
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm text-[#78827c]">{activeSite ? `${activeSite.business_name} · ${t(activeSite.status === "published" ? "common.published" : "common.draft")}` : loading ? t("dashboard.header.loadingSites") : t("dashboard.header.noSite")}</div><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">{t("dashboard.header.hello")}{user?.email ? `, ${user.email.split("@")[0]}` : ""}.</h1><p className="mt-2 text-sm text-[#69756e]">{t("dashboard.header.subtitle")}</p></div>{activeSite ? <div className="flex gap-2"><Select value={activeSite.id} onValueChange={selectSite}><SelectTrigger className="w-[220px] rounded-full bg-white"><SelectValue /></SelectTrigger><SelectContent>{sites.map((site) => <SelectItem key={site.id} value={site.id}>{site.business_name}</SelectItem>)}</SelectContent></Select><Button onClick={startNewListing} className="rounded-full bg-[#d86f45] text-white"><Plus className="mr-2 h-4 w-4" />{t("dashboard.header.newListing")}</Button></div> : null}</div>
 
 
-      <div className="flex gap-2 overflow-x-auto">{(["overview", "listings", "content", "leads", "site"] as const).map((tab) => <Button key={tab} variant="ghost" onClick={() => setActiveTab(tab)} className={cn("rounded-full px-5", activeTab === tab ? "bg-[#173f32] text-white hover:bg-[#173f32] hover:text-white" : "bg-white/60")}>{t(`dashboard.tabs.${tab === "site" ? "settings" : tab}`)}</Button>)}</div>
+      <div className="flex gap-2 overflow-x-auto">{(["overview", "listings", "content", "images", "leads", "site"] as const).map((tab) => <Button key={tab} variant="ghost" onClick={() => setActiveTab(tab)} className={cn("rounded-full px-5", activeTab === tab ? "bg-[#173f32] text-white hover:bg-[#173f32] hover:text-white" : "bg-white/60")}>{t(`dashboard.tabs.${tab === "site" ? "settings" : tab}`)}</Button>)}</div>
 
       {!activeSite && !loading ? <Card><CardContent className="p-8 text-center text-sm text-[#69756e]">{t("dashboard.empty.body")}</CardContent></Card> : null}
 
@@ -716,6 +733,8 @@ export function DashboardPage() {
       {activeSite && activeTab === "leads" ? <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between gap-4"><div><CardTitle>{t("dashboard.leads.title")}</CardTitle><CardDescription>{t("dashboard.leads.description")}</CardDescription></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void loadLeads()}><RefreshCw className="mr-2 h-4 w-4" />{t("common.refresh")}</Button><Button variant="outline" disabled={openingPaywall} onClick={() => plan === "free" ? void openPaywall("lead_export") : toast.info(t("dashboard.leads.exporting"))}><Download className="mr-2 h-4 w-4" />{t("dashboard.leads.export")}{plan === "free" ? <Lock className="ml-2 h-3.5 w-3.5" /> : null}</Button></div></CardHeader><CardContent>{siteLeads.length ? <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left"><thead className="border-y text-xs text-[#7a857e]"><tr><th className="py-4">{t("dashboard.leads.name")}</th><th>{t("dashboard.leads.phone")}</th><th>{t("dashboard.leads.message")}</th><th>{t("dashboard.leads.date")}</th></tr></thead><tbody>{siteLeads.map((lead) => <tr key={lead.id} className="border-b"><td className="py-5 font-semibold">{lead.name}</td><td><a href={`tel:${lead.phone}`}>{lead.phone}</a></td><td className="max-w-sm text-sm">{lead.message || "—"}</td><td className="text-xs text-[#7a857e]">{new Intl.DateTimeFormat(i18n.resolvedLanguage === "en" ? "en-US" : "tr-TR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(lead.created_at))}</td></tr>)}</tbody></table></div> : <p className="p-5 text-sm text-[#69756e]">{t("dashboard.leads.empty")}</p>}</CardContent></Card> : null}
 
       {activeSite && activeTab === "content" ? <ContentEditor schema={contentSchema} content={contentDraft} previewUrl={`/site/${activeSite.slug}`} previewVersion={previewVersion} onChange={setContentDraft} onSave={() => void saveContent()} saving={savingSite} dirty={contentDirty} /> : null}
+
+      {activeSite && activeTab === "images" ? <ImageEditor schema={imageSchema} media={mediaDraft} previewUrl={`/site/${activeSite.slug}`} previewVersion={previewVersion} onChange={setMediaDraft} onSave={() => void saveMedia()} saving={savingSite} dirty={mediaDirty} /> : null}
 
       {activeSite && activeTab === "site" && siteDraft ? (
         <div className="grid gap-6 xl:grid-cols-2">

@@ -21,7 +21,9 @@ const getSite = async (request, response, siteId) => {
 
 const updateSite = async (request, response, siteId) => {
   const user = await getAuthenticatedUser(request);
-  const body = await readJsonBody(request, 256 * 1024);
+  // Site media follows the existing listing/team data-URL upload pattern.
+  // Four 1.5 MB gallery images expand to roughly 8 MB after base64 encoding.
+  const body = await readJsonBody(request, 12 * 1024 * 1024);
   const { data: current, error: currentError } = await getSupabaseClient().from("sites").select("id, theme_config").eq("id", siteId).eq("user_id", user.id).maybeSingle();
   if (currentError) throw new Error(`Failed to verify site ownership: ${currentError.message}`);
   if (!current) return sendJson(response, 404, { error: "Owned site not found." });
@@ -97,6 +99,7 @@ const updateSite = async (request, response, siteId) => {
     if (body[key] !== undefined) themePatch[key] = body[key];
   }
   if (body.content !== undefined) themePatch.content = body.content;
+  if (body.media !== undefined) themePatch.media = body.media;
   if (Object.keys(updates).length === 0 && Object.keys(body).length === 0) return sendJson(response, 400, { error: "No site changes were supplied." });
   const { themeConfig, topLevel } = mergeThemeConfig(current.theme_config, themePatch);
   Object.assign(updates, topLevel, { theme_config: themeConfig });

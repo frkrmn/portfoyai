@@ -11,6 +11,13 @@ import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField } from "../content-schema";
+import { imageSlots } from "../image-schema";
+
+export const imageSchema = imageSlots([
+  { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
+  { key: "media.showcaseImages", label: "Mimari Seçki Galerisi", type: "gallery", recommendedSize: "1600x1000", maxImages: 4 },
+  { key: "media.approachImage", label: "Yaklaşım Bölümü Görseli", type: "single", recommendedSize: "1200x1500" },
+]);
 
 export const contentSchema = [
   ...contentFields(["eyebrow", "tagline", "navAbout", "navContact", "navListings", "featuredEyebrow", "showcaseEyebrow", "showcaseTitle", "whyEyebrow", "whyTitle", "listingsTitle", "listingsDescription", "searchLabel", "typeLabel", "locationLabel", "allLabel", "saleLabel", "rentLabel", "emptyListings", "backLabel", "listingAboutLabel", "listingFeaturesLabel", "tourTitle", "tourDescription", "fullNameLabel", "emailLabel", "phoneLabel", "messageLabel", "formSubmit", "formSubmitting", "formSuccess", "formError", "testimonialQuote", "testimonialAuthor", "teamDescription"], ["tagline", "listingsDescription", "tourDescription", "formSuccess", "formError", "testimonialQuote", "teamDescription"]),
@@ -77,18 +84,19 @@ function Stats({ config }: SiteTemplateProps) {
 }
 
 function Showcase({ config }: SiteTemplateProps) {
-  const images = config.listings.slice(0, 4).map((listing, index) => ({ id: listing.id, url: getListingImage(listing, index), alt: listing.title }));
-  return <section className="bg-[var(--lux-dark)] px-5 py-24 sm:px-8 lg:px-12 lg:py-32"><div className="mx-auto max-w-[1440px]"><div className="text-[10px] uppercase tracking-[0.22em] text-[var(--lux-accent)]">{config.content.showcaseEyebrow}</div><h2 className="mt-5 max-w-4xl font-[family-name:var(--lux-heading)] text-6xl font-bold leading-[0.92] sm:text-7xl">{config.content.showcaseTitle}</h2>{images[0] ? <img src={images[0].url} alt={images[0].alt} className="mt-14 aspect-[16/8] w-full object-cover" /> : <div className="mt-14 aspect-[16/8] bg-[color:color-mix(in_srgb,var(--lux-accent)_12%,var(--lux-dark))]" />}<div className="mt-4 grid grid-cols-3 gap-4">{images.slice(1, 4).map((image) => <img key={image.id} src={image.url} alt={image.alt} className="aspect-[4/3] w-full object-cover" />)}</div></div></section>;
+  const uploaded = Array.isArray(config.media.showcaseImages) ? config.media.showcaseImages : [];
+  const images = uploaded.length ? uploaded.map((url, index) => ({ id: `showcase-${index}`, url, alt: config.content.showcaseTitle })) : config.listings.slice(0, 4).map((listing, index) => ({ id: listing.id, url: getListingImage(listing, index), alt: listing.title }));
+  return <section className="bg-[var(--lux-dark)] px-5 py-24 sm:px-8 lg:px-12 lg:py-32"><div className="mx-auto max-w-[1440px]"><div className="text-[10px] uppercase tracking-[0.22em] text-[var(--lux-accent)]">{config.content.showcaseEyebrow}</div><h2 className="mt-5 max-w-4xl font-[family-name:var(--lux-heading)] text-6xl font-bold leading-[0.92] sm:text-7xl">{config.content.showcaseTitle}</h2>{images[0] ? <img data-image-slot="showcaseImages" data-image-index="0" src={images[0].url} alt={images[0].alt} className="mt-14 aspect-[16/8] w-full object-cover" /> : <div className="mt-14 aspect-[16/8] bg-[color:color-mix(in_srgb,var(--lux-accent)_12%,var(--lux-dark))]" />}<div className="mt-4 grid grid-cols-3 gap-4">{images.slice(1, 4).map((image, index) => <img key={image.id} data-image-slot="showcaseImages" data-image-index={index + 1} src={image.url} alt={image.alt} className="aspect-[4/3] w-full object-cover" />)}</div></div></section>;
 }
 
 function WhyChoose({ config }: SiteTemplateProps) {
-  const image = getListingImage(config.listings[1] || config.listings[0]);
+  const image = String(config.media.approachImage || getListingImage(config.listings[1] || config.listings[0]));
   return <section id="yaklasim" className="bg-[var(--lux-light)] px-5 py-24 text-[var(--lux-ink)] sm:px-8 lg:px-12 lg:py-32"><div className="mx-auto grid max-w-[1440px] gap-16 lg:grid-cols-[0.85fr_1.15fr] lg:items-stretch"><div><div className="text-[10px] uppercase tracking-[0.22em] text-[var(--lux-accent)]">{config.content.whyEyebrow}</div><h2 className="mt-5 font-[family-name:var(--lux-heading)] text-6xl font-bold leading-[0.94]">{config.content.whyTitle}</h2><div className="mt-12 divide-y divide-[color:color-mix(in_srgb,var(--lux-ink)_16%,transparent)]">{config.content.whyItems.slice(0, 4).map((item, index) => <div key={item.title} className="grid grid-cols-[48px_1fr] gap-4 py-6"><span className="font-[family-name:var(--lux-heading)] text-2xl text-[var(--lux-accent)]">{String(index + 1).padStart(2, "0")}</span><div><h3 className="text-lg font-semibold">{item.title}</h3><p className="mt-2 text-sm leading-6 opacity-60">{item.description}</p></div></div>)}</div></div><div className="min-h-[620px] bg-[color:color-mix(in_srgb,var(--lux-ink)_8%,transparent)]">{image ? <img src={image} alt="" className="h-full w-full object-cover" /> : null}</div></div></section>;
 }
 
 export function BoldLuxuryHome({ config }: SiteTemplateProps) {
   const c = config.content;
-  const heroImage = getHeroImage(config.siteId, config.content.heroImage || (config.listings[0]?.media?.length ? getListingImage(config.listings[0]) : undefined));
+  const heroImage = getHeroImage(config.siteId, String(config.media.heroImage || config.content.heroImage || (config.listings[0]?.media?.length ? getListingImage(config.listings[0]) : undefined)));
   return <div {...fineTuneAttributes(config)} style={luxuryStyle(config)}><LuxuryHeader config={config} /><main><section className="relative min-h-[780px] overflow-hidden">{heroImage ? <img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover" /> : null}<div className="absolute inset-0 bg-[linear-gradient(90deg,color-mix(in_srgb,var(--lux-dark)_92%,transparent),color-mix(in_srgb,var(--lux-dark)_36%,transparent))]" /><div className="relative mx-auto flex min-h-[780px] max-w-[1440px] flex-col justify-end px-5 pb-14 pt-28 sm:px-8 lg:px-12"><div className="text-[10px] uppercase tracking-[0.24em] text-[var(--lux-accent)]">{c.eyebrow}</div><h1 className="mt-5 max-w-6xl font-[family-name:var(--lux-heading)] text-7xl font-bold uppercase leading-[0.82] tracking-[-0.045em] sm:text-8xl lg:text-[132px]">{c.businessName}</h1><p className="mt-7 max-w-xl text-base leading-7 opacity-70">{c.tagline}</p><div className="mt-12 border-t border-[color:color-mix(in_srgb,var(--lux-text)_24%,transparent)] pt-6"><LeadForm config={config} hero /></div></div></section><Stats config={config} /><Showcase config={config} /><WhyChoose config={config} />{config.layout.showTestimonial ? <section className="bg-[var(--lux-dark)] px-5 py-24 text-center sm:px-8 lg:py-32"><blockquote className="mx-auto max-w-4xl font-[family-name:var(--lux-heading)] text-5xl font-semibold leading-tight">“{c.testimonialQuote}”</blockquote><div className="mt-8 text-[10px] uppercase tracking-[0.2em] text-[var(--lux-accent)]">{c.testimonialAuthor}</div></section> : null}</main><LuxuryFooter config={config} /></div>;
 }
 

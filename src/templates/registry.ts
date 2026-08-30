@@ -4,15 +4,16 @@ import {
   WarmEditorialHome,
   WarmEditorialListings,
   contentSchema as warmEditorialContentSchema,
+  imageSchema as warmEditorialImageSchema,
 } from "./warm-editorial/WarmEditorialTemplate";
 import { LegacyDetail, LegacyHome, LegacyListings } from "./legacy/LegacyTemplate";
-import { BoldLuxuryDetail, BoldLuxuryHome, BoldLuxuryListings, contentSchema as boldLuxuryContentSchema } from "./bold-luxury/BoldLuxuryTemplate";
-import { CleanModernDetail, CleanModernHome, CleanModernListings, contentSchema as cleanModernContentSchema } from "./clean-modern/CleanModernTemplate";
-import { NeighborhoodFriendlyDetail, NeighborhoodFriendlyHome, NeighborhoodFriendlyListings, contentSchema as neighborhoodFriendlyContentSchema } from "./neighborhood-friendly/NeighborhoodFriendlyTemplate";
-import { InvestmentFocusedDetail, InvestmentFocusedHome, InvestmentFocusedListings, contentSchema as investmentFocusedContentSchema } from "./investment-focused/InvestmentFocusedTemplate";
-import { UrgentDealsDetail, UrgentDealsHome, UrgentDealsListings, contentSchema as urgentDealsContentSchema } from "./urgent-deals/UrgentDealsTemplate";
-import { GuidedMatchDetail, GuidedMatchHome, GuidedMatchListings, contentSchema as guidedMatchContentSchema } from "./guided-match/GuidedMatchTemplate";
-import { LandPlotsDetail, LandPlotsHome, LandPlotsListings, contentSchema as landPlotsContentSchema } from "./land-plots/LandPlotsTemplate";
+import { BoldLuxuryDetail, BoldLuxuryHome, BoldLuxuryListings, contentSchema as boldLuxuryContentSchema, imageSchema as boldLuxuryImageSchema } from "./bold-luxury/BoldLuxuryTemplate";
+import { CleanModernDetail, CleanModernHome, CleanModernListings, contentSchema as cleanModernContentSchema, imageSchema as cleanModernImageSchema } from "./clean-modern/CleanModernTemplate";
+import { NeighborhoodFriendlyDetail, NeighborhoodFriendlyHome, NeighborhoodFriendlyListings, contentSchema as neighborhoodFriendlyContentSchema, imageSchema as neighborhoodFriendlyImageSchema } from "./neighborhood-friendly/NeighborhoodFriendlyTemplate";
+import { InvestmentFocusedDetail, InvestmentFocusedHome, InvestmentFocusedListings, contentSchema as investmentFocusedContentSchema, imageSchema as investmentFocusedImageSchema } from "./investment-focused/InvestmentFocusedTemplate";
+import { UrgentDealsDetail, UrgentDealsHome, UrgentDealsListings, contentSchema as urgentDealsContentSchema, imageSchema as urgentDealsImageSchema } from "./urgent-deals/UrgentDealsTemplate";
+import { GuidedMatchDetail, GuidedMatchHome, GuidedMatchListings, contentSchema as guidedMatchContentSchema, imageSchema as guidedMatchImageSchema } from "./guided-match/GuidedMatchTemplate";
+import { LandPlotsDetail, LandPlotsHome, LandPlotsListings, contentSchema as landPlotsContentSchema, imageSchema as landPlotsImageSchema } from "./land-plots/LandPlotsTemplate";
 
 export const defaultTemplateId = "tm_01";
 
@@ -21,6 +22,7 @@ const warmEditorialFamily: TemplateFamily = {
   Listings: WarmEditorialListings,
   Detail: WarmEditorialDetail,
   contentSchema: warmEditorialContentSchema,
+  imageSchema: warmEditorialImageSchema,
 };
 
 const legacyFamily: TemplateFamily = {
@@ -28,6 +30,7 @@ const legacyFamily: TemplateFamily = {
   Listings: LegacyListings,
   Detail: LegacyDetail,
   contentSchema: warmEditorialContentSchema,
+  imageSchema: warmEditorialImageSchema,
 };
 
 const boldLuxuryFamily: TemplateFamily = {
@@ -35,6 +38,7 @@ const boldLuxuryFamily: TemplateFamily = {
   Listings: BoldLuxuryListings,
   Detail: BoldLuxuryDetail,
   contentSchema: boldLuxuryContentSchema,
+  imageSchema: boldLuxuryImageSchema,
 };
 
 const cleanModernFamily: TemplateFamily = {
@@ -42,6 +46,7 @@ const cleanModernFamily: TemplateFamily = {
   Listings: CleanModernListings,
   Detail: CleanModernDetail,
   contentSchema: cleanModernContentSchema,
+  imageSchema: cleanModernImageSchema,
 };
 
 const neighborhoodFriendlyFamily: TemplateFamily = {
@@ -49,6 +54,7 @@ const neighborhoodFriendlyFamily: TemplateFamily = {
   Listings: NeighborhoodFriendlyListings,
   Detail: NeighborhoodFriendlyDetail,
   contentSchema: neighborhoodFriendlyContentSchema,
+  imageSchema: neighborhoodFriendlyImageSchema,
 };
 
 const investmentFocusedFamily: TemplateFamily = {
@@ -56,6 +62,7 @@ const investmentFocusedFamily: TemplateFamily = {
   Listings: InvestmentFocusedListings,
   Detail: InvestmentFocusedDetail,
   contentSchema: investmentFocusedContentSchema,
+  imageSchema: investmentFocusedImageSchema,
 };
 
 const urgentDealsFamily: TemplateFamily = {
@@ -63,6 +70,7 @@ const urgentDealsFamily: TemplateFamily = {
   Listings: UrgentDealsListings,
   Detail: UrgentDealsDetail,
   contentSchema: urgentDealsContentSchema,
+  imageSchema: urgentDealsImageSchema,
 };
 
 const guidedMatchFamily: TemplateFamily = {
@@ -70,6 +78,7 @@ const guidedMatchFamily: TemplateFamily = {
   Listings: GuidedMatchListings,
   Detail: GuidedMatchDetail,
   contentSchema: guidedMatchContentSchema,
+  imageSchema: guidedMatchImageSchema,
 };
 
 const landPlotsFamily: TemplateFamily = {
@@ -77,6 +86,7 @@ const landPlotsFamily: TemplateFamily = {
   Listings: LandPlotsListings,
   Detail: LandPlotsDetail,
   contentSchema: landPlotsContentSchema,
+  imageSchema: landPlotsImageSchema,
 };
 
 export const templates: Record<string, TemplateFamily> = {
