@@ -430,8 +430,12 @@ export function LandingPage() {
   usePageMeta(t("landing.meta.title"), t("landing.meta.description"));
   const prompt = state.onboardingPrompt;
   const { theme } = useMemo(() => generateThemeFromPrompt(prompt), [prompt]);
+  const englishLanding = i18n.resolvedLanguage === "en";
+  const londonPreviewPrices = [1_850_000, 1_275_000, 2_100_000];
   const previewListings = state.listings.slice(0, 3).map((listing, index) => ({
     ...listing,
+    currency: englishLanding ? "GBP" as const : listing.currency,
+    price: englishLanding ? londonPreviewPrices[index] : listing.price,
     title: t(`landing.preview.listing${index + 1}`),
     province_name: t("landing.preview.locationProvince"),
     district_name: t("landing.preview.locationDistrict"),
