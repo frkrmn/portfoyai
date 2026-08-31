@@ -557,7 +557,6 @@ export function LandingPage() {
               <div className="relative overflow-hidden rounded-[2.1rem] border border-white/80 bg-white shadow-[0_35px_100px_rgba(40,55,47,0.20)]">
                 <div className="flex items-center justify-between border-b border-[#19372d]/10 bg-[#fbfaf7] px-5 py-3">
                   <div className="flex gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#e9a58b]" /><span className="h-2.5 w-2.5 rounded-full bg-[#e6cf86]" /><span className="h-2.5 w-2.5 rounded-full bg-[#9dc4a9]" /></div>
-                  <div className="rounded-full bg-[#eef0eb] px-4 py-1.5 text-[10px] font-medium text-[#69756e]">portfoyai.vercel.app/site/{previewBusinessName.toLocaleLowerCase(i18n.resolvedLanguage).replace(/[^a-z0-9ğüşöçıİ\s-]/gi, "").replace(/\s+/g, "-")}</div>
                   <Badge className="rounded-full bg-[#e4f0e9] px-2.5 text-[10px] text-[#326049] hover:bg-[#e4f0e9]">{t("landing.management.live")}</Badge>
                 </div>
                 <div className="bg-[#f6efe6] p-3 sm:p-4" style={getThemeStyles(theme)}>
