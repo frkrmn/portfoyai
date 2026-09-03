@@ -68,6 +68,19 @@ const updateSite = async (request, response, siteId) => {
       themePatch[key] = value;
     }
   }
+  if (body.map_url !== undefined) {
+    const value = String(body.map_url || "").trim();
+    if (value.length > 1000) return sendJson(response, 400, { error: "Map URL must be at most 1000 characters." });
+    if (value) {
+      try {
+        const url = new URL(value);
+        if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+      } catch {
+        return sendJson(response, 400, { error: "Map URL must be a valid http or https URL." });
+      }
+    }
+    themePatch.map_url = value;
+  }
   if (body.region_focus !== undefined) themePatch.region_focus = body.region_focus;
   for (const key of ["country_id", "province_id", "district_id", "neighborhood_id"]) {
     if (body[key] === undefined) continue;

@@ -22,6 +22,8 @@ export type TemplateContent = {
   phone: string;
   email: string;
   address: string;
+  regionFocus: string;
+  mapUrl: string;
   tagline: string;
   stats: Array<{ value: string; label: string }>;
   showcaseEyebrow: string;
@@ -257,6 +259,8 @@ export const warmEditorialFallbacks: TemplateContent = {
   phone: "+90 212 000 00 00",
   email: "iletisim@example.com",
   address: "İstanbul, Türkiye",
+  regionFocus: "İstanbul, Türkiye",
+  mapUrl: "",
   tagline: "Yaşam alanlarını kişisel bir seçkiyle buluşturuyoruz.",
   stats: [
     { value: "18+", label: "Seçkin Bölge" },

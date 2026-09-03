@@ -33,12 +33,18 @@ try {
   assert.match(render(SharedTeamPage, one), /Deniz Kaya/);
   assert.match(render(SharedTeamHeaderLink, one), />Danışmanımız</);
   assert.match(render(SharedTeamSection, one), /data-team-section/);
-  const contact = render(SharedFooterContact, one);
+  const contactConfig = createTemplateConfig({
+    ...base,
+    config: { ...base.config, theme_config: { ...base.config.theme_config, content: { regionFocus: "Moda, Kadıköy, İstanbul", mapUrl: "https://maps.app.goo.gl/example" } } },
+    team_members: [member("one", "Deniz Kaya")],
+  }, "home");
+  const contact = render(SharedFooterContact, contactConfig);
   assert.match(contact, /data-footer-contact/);
   assert.match(contact, />Adres</);
   assert.match(contact, />Telefon</);
   assert.match(contact, />E-posta</);
-  assert.match(contact, /google\.com\/maps\/search\/\?api=1&amp;query=/);
+  assert.match(contact, /Moda, Kadıköy, İstanbul/);
+  assert.match(contact, /href="https:\/\/maps\.app\.goo\.gl\/example"/);
   assert.match(contact, /Haritada Göster/);
   assert.match(contact, /href="tel:/);
   assert.match(contact, /href="mailto:/);

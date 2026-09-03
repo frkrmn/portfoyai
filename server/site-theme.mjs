@@ -106,6 +106,20 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
     themeConfig.content.regionFocus = value;
     appliedFields.push("region_focus");
   }
+  if (patch.map_url !== undefined) {
+    const value = String(patch.map_url).trim();
+    if (value.length > 1000) throw new Error("VALIDATION:Map URL must be at most 1000 characters.");
+    if (value) {
+      try {
+        const url = new URL(value);
+        if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+      } catch {
+        throw new Error("VALIDATION:Map URL must be a valid http or https URL.");
+      }
+    }
+    themeConfig.content.mapUrl = value;
+    appliedFields.push("map_url");
+  }
   for (const [field, colorKey] of [["primary_color", "primary"], ["accent_color", "accent"]]) {
     if (patch[field] === undefined) continue;
     if (!hexColorPattern.test(patch[field])) throw new Error(`VALIDATION:${field === "primary_color" ? "Primary" : "Accent"} color must be a six-digit hex color.`);

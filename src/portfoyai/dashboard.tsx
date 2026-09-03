@@ -79,6 +79,7 @@ type SiteDraft = {
   email: string;
   address: string;
   region_focus: string;
+  map_url: string;
   country_id: string | null;
   province_id: string | null;
   district_id: string | null;
@@ -243,6 +244,7 @@ const siteDraftFrom = (site: DashboardSite): SiteDraft => ({
   email: site.theme_config?.content?.email || "",
   address: site.theme_config?.content?.address || "",
   region_focus: site.theme_config?.content?.regionFocus || "",
+  map_url: site.theme_config?.content?.mapUrl || "",
   country_id: site.country_id || null,
   province_id: site.province_id || null,
   district_id: site.district_id || null,
@@ -579,7 +581,7 @@ export function DashboardPage() {
     }
   };
 
-  const saveIdentity = () => siteDraft && patchSite({ business_name: siteDraft.business_name, headline: siteDraft.headline, tone: siteDraft.tone, phone: siteDraft.phone, email: siteDraft.email, address: siteDraft.address, region_focus: siteDraft.region_focus, country_id: siteDraft.country_id, province_id: siteDraft.province_id, district_id: siteDraft.district_id, neighborhood_id: siteDraft.neighborhood_id }, t("dashboard.site.saved"));
+  const saveIdentity = () => siteDraft && patchSite({ business_name: siteDraft.business_name, headline: siteDraft.headline, tone: siteDraft.tone, phone: siteDraft.phone, email: siteDraft.email, address: siteDraft.address, region_focus: siteDraft.region_focus, map_url: siteDraft.map_url, country_id: siteDraft.country_id, province_id: siteDraft.province_id, district_id: siteDraft.district_id, neighborhood_id: siteDraft.neighborhood_id }, t("dashboard.site.saved"));
   const togglePublication = () => activeSite && patchSite({ status: activeSite.status === "published" ? "draft" : "published" }, t(activeSite.status === "published" ? "dashboard.site.unpublished" : "dashboard.site.published"));
   const toggleClosedListings = () => activeSite && patchSite({ show_closed_listings: !activeSite.show_closed_listings }, t(!activeSite.show_closed_listings ? "dashboard.site.closedListingsShown" : "dashboard.site.closedListingsHidden"));
   const toggleTeamSection = () => activeSite && patchSite({ show_team_section: !activeSite.show_team_section }, t(!activeSite.show_team_section ? "dashboard.team.shown" : "dashboard.team.hidden"));
@@ -756,6 +758,7 @@ export function DashboardPage() {
               <div><Label>{t("dashboard.site.shortDescription")}</Label><Textarea value={siteDraft.tone} onChange={(e) => setSiteDraft({ ...siteDraft, tone: e.target.value })} /></div>
               <div className="grid gap-4 sm:grid-cols-2"><div><Label>{t("dashboard.site.phone")}</Label><Input value={siteDraft.phone} onChange={(e) => setSiteDraft({ ...siteDraft, phone: e.target.value })} /></div><div><Label>{t("dashboard.site.email")}</Label><Input type="email" value={siteDraft.email} onChange={(e) => setSiteDraft({ ...siteDraft, email: e.target.value })} /></div></div>
               <div><Label>{t("dashboard.site.address")}</Label><Input value={siteDraft.address} onChange={(e) => setSiteDraft({ ...siteDraft, address: e.target.value })} /></div>
+              <div><Label htmlFor="site-map-url">{t("dashboard.site.mapUrl")}</Label><Input id="site-map-url" type="url" inputMode="url" placeholder="https://maps.app.goo.gl/..." value={siteDraft.map_url} onChange={(e) => setSiteDraft({ ...siteDraft, map_url: e.target.value })} /><p className="mt-1 text-xs text-[#69756e]">{t("dashboard.site.mapUrlHelp")}</p></div>
               <div><Label>{t("dashboard.site.region")}</Label><p className="mt-1 text-xs text-[#69756e]">{t("dashboard.site.regionHelp")}</p></div>
               <LocationHierarchyFields idPrefix="site-region" value={siteDraft} onChange={(selection, names) => setSiteDraft({ ...siteDraft, ...selection, region_focus: [names.neighborhood, names.district, names.province].filter(Boolean).join(", ") })} />
               <div className="flex flex-wrap gap-2"><Button onClick={saveIdentity} disabled={savingSite}>{t("dashboard.site.save")}</Button><Button variant="outline" onClick={togglePublication} disabled={savingSite}>{t(activeSite.status === "published" ? "dashboard.site.unpublish" : "dashboard.site.publish")}</Button></div>
