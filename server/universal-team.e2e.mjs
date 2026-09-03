@@ -35,15 +35,15 @@ try {
   assert.match(render(SharedTeamSection, one), /data-team-section/);
   const contactConfig = createTemplateConfig({
     ...base,
-    config: { ...base.config, theme_config: { ...base.config.theme_config, content: { regionFocus: "Moda, Kadıköy, İstanbul", mapUrl: "https://maps.app.goo.gl/example" } } },
+    config: { ...base.config, theme_config: { ...base.config.theme_config, content: { address: "2566 SOKAK İŞ BANKALILAR SİTESİ NO:1/59", regionFocus: "BİTEZ, BODRUM, MUĞLA", mapUrl: "https://maps.app.goo.gl/example" } } },
     team_members: [member("one", "Deniz Kaya")],
   }, "home");
   const contact = render(SharedFooterContact, contactConfig);
   assert.match(contact, /data-footer-contact/);
-  assert.match(contact, />Adres</);
-  assert.match(contact, />Telefon</);
-  assert.match(contact, />E-posta</);
-  assert.match(contact, /Moda, Kadıköy, İstanbul/);
+  assert.match(contact, /Adres/);
+  assert.match(contact, /2566 Sokak İş Bankalılar Sitesi No:1\/59 \/ Bitez Mahallesi \/ Bodrum \/ Muğla/);
+  assert.match(contact, /Telefon/);
+  assert.match(contact, /E-Posta/);
   assert.match(contact, /href="https:\/\/maps\.app\.goo\.gl\/example"/);
   assert.match(contact, /Haritada Göster/);
   assert.match(contact, /href="tel:/);
