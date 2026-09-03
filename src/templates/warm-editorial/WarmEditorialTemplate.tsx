@@ -18,7 +18,7 @@ import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getHeroImage, getListingImage } from "../mediaFallbacks";
-import { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields } from "../content-schema";
@@ -117,7 +117,7 @@ function Footer({ config }: SiteTemplateProps) {
           <div>{config.content.agentName}</div><div>{config.content.phone}</div><div>{config.content.email}</div><div>{config.content.address}</div>
         </address>
         <div className="text-xs opacity-45">{labels.footerCredit}</div>
-      </div><SharedTeamFooterLink config={config} />
+      </div>
     </footer></>
   );
 }

@@ -7,7 +7,7 @@ import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getHeroImage, getListingImage } from "../mediaFallbacks";
-import { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, propertyTaxonomyLabel, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields } from "../content-schema";
@@ -47,7 +47,7 @@ function Header({ config }: SiteTemplateProps) {
 
 function Footer({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <><SharedTeamSection config={config} /><footer className="border-t border-[var(--cm-line)] bg-[var(--cm-soft)] px-5 py-14 sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1380px] gap-10 md:grid-cols-[1fr_auto_auto]"><div><div className="font-[family-name:var(--cm-heading)] text-2xl font-extrabold">{c.businessName}</div><p className="mt-3 max-w-md text-sm leading-6 opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div><nav className="space-y-3 text-sm"><Link className="block" to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a className="block" href="#hakkimizda">{c.navAbout}</a><a className="block" href="#iletisim">{c.navContact}</a></nav><address className="space-y-2 text-sm not-italic opacity-65"><div>{c.address}</div><div>{c.phone}</div><div>{c.email}</div></address></div><SharedTeamFooterLink config={config} /></footer></>;
+  return <><SharedTeamSection config={config} /><footer className="border-t border-[var(--cm-line)] bg-[var(--cm-soft)] px-5 py-14 sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1380px] gap-10 md:grid-cols-[1fr_auto_auto]"><div><div className="font-[family-name:var(--cm-heading)] text-2xl font-extrabold">{c.businessName}</div><p className="mt-3 max-w-md text-sm leading-6 opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div><nav className="space-y-3 text-sm"><Link className="block" to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a className="block" href="#hakkimizda">{c.navAbout}</a><a className="block" href="#iletisim">{c.navContact}</a></nav><address className="space-y-2 text-sm not-italic opacity-65"><div>{c.address}</div><div>{c.phone}</div><div>{c.email}</div></address></div></footer></>;
 }
 
 function Specs({ config, listing, compact = false }: { config: TemplateConfig; listing: Listing; compact?: boolean }) {

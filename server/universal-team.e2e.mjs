@@ -7,7 +7,7 @@ import { createServer } from "vite";
 const vite = await createServer({ server: { middlewareMode: true }, appType: "custom", logLevel: "silent" });
 try {
   const { createTemplateConfig } = await vite.ssrLoadModule("/src/templates/types.ts");
-  const { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamPage, SharedTeamSection } = await vite.ssrLoadModule("/src/templates/SharedTeamPage.tsx");
+  const { SharedTeamHeaderLink, SharedTeamPage, SharedTeamSection } = await vite.ssrLoadModule("/src/templates/SharedTeamPage.tsx");
   const { getTemplateFamily } = await vite.ssrLoadModule("/src/templates/registry.ts");
   const base = {
     id: "warm-team-site",
@@ -30,7 +30,6 @@ try {
   const one = createTemplateConfig({ ...base, team_members: [member("one", "Deniz Kaya")] }, "home");
   assert.equal(one.teamSectionLabel, "Danışmanımız");
   assert.match(render(SharedTeamPage, one), /Deniz Kaya/);
-  assert.match(render(SharedTeamFooterLink, one), /#ekibimiz/);
   assert.match(render(SharedTeamHeaderLink, one), />Danışmanımız</);
   assert.match(render(SharedTeamSection, one), /data-team-section/);
 
@@ -42,7 +41,6 @@ try {
   assert.equal(custom.teamSectionLabel, "Danışmanlarımız");
 
   const hidden = createTemplateConfig({ ...base, show_team_section: false, team_members: [member("one", "Deniz Kaya")] }, "home");
-  assert.equal(render(SharedTeamFooterLink, hidden), "");
   assert.equal(render(SharedTeamHeaderLink, hidden), "");
   assert.equal(render(SharedTeamSection, hidden), "");
 
@@ -52,7 +50,7 @@ try {
     const html = render(getTemplateFamily(templateId).Home, config);
     assert.match(html, /data-team-section/, `${templateId} must render the team inside the landing flow`);
     assert.match(html, />Danışmanımız<\/a>/, `${templateId} header must show the team section label`);
-    assert.match(html, /href="#ekibimiz"/, `${templateId} footer must link to the inline team section`);
+    assert.equal((html.match(/href="#ekibimiz"/g) || []).length, 1, `${templateId} must link to the team section once from its header`);
   }
 
   console.info(JSON.stringify({ one_member_label: one.teamSectionLabel, two_member_label: two.teamSectionLabel, custom_label: custom.teamSectionLabel, hidden_nav: false, placeholder_photo: true, inline_templates: templateIds }, null, 2));

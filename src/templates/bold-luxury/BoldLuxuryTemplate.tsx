@@ -7,7 +7,7 @@ import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getHeroImage, getListingImage } from "../mediaFallbacks";
-import { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField } from "../content-schema";
@@ -47,7 +47,7 @@ function LuxuryHeader({ config }: SiteTemplateProps) {
 
 function LuxuryFooter({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <><SharedTeamSection config={config} /><footer className="border-t border-[color:color-mix(in_srgb,var(--lux-text)_14%,transparent)] bg-[var(--lux-dark)] px-5 py-14 sm:px-8 lg:px-12"><div className="mx-auto grid max-w-[1440px] gap-10 md:grid-cols-[1fr_auto_auto]"><div><div className="font-[family-name:var(--lux-heading)] text-3xl font-bold uppercase tracking-[0.06em]">{c.businessName}</div><p className="mt-4 max-w-md text-sm leading-6 opacity-55">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div><nav className="space-y-3 text-sm"><Link className="block" to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a className="block" href="#yaklasim">{c.navAbout}</a><a className="block" href="#iletisim">{c.navContact}</a></nav><address className="space-y-2 text-sm not-italic opacity-65"><div>{c.email}</div><div>{c.phone}</div><div>{c.address}</div></address></div><SharedTeamFooterLink config={config} /></footer></>;
+  return <><SharedTeamSection config={config} /><footer className="border-t border-[color:color-mix(in_srgb,var(--lux-text)_14%,transparent)] bg-[var(--lux-dark)] px-5 py-14 sm:px-8 lg:px-12"><div className="mx-auto grid max-w-[1440px] gap-10 md:grid-cols-[1fr_auto_auto]"><div><div className="font-[family-name:var(--lux-heading)] text-3xl font-bold uppercase tracking-[0.06em]">{c.businessName}</div><p className="mt-4 max-w-md text-sm leading-6 opacity-55">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div><nav className="space-y-3 text-sm"><Link className="block" to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a className="block" href="#yaklasim">{c.navAbout}</a><a className="block" href="#iletisim">{c.navContact}</a></nav><address className="space-y-2 text-sm not-italic opacity-65"><div>{c.email}</div><div>{c.phone}</div><div>{c.address}</div></address></div></footer></>;
 }
 
 function LeadForm({ config, listing, hero = false, dark = false }: { config: TemplateConfig; listing?: Listing; hero?: boolean; dark?: boolean }) {
