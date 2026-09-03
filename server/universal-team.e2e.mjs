@@ -8,6 +8,7 @@ const vite = await createServer({ server: { middlewareMode: true }, appType: "cu
 try {
   const { createTemplateConfig } = await vite.ssrLoadModule("/src/templates/types.ts");
   const { SharedTeamHeaderLink, SharedTeamPage, SharedTeamSection } = await vite.ssrLoadModule("/src/templates/SharedTeamPage.tsx");
+  const { SharedFooterContact } = await vite.ssrLoadModule("/src/templates/SharedFooterContact.tsx");
   const { getTemplateFamily } = await vite.ssrLoadModule("/src/templates/registry.ts");
   const base = {
     id: "warm-team-site",
@@ -32,6 +33,15 @@ try {
   assert.match(render(SharedTeamPage, one), /Deniz Kaya/);
   assert.match(render(SharedTeamHeaderLink, one), />Danışmanımız</);
   assert.match(render(SharedTeamSection, one), /data-team-section/);
+  const contact = render(SharedFooterContact, one);
+  assert.match(contact, /data-footer-contact/);
+  assert.match(contact, />Adres</);
+  assert.match(contact, />Telefon</);
+  assert.match(contact, />E-posta</);
+  assert.match(contact, /google\.com\/maps\/search\/\?api=1&amp;query=/);
+  assert.match(contact, /Haritada Göster/);
+  assert.match(contact, /href="tel:/);
+  assert.match(contact, /href="mailto:/);
 
   const two = createTemplateConfig({ ...base, team_members: [member("one", "Deniz Kaya"), member("two", "Ece Akın")] }, "team");
   assert.equal(two.teamSectionLabel, "Ekibimiz");
@@ -49,6 +59,7 @@ try {
     const config = createTemplateConfig({ ...base, config: { ...base.config, template_id: templateId, theme_config: { ...base.config.theme_config, template_id: templateId } }, team_members: [member("one", "Deniz Kaya")] }, "home");
     const html = render(getTemplateFamily(templateId).Home, config);
     assert.match(html, /data-team-section/, `${templateId} must render the team inside the landing flow`);
+    assert.equal((html.match(/data-footer-contact/g) || []).length, 1, `${templateId} must render the standard footer contact block once`);
     assert.match(html, />Danışmanımız<\/a>/, `${templateId} header must show the team section label`);
     assert.equal((html.match(/href="#ekibimiz"/g) || []).length, 1, `${templateId} must link to the team section once from its header`);
   }

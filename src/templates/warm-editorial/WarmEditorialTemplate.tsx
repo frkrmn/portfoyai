@@ -19,6 +19,7 @@ import { formatListingPrice } from "@/lib/listing-price";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getHeroImage, getListingImage } from "../mediaFallbacks";
 import { SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedFooterContact } from "../SharedFooterContact";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields } from "../content-schema";
@@ -113,11 +114,8 @@ function Footer({ config }: SiteTemplateProps) {
           <div className="font-[family-name:var(--we-heading)] text-2xl font-semibold">{config.content.businessName}</div>
           <p className="mt-3 max-w-md leading-6 opacity-65">{config.content.bio}</p>
         </div>
-        <address className="not-italic leading-7 opacity-70">
-          <div>{config.content.agentName}</div><div>{config.content.phone}</div><div>{config.content.email}</div><div>{config.content.address}</div>
-        </address>
         <div className="text-xs opacity-45">{labels.footerCredit}</div>
-      </div>
+      </div><SharedFooterContact config={config} />
     </footer></>
   );
 }

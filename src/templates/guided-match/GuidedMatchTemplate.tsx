@@ -8,6 +8,7 @@ import { formatListingPrice } from "@/lib/listing-price";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getAgentImage, getHeroImage, getListingImage } from "../mediaFallbacks";
 import { SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedFooterContact } from "../SharedFooterContact";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField, stringArrayField } from "../content-schema";
@@ -52,7 +53,7 @@ function Header({ config }: SiteTemplateProps) {
 
 function Footer({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <><SharedTeamSection config={config} /><footer id="iletisim" className="border-t border-[var(--gm-line)] bg-[var(--gm-soft)] px-5 py-12 sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1360px] gap-8 md:grid-cols-[1fr_auto]"><div><div className="font-[family-name:var(--gm-heading)] text-3xl italic">{c.agentName}</div><p className="mt-3 max-w-lg text-sm leading-6 opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div><address className="space-y-2 text-sm not-italic opacity-70"><div>{c.phone}</div><div>{c.email}</div><div>{c.address}</div></address></div></footer></>;
+  return <><SharedTeamSection config={config} /><footer id="iletisim" className="border-t border-[var(--gm-line)] bg-[var(--gm-soft)] px-5 py-12 sm:px-8 lg:px-10"><div className="mx-auto max-w-[1360px]"><div><div className="font-[family-name:var(--gm-heading)] text-3xl italic">{c.agentName}</div><p className="mt-3 max-w-lg text-sm leading-6 opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div></div><SharedFooterContact config={config} /></footer></>;
 }
 
 function Specs({ config, listing }: { config: TemplateConfig; listing: Listing }) {

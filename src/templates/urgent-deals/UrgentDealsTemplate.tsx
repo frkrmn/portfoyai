@@ -8,6 +8,7 @@ import { formatListingPrice } from "@/lib/listing-price";
 import { getListingImage } from "../mediaFallbacks";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedFooterContact } from "../SharedFooterContact";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields } from "../content-schema";
@@ -49,7 +50,7 @@ function Header({ config }: SiteTemplateProps) {
 
 function Footer({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <><SharedTeamSection config={config} /><footer className="border-t border-[var(--ud-line)] bg-[var(--ud-primary)] px-5 py-12 text-[var(--ud-on-primary)] sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1380px] gap-8 md:grid-cols-[1fr_auto]"><div><div className="font-[family-name:var(--ud-heading)] text-2xl font-black">{c.businessName}</div><p className="mt-3 max-w-lg text-sm opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div><address className="space-y-2 text-sm not-italic opacity-70"><div>{c.phone}</div><div>{c.email}</div><div>{c.address}</div></address></div></footer></>;
+  return <><SharedTeamSection config={config} /><footer className="border-t border-[var(--ud-line)] bg-[var(--ud-primary)] px-5 py-12 text-[var(--ud-on-primary)] sm:px-8 lg:px-10"><div className="mx-auto max-w-[1380px]"><div><div className="font-[family-name:var(--ud-heading)] text-2xl font-black">{c.businessName}</div><p className="mt-3 max-w-lg text-sm opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div></div><SharedFooterContact config={config} /></footer></>;
 }
 
 function UrgencyBadges({ config, listing, large = false }: { config: TemplateConfig; listing: Listing; large?: boolean }) {

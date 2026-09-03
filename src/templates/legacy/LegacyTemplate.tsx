@@ -6,6 +6,7 @@ import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import type { SiteTemplateProps, TemplateConfig } from "../types";
 import { SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedFooterContact } from "../SharedFooterContact";
 
 const styleFor = (config: TemplateConfig) => ({
   "--legacy-primary": config.colors.primary,
@@ -25,7 +26,7 @@ function LegacyCard({ config, listing }: { config: TemplateConfig; listing: List
 }
 
 function LegacyFooter({ config }: SiteTemplateProps) {
-  return <><SharedTeamSection config={config} /><footer className="mt-20 border-t border-black/10 px-5 py-10 text-sm sm:px-8 lg:px-10"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 md:flex-row"><strong>{config.content.businessName}</strong><span>{config.content.phone} · {config.content.email}</span><span>{config.content.address}</span><span className="opacity-50">Fastate AI ile hazırlandı</span></div></footer></>;
+  return <><SharedTeamSection config={config} /><footer className="mt-20 border-t border-black/10 px-5 py-10 text-sm sm:px-8 lg:px-10"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 md:flex-row"><strong>{config.content.businessName}</strong><span className="opacity-50">Fastate AI ile hazırlandı</span></div><SharedFooterContact config={config} /></footer></>;
 }
 
 export function LegacyHome({ config }: SiteTemplateProps) {
