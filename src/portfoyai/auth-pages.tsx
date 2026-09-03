@@ -35,7 +35,8 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const hasPendingPrompt = Boolean(getPendingPrompt());
-  const destination = (location.state as { from?: string } | null)?.from || (hasPendingPrompt ? "/auth" : "/dashboard");
+  const destination = (location.state as { from?: string } | null)?.from || "/dashboard";
+  const isPendingPromptFlow = destination === "/auth" && hasPendingPrompt;
 
   if (!isLoading && user) return <Navigate to={destination} replace />;
 
@@ -45,11 +46,11 @@ export function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
     if (error) return toast.error(error.message);
-    toast.success(t(hasPendingPrompt ? "auth.login.pendingSuccess" : "auth.login.success"));
+    toast.success(t(isPendingPromptFlow ? "auth.login.pendingSuccess" : "auth.login.success"));
     navigate(destination, { replace: true });
   };
 
-  return <AuthLayout><Card className="rounded-[2rem] border-[#173f32]/10 bg-white"><CardHeader><CardTitle className="text-3xl">{t("auth.login.title")}</CardTitle><CardDescription>{t(hasPendingPrompt ? "auth.login.pendingDescription" : "auth.login.description")}</CardDescription></CardHeader><CardContent><form onSubmit={submit} className="space-y-4"><div className="space-y-2"><Label htmlFor="login-email">{t("auth.login.emailLabel")}</Label><Input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div><div className="space-y-2"><Label htmlFor="login-password">{t("auth.login.passwordLabel")}</Label><Input id="login-password" type="password" autoComplete="current-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required /></div><Button className="w-full rounded-full bg-[#173f32]" disabled={submitting || !isSupabaseAuthConfigured}>{t(submitting ? "auth.login.submitting" : "auth.login.submit")}</Button><Button type="button" variant="outline" className="w-full rounded-full" disabled={!isSupabaseAuthConfigured} onClick={() => void supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}${hasPendingPrompt ? "/auth" : "/dashboard"}` } })}>{t("auth.login.google")}</Button><p className="text-center text-sm text-slate-600">{t("auth.login.noAccount")} <Link className="font-semibold text-[#173f32] underline" to="/signup" state={{ from: destination }}>{t("auth.login.signupLink")}</Link></p>{!isSupabaseAuthConfigured ? <p className="text-center text-xs text-red-600">{t("auth.configMissing")}</p> : null}</form></CardContent></Card></AuthLayout>;
+  return <AuthLayout><Card className="rounded-[2rem] border-[#173f32]/10 bg-white"><CardHeader><CardTitle className="text-3xl">{t("auth.login.title")}</CardTitle><CardDescription>{t(isPendingPromptFlow ? "auth.login.pendingDescription" : "auth.login.description")}</CardDescription></CardHeader><CardContent><form onSubmit={submit} className="space-y-4"><div className="space-y-2"><Label htmlFor="login-email">{t("auth.login.emailLabel")}</Label><Input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div><div className="space-y-2"><Label htmlFor="login-password">{t("auth.login.passwordLabel")}</Label><Input id="login-password" type="password" autoComplete="current-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required /></div><Button className="w-full rounded-full bg-[#173f32]" disabled={submitting || !isSupabaseAuthConfigured}>{t(submitting ? "auth.login.submitting" : "auth.login.submit")}</Button><Button type="button" variant="outline" className="w-full rounded-full" disabled={!isSupabaseAuthConfigured} onClick={() => void supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}${destination}` } })}>{t("auth.login.google")}</Button>{isPendingPromptFlow ? <Button asChild type="button" variant="ghost" className="w-full rounded-full"><Link to="/login" replace>{t("auth.login.dashboardInstead")}</Link></Button> : null}<p className="text-center text-sm text-slate-600">{t("auth.login.noAccount")} <Link className="font-semibold text-[#173f32] underline" to="/signup" state={{ from: destination }}>{t("auth.login.signupLink")}</Link></p>{!isSupabaseAuthConfigured ? <p className="text-center text-xs text-red-600">{t("auth.configMissing")}</p> : null}</form></CardContent></Card></AuthLayout>;
 }
 
 export function SignupPage() {
