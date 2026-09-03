@@ -7,7 +7,7 @@ import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getListingImage } from "../mediaFallbacks";
-import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, propertyTaxonomyLabel, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField } from "../content-schema";
@@ -45,7 +45,7 @@ const investmentStyle = (config: TemplateConfig) => ({
 
 function Header({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="border-b border-[var(--if-line)] bg-[var(--if-bg)]"><div className="mx-auto flex h-[74px] max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--if-heading)] text-xl font-extrabold tracking-[-0.025em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-semibold md:flex"><a href="#yaklasim">{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a href="#iletisim">{c.navContact}</a></nav><Link data-site-button to={`/site/${config.slug}/listings`} className="flex items-center gap-2 bg-[var(--if-primary)] px-5 py-3 text-xs font-bold text-[var(--if-on-primary)]">{c.ctaText}<ArrowRight className="h-4 w-4" /></Link></div></header>;
+  return <header className="border-b border-[var(--if-line)] bg-[var(--if-bg)]"><div className="mx-auto flex h-[74px] max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--if-heading)] text-xl font-extrabold tracking-[-0.025em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-semibold md:flex"><a href="#yaklasim">{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">{c.navContact}</a></nav><Link data-site-button to={`/site/${config.slug}/listings`} className="flex items-center gap-2 bg-[var(--if-primary)] px-5 py-3 text-xs font-bold text-[var(--if-on-primary)]">{c.ctaText}<ArrowRight className="h-4 w-4" /></Link></div></header>;
 }
 
 function Footer({ config }: SiteTemplateProps) {

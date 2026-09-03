@@ -18,7 +18,7 @@ import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getHeroImage, getListingImage } from "../mediaFallbacks";
-import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields } from "../content-schema";
@@ -93,6 +93,7 @@ function Header({ config }: SiteTemplateProps) {
         </Link>
         <nav className="hidden items-center gap-8 text-[13px] md:flex">
           <Link to={`/site/${config.slug}/listings`}>{labels.navListings}</Link>
+          <SharedTeamHeaderLink config={config} />
           <a href="#hakkimizda">{labels.navAbout}</a>
           <a href="#iletisim">{labels.navContact}</a>
         </nav>

@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, Check, MapPin, X } from "lucide-react";
 import type { Listing } from "@/portfoyai/types";
 import { formatListingPrice } from "@/lib/listing-price";
 import { formatListingLocation } from "@/portfoyai/listing-location";
-import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { getListingImage } from "../mediaFallbacks";
 import { propertySubtypeFor, propertyTaxonomyLabel } from "../PropertyTaxonomy";
@@ -37,7 +37,7 @@ const landStyle = (config: TemplateConfig) => ({
 
 function Header({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="border-b border-[var(--lp-line)] bg-[var(--lp-bg)]"><div className="mx-auto flex h-20 max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--lp-heading)] text-2xl font-bold">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-semibold md:flex"><a href={`/site/${config.slug}#hizmetler`}>{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a href="#iletisim">{c.navContact}</a></nav><Link data-site-button to={`/site/${config.slug}/listings`} className="bg-[var(--site-button)] px-5 py-3 text-xs font-bold text-[var(--site-button-text)]">{c.ctaText}</Link></div></header>;
+  return <header className="border-b border-[var(--lp-line)] bg-[var(--lp-bg)]"><div className="mx-auto flex h-20 max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--lp-heading)] text-2xl font-bold">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-semibold md:flex"><a href={`/site/${config.slug}#hizmetler`}>{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">{c.navContact}</a></nav><Link data-site-button to={`/site/${config.slug}/listings`} className="bg-[var(--site-button)] px-5 py-3 text-xs font-bold text-[var(--site-button-text)]">{c.ctaText}</Link></div></header>;
 }
 
 function Footer({ config }: SiteTemplateProps) {

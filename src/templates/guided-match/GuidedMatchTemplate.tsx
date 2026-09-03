@@ -7,7 +7,7 @@ import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getAgentImage, getHeroImage, getListingImage } from "../mediaFallbacks";
-import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField, stringArrayField } from "../content-schema";
@@ -47,7 +47,7 @@ const guidedStyle = (config: TemplateConfig) => ({
 
 function Header({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="relative z-30 border-b border-[var(--gm-line)] bg-[var(--gm-bg)]/95 backdrop-blur"><div className="mx-auto flex h-20 max-w-[1360px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--gm-heading)] text-2xl font-semibold italic">{c.businessName}</Link><nav className="hidden items-center gap-8 text-sm md:flex"><a href="#eslesme">{c.matchTitle}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a href="#rehber">{c.navAbout}</a></nav><a data-site-button href="#eslesme" className="rounded-full bg-[var(--gm-primary)] px-5 py-3 text-xs font-bold text-[var(--gm-on-primary)]">{c.ctaText}</a></div></header>;
+  return <header className="relative z-30 border-b border-[var(--gm-line)] bg-[var(--gm-bg)]/95 backdrop-blur"><div className="mx-auto flex h-20 max-w-[1360px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--gm-heading)] text-2xl font-semibold italic">{c.businessName}</Link><nav className="hidden items-center gap-8 text-sm md:flex"><a href="#eslesme">{c.matchTitle}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#rehber">{c.navAbout}</a></nav><a data-site-button href="#eslesme" className="rounded-full bg-[var(--gm-primary)] px-5 py-3 text-xs font-bold text-[var(--gm-on-primary)]">{c.ctaText}</a></div></header>;
 }
 
 function Footer({ config }: SiteTemplateProps) {

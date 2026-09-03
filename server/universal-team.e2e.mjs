@@ -7,7 +7,7 @@ import { createServer } from "vite";
 const vite = await createServer({ server: { middlewareMode: true }, appType: "custom", logLevel: "silent" });
 try {
   const { createTemplateConfig } = await vite.ssrLoadModule("/src/templates/types.ts");
-  const { SharedTeamFooterLink, SharedTeamPage, SharedTeamSection } = await vite.ssrLoadModule("/src/templates/SharedTeamPage.tsx");
+  const { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamPage, SharedTeamSection } = await vite.ssrLoadModule("/src/templates/SharedTeamPage.tsx");
   const { getTemplateFamily } = await vite.ssrLoadModule("/src/templates/registry.ts");
   const base = {
     id: "warm-team-site",
@@ -31,6 +31,7 @@ try {
   assert.equal(one.teamSectionLabel, "Danışmanımız");
   assert.match(render(SharedTeamPage, one), /Deniz Kaya/);
   assert.match(render(SharedTeamFooterLink, one), /#ekibimiz/);
+  assert.match(render(SharedTeamHeaderLink, one), />Danışmanımız</);
   assert.match(render(SharedTeamSection, one), /data-team-section/);
 
   const two = createTemplateConfig({ ...base, team_members: [member("one", "Deniz Kaya"), member("two", "Ece Akın")] }, "team");
@@ -42,13 +43,15 @@ try {
 
   const hidden = createTemplateConfig({ ...base, show_team_section: false, team_members: [member("one", "Deniz Kaya")] }, "home");
   assert.equal(render(SharedTeamFooterLink, hidden), "");
+  assert.equal(render(SharedTeamHeaderLink, hidden), "");
   assert.equal(render(SharedTeamSection, hidden), "");
 
-  const templateIds = ["warm-editorial", "bold-luxury", "clean-modern", "neighborhood-friendly", "investment-focused", "urgent-deals", "guided-match", "land-plots"];
+  const templateIds = ["warm-editorial", "bold-luxury", "clean-modern", "neighborhood-friendly", "investment-focused", "urgent-deals", "guided-match", "land-plots", "tm_01"];
   for (const templateId of templateIds) {
     const config = createTemplateConfig({ ...base, config: { ...base.config, template_id: templateId, theme_config: { ...base.config.theme_config, template_id: templateId } }, team_members: [member("one", "Deniz Kaya")] }, "home");
     const html = render(getTemplateFamily(templateId).Home, config);
     assert.match(html, /data-team-section/, `${templateId} must render the team inside the landing flow`);
+    assert.match(html, />Danışmanımız<\/a>/, `${templateId} header must show the team section label`);
     assert.match(html, /href="#ekibimiz"/, `${templateId} footer must link to the inline team section`);
   }
 

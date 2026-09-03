@@ -7,7 +7,7 @@ import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { getListingImage } from "../mediaFallbacks";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
-import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields } from "../content-schema";
@@ -44,7 +44,7 @@ const dealStyle = (config: TemplateConfig) => ({
 
 function Header({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="border-b border-[var(--ud-line)] bg-[var(--ud-bg)]"><div className="mx-auto flex h-[74px] max-w-[1380px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--ud-heading)] text-xl font-black tracking-[-0.035em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-bold md:flex"><a href="#firsatlar">{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a href="#iletisim">{c.navContact}</a></nav><Link data-site-button to={`/site/${config.slug}/listings`} className="flex items-center gap-2 rounded-full bg-[var(--ud-primary)] px-5 py-3 text-xs font-bold text-[var(--ud-on-primary)]">{c.ctaText}<ArrowRight className="h-4 w-4" /></Link></div></header>;
+  return <header className="border-b border-[var(--ud-line)] bg-[var(--ud-bg)]"><div className="mx-auto flex h-[74px] max-w-[1380px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--ud-heading)] text-xl font-black tracking-[-0.035em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-bold md:flex"><a href="#firsatlar">{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">{c.navContact}</a></nav><Link data-site-button to={`/site/${config.slug}/listings`} className="flex items-center gap-2 rounded-full bg-[var(--ud-primary)] px-5 py-3 text-xs font-bold text-[var(--ud-on-primary)]">{c.ctaText}<ArrowRight className="h-4 w-4" /></Link></div></header>;
 }
 
 function Footer({ config }: SiteTemplateProps) {

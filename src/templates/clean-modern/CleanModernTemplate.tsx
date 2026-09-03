@@ -7,7 +7,7 @@ import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getHeroImage, getListingImage } from "../mediaFallbacks";
-import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, propertyTaxonomyLabel, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields } from "../content-schema";
@@ -42,7 +42,7 @@ const cleanStyle = (config: TemplateConfig) => ({
 
 function Header({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="relative z-30 border-b border-[var(--cm-line)] bg-[var(--cm-bg)]"><div className="mx-auto flex h-[74px] max-w-[1380px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--cm-heading)] text-xl font-extrabold tracking-[-0.025em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-[13px] font-medium md:flex"><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a href="#hakkimizda">{c.navAbout}</a><a href="#iletisim">{c.navContact}</a></nav><Link data-site-button to={`/site/${config.slug}/listings`} className="bg-[var(--cm-primary)] px-5 py-3 text-xs font-bold text-[var(--cm-on-primary)]">{c.ctaText}</Link></div></header>;
+  return <header className="relative z-30 border-b border-[var(--cm-line)] bg-[var(--cm-bg)]"><div className="mx-auto flex h-[74px] max-w-[1380px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--cm-heading)] text-xl font-extrabold tracking-[-0.025em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-[13px] font-medium md:flex"><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#hakkimizda">{c.navAbout}</a><a href="#iletisim">{c.navContact}</a></nav><Link data-site-button to={`/site/${config.slug}/listings`} className="bg-[var(--cm-primary)] px-5 py-3 text-xs font-bold text-[var(--cm-on-primary)]">{c.ctaText}</Link></div></header>;
 }
 
 function Footer({ config }: SiteTemplateProps) {

@@ -4,6 +4,12 @@ import type { CSSProperties } from "react";
 import { getAgentImage } from "./mediaFallbacks";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps } from "./types";
 
+export function SharedTeamHeaderLink({ config }: SiteTemplateProps) {
+  if (!config.showTeamSection || !config.teamMembers.length) return null;
+  const href = config.view === "home" ? "#ekibimiz" : `/site/${config.slug}#ekibimiz`;
+  return <a href={href}>{config.teamSectionLabel}</a>;
+}
+
 export function SharedTeamFooterLink({ config }: SiteTemplateProps) {
   if (!config.showTeamSection || !config.teamMembers.length) return null;
   const href = config.view === "home" ? "#ekibimiz" : `/site/${config.slug}#ekibimiz`;

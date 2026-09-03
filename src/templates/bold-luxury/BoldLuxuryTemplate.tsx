@@ -7,7 +7,7 @@ import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { getHeroImage, getListingImage } from "../mediaFallbacks";
-import { SharedTeamFooterLink, SharedTeamSection } from "../SharedTeamPage";
+import { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField } from "../content-schema";
@@ -42,7 +42,7 @@ const luxuryStyle = (config: TemplateConfig) => ({
 
 function LuxuryHeader({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="relative z-30 border-b border-[color:color-mix(in_srgb,var(--lux-text)_14%,transparent)] bg-[var(--lux-dark)]"><div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--lux-heading)] text-2xl font-bold uppercase tracking-[0.08em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs uppercase tracking-[0.14em] md:flex"><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a href="#yaklasim">{c.navAbout}</a><a href="#iletisim">{c.navContact}</a></nav><a data-site-button href="#iletisim" className="bg-[var(--lux-accent)] px-5 py-3 text-xs font-semibold text-[var(--lux-ink)]">{c.formSubmit}</a></div></header>;
+  return <header className="relative z-30 border-b border-[color:color-mix(in_srgb,var(--lux-text)_14%,transparent)] bg-[var(--lux-dark)]"><div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--lux-heading)] text-2xl font-bold uppercase tracking-[0.08em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs uppercase tracking-[0.14em] md:flex"><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#yaklasim">{c.navAbout}</a><a href="#iletisim">{c.navContact}</a></nav><a data-site-button href="#iletisim" className="bg-[var(--lux-accent)] px-5 py-3 text-xs font-semibold text-[var(--lux-ink)]">{c.formSubmit}</a></div></header>;
 }
 
 function LuxuryFooter({ config }: SiteTemplateProps) {

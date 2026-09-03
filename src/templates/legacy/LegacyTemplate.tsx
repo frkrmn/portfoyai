@@ -5,6 +5,7 @@ import type { Listing } from "@/portfoyai/types";
 import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import type { SiteTemplateProps, TemplateConfig } from "../types";
+import { SharedTeamFooterLink, SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 
 const styleFor = (config: TemplateConfig) => ({
   "--legacy-primary": config.colors.primary,
@@ -15,7 +16,7 @@ const styleFor = (config: TemplateConfig) => ({
 }) as CSSProperties;
 
 function LegacyHeader({ config }: SiteTemplateProps) {
-  return <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-bold uppercase tracking-[0.18em] text-[var(--legacy-primary)]">{config.content.businessName}</Link><nav className="flex items-center gap-6 text-sm"><Link to={`/site/${config.slug}/listings`}>Portföyler</Link><a href="#iletisim">İletişim</a></nav></header>;
+  return <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-bold uppercase tracking-[0.18em] text-[var(--legacy-primary)]">{config.content.businessName}</Link><nav className="flex items-center gap-6 text-sm"><Link to={`/site/${config.slug}/listings`}>Portföyler</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">İletişim</a></nav></header>;
 }
 
 function LegacyCard({ config, listing }: { config: TemplateConfig; listing: Listing }) {
@@ -24,7 +25,7 @@ function LegacyCard({ config, listing }: { config: TemplateConfig; listing: List
 }
 
 function LegacyFooter({ config }: SiteTemplateProps) {
-  return <footer className="mt-20 border-t border-black/10 px-5 py-10 text-sm sm:px-8 lg:px-10"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 md:flex-row"><strong>{config.content.businessName}</strong><span>{config.content.phone} · {config.content.email}</span><span>{config.content.address}</span><span className="opacity-50">Fastate AI ile hazırlandı</span></div></footer>;
+  return <><SharedTeamSection config={config} /><footer className="mt-20 border-t border-black/10 px-5 py-10 text-sm sm:px-8 lg:px-10"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 md:flex-row"><strong>{config.content.businessName}</strong><span>{config.content.phone} · {config.content.email}</span><span>{config.content.address}</span><span className="opacity-50">Fastate AI ile hazırlandı</span></div><SharedTeamFooterLink config={config} /></footer></>;
 }
 
 export function LegacyHome({ config }: SiteTemplateProps) {
