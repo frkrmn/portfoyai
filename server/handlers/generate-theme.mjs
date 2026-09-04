@@ -11,7 +11,8 @@ export const siteConfigSystemPrompt = [
   "Convert the user's description into one confident website identity.",
   "Return only the JSON object required by the supplied schema.",
   "Do not return layout_fine_tune during initial generation. That optional object is reserved exclusively for later authenticated refinement requests, so every template must initially keep its established visual defaults.",
-  "The headline must be polished Turkish and no longer than 12 words.",
+  "For every localized text object, return both tr and en in this same single response. Turkish must be polished and English must be a natural market-appropriate adaptation, never a literal word-for-word translation.",
+  "The Turkish and English headlines must each be no longer than 12 words.",
   "Set region_focus to a concise comma-separated list of the Turkish city, district or neighborhood names the business serves, inferred from the user's description.",
   "Use sophisticated, accessible colors with strong text contrast. Avoid generic bright SaaS gradients.",
   "Choose exactly one internal template_id using these distinct style rules:",
@@ -28,9 +29,9 @@ export const siteConfigSystemPrompt = [
   "- tm_03: polished contemporary prestige with a lighter presentation; use it only when the user wants premium positioning but not a dark, bold or architectural identity.",
   "- tm_04: crisp corporate; structured, efficient and businesslike. Prefer this for commercial real estate, corporate teams and operational clarity.",
   "Select from the user's stated positioning; do not default to warm-editorial, bold-luxury, urgent-deals or guided-match. Distinguish guided-match (preference intake and personal guidance) from neighborhood-friendly (district-led browsing and local community expertise) and warm-editorial (curated lifestyle storytelling). Distinguish urgent-deals (speed, reduced prices, quick decisions) from investment-focused (yield, ROI, analytical returns). When the user explicitly says they have no special style preference or asks for a standard/general-purpose site, select clean-modern.",
-  "When and only when neighborhood-friendly is selected, populate content.neighborhoods with 2 to 4 relevant Turkish neighborhood or district names and one short, friendly Turkish description for each. Every place explicitly named by the user must appear first and verbatim before adding nearby neighborhoods: never expand, rename or qualify it (for example, Kadıköy must remain exactly Kadıköy, not Kadıköy Merkez). If none are named, choose reasonable neighborhoods for the user's city.",
-  "When and only when guided-match is selected, populate content.feelings with 3 to 5 short Turkish home-feeling preferences (for example sakin, enerjik, aile dostu) and content.timings with 3 to 5 short Turkish moving-time choices. These are private matching-intake options, not template names or neighborhood browsing cards.",
-  "When and only when land-plots is selected, populate content.services with exactly 4 concise Turkish land-consultancy services, content.teamMembers with 2 to 3 plausible Turkish team members (name, role, short bio and an empty photo_url when no real URL is known), and content.processSteps with exactly 3 concise Turkish consultancy steps based on the user's context.",
+  "When and only when neighborhood-friendly is selected, populate content.neighborhoods with 2 to 4 relevant neighborhood or district names and localized tr/en descriptions. Every place explicitly named by the user must appear first and verbatim before adding nearby neighborhoods: never expand, rename or qualify it (for example, Kadıköy must remain exactly Kadıköy, not Kadıköy Merkez). If none are named, choose reasonable neighborhoods for the user's city.",
+  "When and only when guided-match is selected, populate content.feelings with 3 to 5 localized tr/en home-feeling preferences and content.timings with 3 to 5 localized tr/en moving-time choices. These are private matching-intake options, not template names or neighborhood browsing cards.",
+  "When and only when land-plots is selected, populate content.services with exactly 4 concise localized tr/en land-consultancy services, content.teamMembers with 2 to 3 plausible Turkish team member names plus localized tr/en roles and bios (and an empty photo_url when no real URL is known), and content.processSteps with exactly 3 concise localized tr/en consultancy steps based on the user's context.",
   "Do not inspect files, call tools, or modify anything.",
 ].join("\n");
 
@@ -50,20 +51,20 @@ export const ensureLandPlotsContent = (config) => {
     content: {
       ...content,
       services: Array.isArray(content.services) && content.services.length === 4 ? content.services : [
-        { title: "Arsa Alım-Satım Danışmanlığı", description: "Doğru araziyi doğru değer ve güvenli işlem koşullarıyla buluşturuyoruz." },
-        { title: "İmar ve Tapu Takibi", description: "İmar durumu, mülkiyet ve resmi süreçleri ayrıntılı biçimde inceliyoruz." },
-        { title: "Değerleme ve Pazarlama", description: "Araziyi konumu, niteliği ve gelişim potansiyeliyle doğru konumlandırıyoruz." },
-        { title: "Yatırım Danışmanlığı", description: "Bölgesel verilerle uzun vadeli yatırım kararlarını destekliyoruz." },
+        { title: { tr: "Arsa Alım-Satım Danışmanlığı", en: "Land Acquisition & Sales" }, description: { tr: "Doğru araziyi doğru değer ve güvenli işlem koşullarıyla buluşturuyoruz.", en: "We connect the right land with fair value and a secure transaction process." } },
+        { title: { tr: "İmar ve Tapu Takibi", en: "Zoning & Title Due Diligence" }, description: { tr: "İmar durumu, mülkiyet ve resmi süreçleri ayrıntılı biçimde inceliyoruz.", en: "We review zoning, ownership and official records in detail." } },
+        { title: { tr: "Değerleme ve Pazarlama", en: "Valuation & Marketing" }, description: { tr: "Araziyi konumu, niteliği ve gelişim potansiyeliyle doğru konumlandırıyoruz.", en: "We position each property around its location, character and development potential." } },
+        { title: { tr: "Yatırım Danışmanlığı", en: "Investment Advisory" }, description: { tr: "Bölgesel verilerle uzun vadeli yatırım kararlarını destekliyoruz.", en: "We support long-term investment decisions with relevant local data." } },
       ],
       teamMembers: Array.isArray(content.teamMembers) && content.teamMembers.length >= 2 ? content.teamMembers : [
-        { name: `${businessName} Kurucusu`, role: "Gayrimenkul Danışmanı", bio: "Arazi yatırımları, değerleme ve satış süreçlerinde müşterilere uçtan uca rehberlik eder.", photo_url: "" },
-        { name: "İmar ve Tapu Uzmanı", role: "Teknik Danışman", bio: "İmar, tapu ve resmi kayıtları inceleyerek karar sürecini güvenli hale getirir.", photo_url: "" },
-        { name: "Yatırım Danışmanı", role: "Portföy Uzmanı", bio: "Bölgesel potansiyeli ve piyasa verilerini analiz ederek uygun seçenekleri sunar.", photo_url: "" },
+        { name: `${businessName} Kurucusu`, role: { tr: "Gayrimenkul Danışmanı", en: "Real Estate Advisor" }, bio: { tr: "Arazi yatırımları, değerleme ve satış süreçlerinde müşterilere uçtan uca rehberlik eder.", en: "Guides clients through land investment, valuation and sales from start to finish." }, photo_url: "" },
+        { name: "İmar ve Tapu Uzmanı", role: { tr: "Teknik Danışman", en: "Technical Advisor" }, bio: { tr: "İmar, tapu ve resmi kayıtları inceleyerek karar sürecini güvenli hale getirir.", en: "Reviews zoning, title and official records to support confident decisions." }, photo_url: "" },
+        { name: "Yatırım Danışmanı", role: { tr: "Portföy Uzmanı", en: "Portfolio Specialist" }, bio: { tr: "Bölgesel potansiyeli ve piyasa verilerini analiz ederek uygun seçenekleri sunar.", en: "Evaluates local potential and market data to identify suitable opportunities." }, photo_url: "" },
       ],
       processSteps: Array.isArray(content.processSteps) && content.processSteps.length === 3 ? content.processSteps : [
-        { title: "Dinliyoruz", description: "Yatırım hedefinizi ve beklentilerinizi netleştiriyoruz." },
-        { title: "Analiz Ediyoruz", description: "İmar, tapu, konum ve piyasa verilerini birlikte inceliyoruz." },
-        { title: "Sonuçlandırıyoruz", description: "Müzakere ve devir sürecini güvenle tamamlıyoruz." },
+        { title: { tr: "Dinliyoruz", en: "We Listen" }, description: { tr: "Yatırım hedefinizi ve beklentilerinizi netleştiriyoruz.", en: "We clarify your investment goals and expectations." } },
+        { title: { tr: "Analiz Ediyoruz", en: "We Analyse" }, description: { tr: "İmar, tapu, konum ve piyasa verilerini birlikte inceliyoruz.", en: "We assess zoning, title, location and market data together." } },
+        { title: { tr: "Sonuçlandırıyoruz", en: "We Deliver" }, description: { tr: "Müzakere ve devir sürecini güvenle tamamlıyoruz.", en: "We guide negotiations and transfer through to a secure completion." } },
       ],
     },
   };

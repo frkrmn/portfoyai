@@ -240,11 +240,11 @@ const siteDraftFrom = (site: DashboardSite): SiteDraft => ({
   business_name: site.business_name,
   headline: site.headline,
   tone: site.tone || "",
-  phone: site.theme_config?.content?.phone || "",
-  email: site.theme_config?.content?.email || "",
-  address: site.theme_config?.content?.address || "",
-  region_focus: site.theme_config?.content?.regionFocus || "",
-  map_url: site.theme_config?.content?.mapUrl || "",
+  phone: String(site.theme_config?.content?.phone || ""),
+  email: String(site.theme_config?.content?.email || ""),
+  address: String(site.theme_config?.content?.address || ""),
+  region_focus: String(site.theme_config?.content?.regionFocus || ""),
+  map_url: String(site.theme_config?.content?.mapUrl || ""),
   country_id: site.country_id || null,
   province_id: site.province_id || null,
   district_id: site.district_id || null,
@@ -744,7 +744,7 @@ export function DashboardPage() {
 
       {activeSite && activeTab === "leads" ? <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between gap-4"><div><CardTitle>{t("dashboard.leads.title")}</CardTitle><CardDescription>{t("dashboard.leads.description")}</CardDescription></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void loadLeads()}><RefreshCw className="mr-2 h-4 w-4" />{t("common.refresh")}</Button><Button variant="outline" disabled={openingPaywall} onClick={() => plan === "free" ? void openPaywall("lead_export") : toast.info(t("dashboard.leads.exporting"))}><Download className="mr-2 h-4 w-4" />{t("dashboard.leads.export")}{plan === "free" ? <Lock className="ml-2 h-3.5 w-3.5" /> : null}</Button></div></CardHeader><CardContent>{siteLeads.length ? <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left"><thead className="border-y text-xs text-[#7a857e]"><tr><th className="py-4">{t("dashboard.leads.name")}</th><th>{t("dashboard.leads.phone")}</th><th>{t("dashboard.leads.message")}</th><th>{t("dashboard.leads.date")}</th></tr></thead><tbody>{siteLeads.map((lead) => <tr key={lead.id} className="border-b"><td className="py-5 font-semibold">{lead.name}</td><td><a href={`tel:${lead.phone}`}>{lead.phone}</a></td><td className="max-w-sm text-sm">{lead.message || "—"}</td><td className="text-xs text-[#7a857e]">{new Intl.DateTimeFormat(i18n.resolvedLanguage === "en" ? "en-US" : "tr-TR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(lead.created_at))}</td></tr>)}</tbody></table></div> : <p className="p-5 text-sm text-[#69756e]">{t("dashboard.leads.empty")}</p>}</CardContent></Card> : null}
 
-      {activeSite && activeTab === "content" ? <ContentEditor schema={contentSchema} content={contentDraft} previewUrl={`/site/${activeSite.slug}`} previewVersion={previewVersion} onChange={setContentDraft} onSave={() => void saveContent()} saving={savingSite} dirty={contentDirty} /> : null}
+      {activeSite && activeTab === "content" ? <ContentEditor schema={contentSchema} content={contentDraft} previewUrl={`/site/${activeSite.slug}`} previewVersion={previewVersion} onChange={setContentDraft} onBackfilled={(content) => { setContentDraft(content); setPersistedContent(content); }} onSave={() => void saveContent()} saving={savingSite} dirty={contentDirty} /> : null}
 
       {activeSite && activeTab === "images" ? <ImageEditor schema={imageSchema} media={mediaDraft} previewUrl={`/site/${activeSite.slug}`} previewVersion={previewVersion} onChange={setMediaDraft} onSave={() => void saveMedia()} saving={savingSite} dirty={mediaDirty} /> : null}
 

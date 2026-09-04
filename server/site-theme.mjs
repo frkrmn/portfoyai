@@ -89,14 +89,18 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
   if (patch.headline !== undefined) {
     const value = textValue(patch.headline, "Headline", 240);
     topLevel.headline = value;
-    themeConfig.content.headline = value;
+    themeConfig.content.headline = themeConfig.content.headline && typeof themeConfig.content.headline === "object"
+      ? { ...themeConfig.content.headline, tr: value }
+      : value;
     appliedFields.push("headline");
   }
   if (patch.tone !== undefined) {
     const value = String(patch.tone).trim();
     if (value.length > 500) throw new Error("VALIDATION:Description must be at most 500 characters.");
     topLevel.tone = value;
-    themeConfig.content.bio = value;
+    themeConfig.content.bio = themeConfig.content.bio && typeof themeConfig.content.bio === "object"
+      ? { ...themeConfig.content.bio, tr: value }
+      : value;
     appliedFields.push("tone");
   }
   for (const key of ["phone", "email", "address"]) {

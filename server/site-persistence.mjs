@@ -17,7 +17,9 @@ export const slugifyBusinessName = (businessName) => {
     .replace(/-+$/g, "") || "site";
 };
 
-const buildThemeConfig = (config) => {
+const localizedTr = (value) => typeof value === "string" ? value : value?.tr || "";
+
+export const buildThemeConfig = (config) => {
   const isBoldLuxury = config.template_id === "bold-luxury";
   const isCleanModern = config.template_id === "clean-modern";
   const isNeighborhoodFriendly = config.template_id === "neighborhood-friendly";
@@ -49,20 +51,20 @@ const buildThemeConfig = (config) => {
       processSteps: config.content?.processSteps,
       services: config.content?.services,
       tagline: isBoldLuxury
-        ? "Ayrıcalıklı yaşamlar için seçkin bir gayrimenkul deneyimi."
+        ? { tr: "Ayrıcalıklı yaşamlar için seçkin bir gayrimenkul deneyimi.", en: "A distinguished real-estate experience for exceptional living." }
         : isInvestmentFocused
-          ? "Kira getirisi, değer artışı ve piyasa verileriyle desteklenen yatırım danışmanlığı."
+          ? { tr: "Kira getirisi, değer artışı ve piyasa verileriyle desteklenen yatırım danışmanlığı.", en: "Investment guidance grounded in rental yield, appreciation and market data." }
           : isNeighborhoodFriendly
-          ? "Mahallenizi bilen, sizi dinleyen ve doğru evi birlikte bulan komşu gibi danışmanlık."
+          ? { tr: "Mahallenizi bilen, sizi dinleyen ve doğru evi birlikte bulan komşu gibi danışmanlık.", en: "Friendly local guidance from someone who knows your neighborhood and listens." }
         : isCleanModern
-          ? "Doğru evi hızlı, şeffaf ve kolay bir deneyimle bulun."
+          ? { tr: "Doğru evi hızlı, şeffaf ve kolay bir deneyimle bulun.", en: "Find the right home through a fast, transparent and effortless experience." }
           : isUrgentDeals
-            ? "Güncel fiyat avantajlarını net bilgi ve hızlı iletişimle yakalayın."
+            ? { tr: "Güncel fiyat avantajlarını net bilgi ve hızlı iletişimle yakalayın.", en: "Act on today's best-value opportunities with clear facts and fast communication." }
           : isGuidedMatch
-            ? "Sizi dinleyen, tercihlerinizi anlayan ve doğru eve yönlendiren kişisel danışmanlık."
+            ? { tr: "Sizi dinleyen, tercihlerinizi anlayan ve doğru eve yönlendiren kişisel danışmanlık.", en: "Personal guidance that listens, understands your preferences and leads you home." }
           : isLandPlots
-            ? "Arazi yatırımlarında yerel bilgi, teknik inceleme ve güvenilir süreç yönetimi."
-          : "Yaşam alanlarını kişisel bir seçkiyle buluşturuyoruz.",
+            ? { tr: "Arazi yatırımlarında yerel bilgi, teknik inceleme ve güvenilir süreç yönetimi.", en: "Local insight, technical due diligence and trusted guidance for land investments." }
+          : { tr: "Yaşam alanlarını kişisel bir seçkiyle buluşturuyoruz.", en: "A personal curation of places designed for the way you want to live." },
     },
     layout: {
       show_categories: !isBoldLuxury && !isCleanModern && !isNeighborhoodFriendly && !isInvestmentFocused && !isUrgentDeals && !isGuidedMatch && !isLandPlots,
@@ -156,10 +158,10 @@ export const insertGeneratedSite = async (supabase, config, userId, { siteLimitE
         ...(siteLimitExempt ? { owner_limit_exempt: true } : {}),
         slug,
         business_name: config.business_name,
-        tone: config.tone,
+        tone: localizedTr(config.tone),
         primary_color: config.primary_color,
         accent_color: config.accent_color,
-        headline: config.headline,
+        headline: localizedTr(config.headline),
         theme_config: buildThemeConfig(config),
         show_team_section: config.template_id === "land-plots",
         status: "draft",
@@ -194,8 +196,8 @@ export const insertGeneratedSite = async (supabase, config, userId, { siteLimitE
           const starterMembers = (config.content?.teamMembers || []).map((member, index) => ({
             site_id: site.id,
             name: member.name,
-            role: member.role,
-            bio: member.bio || null,
+            role: localizedTr(member.role),
+            bio: localizedTr(member.bio) || null,
             photo_url: member.photo_url || null,
             sort_order: index,
           }));

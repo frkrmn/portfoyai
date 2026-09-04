@@ -11,7 +11,10 @@
       "type": "string"
     },
     "tone": {
-      "type": "string"
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "tr": { "type": "string" }, "en": { "type": "string" } },
+      "required": ["tr", "en"]
     },
     "primary_color": {
       "type": "string",
@@ -22,7 +25,10 @@
       "pattern": "^#[0-9A-Fa-f]{6}$"
     },
     "headline": {
-      "type": "string"
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "tr": { "type": "string" }, "en": { "type": "string" } },
+      "required": ["tr", "en"]
     },
     "region_focus": {
       "type": "string"
@@ -52,7 +58,7 @@
             "additionalProperties": false,
             "properties": {
               "name": { "type": "string" },
-              "description": { "type": "string" }
+              "description": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] }
             },
             "required": ["name", "description"]
           }
@@ -61,13 +67,13 @@
           "type": "array",
           "minItems": 3,
           "maxItems": 5,
-          "items": { "type": "string" }
+          "items": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] }
         },
         "timings": {
           "type": "array",
           "minItems": 3,
           "maxItems": 5,
-          "items": { "type": "string" }
+          "items": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] }
         },
         "teamMembers": {
           "type": "array",
@@ -78,8 +84,8 @@
             "additionalProperties": false,
             "properties": {
               "name": { "type": "string" },
-              "role": { "type": "string" },
-              "bio": { "type": "string" },
+              "role": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] },
+              "bio": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] },
               "photo_url": { "type": "string" }
             },
             "required": ["name", "role", "bio", "photo_url"]
@@ -93,8 +99,8 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "title": { "type": "string" },
-              "description": { "type": "string" }
+              "title": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] },
+              "description": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] }
             },
             "required": ["title", "description"]
           }
@@ -107,8 +113,8 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "title": { "type": "string" },
-              "description": { "type": "string" }
+              "title": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] },
+              "description": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] }
             },
             "required": ["title", "description"]
           }

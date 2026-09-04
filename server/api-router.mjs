@@ -7,6 +7,7 @@ import listing from "./handlers/listing.mjs";
 import generateListingCopy from "./handlers/listing-copy.mjs";
 import socialKit from "./handlers/listing-social-kit.mjs";
 import publicSite from "./handlers/public-site.mjs";
+import publicSiteContentBackfill from "./handlers/public-site-content-backfill.mjs";
 import renderPage from "./handlers/render-page.mjs";
 import site from "./handlers/site.mjs";
 import siteListings from "./handlers/site-listings.mjs";
@@ -31,6 +32,7 @@ export const apiRouteInventory = [
   { pattern: /^\/api\/listings\/generate-copy$/, methods: ["POST"], handler: generateListingCopy },
   { pattern: new RegExp(`^/api/listings/${uuidSource}$`, "i"), methods: ["PATCH", "DELETE"], params: ["id"], handler: listing },
   { pattern: /^\/api\/public-sites\/([a-z0-9]+(?:-[a-z0-9]+)*)$/, methods: ["GET"], params: ["slug"], handler: publicSite },
+  { pattern: /^\/api\/public-sites\/([a-z0-9]+(?:-[a-z0-9]+)*)\/content-backfill$/, methods: ["POST"], params: ["slug"], handler: publicSiteContentBackfill },
   { pattern: new RegExp(`^/api/sites/${uuidSource}/listings$`, "i"), methods: ["GET", "POST"], params: ["id"], handler: siteListings },
   { pattern: new RegExp(`^/api/sites/${uuidSource}/team-members$`, "i"), methods: ["GET", "POST"], params: ["siteId"], handler: teamMembers },
   { pattern: new RegExp(`^/api/team-members/${uuidSource}$`, "i"), methods: ["PATCH", "DELETE"], params: ["memberId"], handler: teamMembers },

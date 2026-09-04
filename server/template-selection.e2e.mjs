@@ -28,8 +28,15 @@ const results = await Promise.all(Object.entries(prompts).map(async ([expected, 
     },
   });
   const config = ensureLandPlotsContent(JSON.parse(response.text || "{}"));
-  return { expected, returned: config.template_id, match: config.template_id === expected };
+  const localizedHeadline = Boolean(config.headline?.tr && config.headline?.en);
+  const localizedTone = Boolean(config.tone?.tr && config.tone?.en);
+  const specializedContentLocalized = expected === "guided-match"
+    ? config.content.feelings.every((item) => item.tr && item.en) && config.content.timings.every((item) => item.tr && item.en)
+    : expected === "land-plots"
+      ? config.content.services.every((item) => item.title.tr && item.title.en && item.description.tr && item.description.en)
+      : true;
+  return { expected, returned: config.template_id, match: config.template_id === expected, localizedHeadline, localizedTone, specializedContentLocalized, generationCalls: 1 };
 }));
 
 console.info(JSON.stringify(results, null, 2));
-if (results.some((result) => !result.match)) process.exitCode = 1;
+if (results.some((result) => !result.match || !result.localizedHeadline || !result.localizedTone || !result.specializedContentLocalized || result.generationCalls !== 1)) process.exitCode = 1;

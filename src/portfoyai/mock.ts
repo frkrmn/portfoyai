@@ -329,8 +329,9 @@ export const createSeedState = (): AppState => ({
 
 export const createAgentFromPrompt = (prompt: string, name: string, email: string, phone: string, generatedConfig?: GeneratedSiteConfig) => {
   const generatedTheme = generateThemeFromPrompt(prompt);
+  const generatedText = (value: string | { tr: string; en?: string }) => typeof value === "string" ? value : value.tr;
   const profile: PromptProfile = generatedConfig
-    ? { ...generatedTheme.profile, business_name: generatedConfig.business_name, tone: generatedConfig.tone }
+    ? { ...generatedTheme.profile, business_name: generatedConfig.business_name, tone: generatedText(generatedConfig.tone) }
     : generatedTheme.profile;
   const theme: ThemeConfig = generatedConfig
     ? { ...generatedTheme.theme, primary: generatedConfig.primary_color, accent: generatedConfig.accent_color }
@@ -366,7 +367,7 @@ export const createAgentFromPrompt = (prompt: string, name: string, email: strin
     theme_config: theme,
     status: "published",
     created_at: now(),
-    heroTitle: generatedConfig?.headline || `${profile.region_focus} için özel olarak hazırlanmış marka sitesi`,
+    heroTitle: generatedConfig?.headline ? generatedText(generatedConfig.headline) : `${profile.region_focus} için özel olarak hazırlanmış marka sitesi`,
     heroSubtitle: `Fastate AI, ${profile.listing_types.join(" ve ")} ilanlarınızı temiz ve güvenilir bir vitrinle sunar.`,
   };
 

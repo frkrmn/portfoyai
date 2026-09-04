@@ -13,6 +13,8 @@ export type LayoutFineTune = {
   headingScale?: "modest" | "bold";
 };
 
+export type LocalizedText = { tr: string; en?: string };
+
 export type ThemeConfig = {
   variant: ThemeVariant;
   primary: string;
@@ -42,18 +44,18 @@ export type GeneratedSiteConfig = {
   /** Opaque internal choice returned by generation; never render this in product UI. */
   template_id?: "tm_01" | "tm_02" | "tm_03" | "tm_04" | "warm-editorial" | "bold-luxury" | "clean-modern" | "neighborhood-friendly" | "investment-focused" | "urgent-deals" | "guided-match" | "land-plots";
   content?: {
-    neighborhoods?: Array<{ name: string; description: string }>;
-    feelings?: string[];
-    timings?: string[];
-    teamMembers?: Array<{ name: string; role: string; bio: string; photo_url: string }>;
-    processSteps?: Array<{ title: string; description: string }>;
-    services?: Array<{ title: string; description: string }>;
+    neighborhoods?: Array<{ name: string; description: LocalizedText }>;
+    feelings?: LocalizedText[];
+    timings?: LocalizedText[];
+    teamMembers?: Array<{ name: string; role: LocalizedText; bio: LocalizedText; photo_url: string }>;
+    processSteps?: Array<{ title: LocalizedText; description: LocalizedText }>;
+    services?: Array<{ title: LocalizedText; description: LocalizedText }>;
   };
   business_name: string;
-  tone: string;
+  tone: LocalizedText;
   primary_color: string;
   accent_color: string;
-  headline: string;
+  headline: LocalizedText;
   region_focus?: string;
   layout_fine_tune?: LayoutFineTune;
 };

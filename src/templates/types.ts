@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import type { LayoutFineTune, Listing, TeamMember, ThemeConfig } from "@/portfoyai/types";
 import type { ContentFieldDescriptor } from "./content-schema";
 import type { ImageSlotDescriptor } from "./image-schema";
+import { resolveStoredContent, type StoredContentRecord } from "./content-localization";
 
 export type TemplateView = "home" | "listings" | "detail" | "team";
 
@@ -162,6 +163,7 @@ export type TemplateConfig = {
     bodyItalic?: boolean;
   };
   content: TemplateContent;
+  storedContent: StoredContentRecord;
   media: Record<string, string | string[]>;
   layout: {
     showCategories: boolean;
@@ -606,7 +608,8 @@ export function createTemplateConfig(
       body: raw.fonts?.body || "Inter, Arial, sans-serif",
     },
   };
-  const content = raw.content || {};
+  const storedContent = (raw.content || {}) as StoredContentRecord;
+  const content = resolveStoredContent<Partial<TemplateContent>>(storedContent, "tr");
   const buttonColorSource = ["accent", "primary", "custom"].includes(raw.colors?.buttonColorSource || "")
     ? raw.colors!.buttonColorSource as "accent" | "primary" | "custom"
     : "accent";
@@ -651,6 +654,7 @@ export function createTemplateConfig(
       processSteps: content.processSteps?.length ? content.processSteps : defaults.processSteps,
       services: content.services?.length ? content.services : defaults.services,
     },
+    storedContent,
     media: raw.media || {},
     layout: {
       showCategories: raw.layout?.show_categories !== false,

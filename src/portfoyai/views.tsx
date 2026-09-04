@@ -45,6 +45,8 @@ import { formatDateTR, generateThemeFromPrompt } from "./mock";
 import { usePortfoyAI } from "./store";
 import { useAuth } from "./auth";
 import type { GeneratedSiteConfig, Listing, ListingDraft, ThemeConfig } from "./types";
+
+const generatedText = (value: string | { tr: string; en?: string }) => typeof value === "string" ? value : value.tr;
 import { formatListingLocation } from "./listing-location";
 import { getListingImage } from "@/templates/mediaFallbacks";
 import { LocationHierarchyFields } from "./location-fields";
@@ -805,7 +807,7 @@ export function GeneratedSitePreviewPage() {
 
   usePageMeta(
     config ? `${config.business_name} - Site Önizlemesi` : "Site önizlemesi yükleniyor",
-    config?.headline || "Kaydedilmiş Fastate AI site önizlemesi.",
+    config?.headline ? generatedText(config.headline) : "Kaydedilmiş Fastate AI site önizlemesi.",
   );
 
   useEffect(() => {
@@ -859,8 +861,8 @@ export function GeneratedSitePreviewPage() {
       <main>
         <section className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-16">
           <div className="overflow-hidden rounded-[2.5rem] px-6 py-16 text-white shadow-[0_30px_90px_rgba(30,45,38,0.18)] sm:px-12 lg:px-16 lg:py-24" style={{ background: `linear-gradient(135deg, ${config.primary_color}, ${config.accent_color})` }}>
-            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/65">{config.tone}</div>
-            <h1 className="mt-6 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] sm:text-6xl lg:text-7xl">{config.headline}</h1>
+            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/65">{generatedText(config.tone)}</div>
+            <h1 className="mt-6 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] sm:text-6xl lg:text-7xl">{generatedText(config.headline)}</h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-white/75">Seçkin portföyler ve güvene dayalı kişisel gayrimenkul danışmanlığı.</p>
             <Button className="mt-8 rounded-full bg-white px-6 text-[#173f32] hover:bg-white/90">Portföyleri keşfedin <ArrowRight className="ml-2 h-4 w-4" /></Button>
           </div>
@@ -920,7 +922,7 @@ export function PublicSitePage() {
   const site = publicSite ? {
     id: publicSite.id,
     subdomain: publicSite.slug,
-    heroTitle: publicSite.config.headline,
+    heroTitle: generatedText(publicSite.config.headline),
     heroSubtitle: "Seçkin portföyler ve güvene dayalı kişisel gayrimenkul danışmanlığı.",
     theme_config: {
       primary: publicSite.config.primary_color,
@@ -933,7 +935,7 @@ export function PublicSitePage() {
     name: publicSite.config.business_name,
     region: "Türkiye",
     phone: "",
-    bio: `${publicSite.config.tone} marka yaklaşımıyla çalışan bir gayrimenkul danışmanlığı markası.`,
+    bio: `${generatedText(publicSite.config.tone)} marka yaklaşımıyla çalışan bir gayrimenkul danışmanlığı markası.`,
   } : null;
   const listings = state.listings.filter((listing) => listing.site_id === "site_demo" && listing.status !== "passive");
 

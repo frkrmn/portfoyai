@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 
 const baseUrl = process.env.SITE_I18N_E2E_URL || "http://127.0.0.1:4173";
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+let legacyBackfillCalls = 0;
+let legacyBackfilled = false;
+const legacyContent = { headline: "Doğru ev, doğru sorularla bulunur", bio: "Sizi dinleyen kişisel danışmanlık.", feelings: ["Sakin", "Enerjik"], timings: ["Hemen", "Henüz araştırıyorum"] };
+const translatedContent = { headline: { tr: legacyContent.headline, en: "The right questions lead to the right home" }, bio: { tr: legacyContent.bio, en: "Personal guidance that starts by listening." }, feelings: [{ tr: "Sakin", en: "Calm" }, { tr: "Enerjik", en: "Vibrant" }], timings: [{ tr: "Hemen", en: "Right away" }, { tr: "Henüz araştırıyorum", en: "Just exploring" }] };
 const listing = (id, overrides = {}) => ({
   id, site_id: "site-i18n", title: `Test listing ${id}`, description: "Listing body supplied by the agent.", district: "Bodrum", room_count: "3+1", price: 8_500_000, m2: 145,
   features: ["Feature one", "Feature two"], media: [], status: "active", listing_status: "active", listing_type: "sale", property_category: "konut", property_subtype: "daire", created_at: new Date().toISOString(),
@@ -11,7 +15,7 @@ const payload = (slug) => {
   const templateId = slug.replace("i18n-", "");
   return {
     id: `site-${templateId}`, slug, language: templateId === "land-plots" ? "en" : "tr", status: "published",
-    config: { template_id: templateId, business_name: "Bilingual Realty", tone: "Agent-authored content stays intact.", primary_color: "#173f32", accent_color: "#d7a84b", headline: "Agent-authored headline", theme_config: { template_id: templateId } },
+    config: { template_id: templateId, business_name: "Bilingual Realty", tone: "Agent-authored content stays intact.", primary_color: "#173f32", accent_color: "#d7a84b", headline: "Agent-authored headline", theme_config: { template_id: templateId, content: templateId === "guided-match" ? (legacyBackfilled ? translatedContent : legacyContent) : {} } },
     listings: [listing(`${templateId}-1`, templateId === "land-plots" ? { property_category: "arsa", property_subtype: "konut-imarli" } : {})],
     show_team_section: templateId === "land-plots", team_members: templateId === "land-plots" ? [{ id: "member-1", site_id: `site-${templateId}`, name: "Deniz Kaya", role: "Land Advisor", bio: "Agent-authored biography.", photo_url: "", sort_order: 0, created_at: new Date().toISOString() }] : [],
   };
@@ -30,6 +34,14 @@ socket.addEventListener("message", (event) => {
   if (message.method === "Runtime.exceptionThrown") errors.push(message.params?.exceptionDetails?.exception?.description || message.params?.exceptionDetails?.text);
   if (message.method === "Fetch.requestPaused") {
     const url = new URL(message.params.request.url);
+    if (url.pathname.endsWith("/content-backfill")) {
+      legacyBackfillCalls += 1;
+      legacyBackfilled = true;
+      const theme_config = { template_id: "guided-match", content: translatedContent, site_content_i18n: { version: 1, status: "complete" } };
+      const body = Buffer.from(JSON.stringify({ backfilled: true, cached: false, theme_config })).toString("base64");
+      void command("Fetch.fulfillRequest", { requestId: message.params.requestId, responseCode: 200, responseHeaders: [{ name: "Content-Type", value: "application/json" }], body });
+      return;
+    }
     const slug = decodeURIComponent(url.pathname.split("/").at(-1));
     const body = Buffer.from(JSON.stringify(payload(slug))).toString("base64");
     void command("Fetch.fulfillRequest", { requestId: message.params.requestId, responseCode: 200, responseHeaders: [{ name: "Content-Type", value: "application/json" }], body });
@@ -71,11 +83,15 @@ try {
   await visit("/site/i18n-guided-match");
   assert.match(await body(), /Ne Arıyorsunuz/); assert.equal(await evaluate("Boolean(document.querySelector('input[placeholder=\"En Düşük Bütçe\"]'))"), true);
   await toggle("en"); await waitFor("document.body.innerText.includes('What Are You Looking For?') && Boolean(document.querySelector('input[placeholder=\"Minimum Budget\"]')) && document.body.innerText.includes('Find My Matches')");
+  await waitFor("document.body.innerText.includes('The right questions lead to the right home')");
+  assert.equal(legacyBackfillCalls, 1);
   await evaluate("location.reload()"); await waitFor("document.body.innerText.includes('What Are You Looking For?')");
   assert.equal(await evaluate("document.documentElement.lang"), "en");
+  await wait(500);
+  assert.equal(legacyBackfillCalls, 1);
 
   assert.deepEqual(errors, []);
-  console.info(JSON.stringify({ templates_tested: ["land-plots", "investment-focused", "guided-match"], default_language: true, immediate_toggle: true, header_nav_buttons_badges_filters_forms: true, session_override_after_reload: true }, null, 2));
+  console.info(JSON.stringify({ templates_tested: ["land-plots", "investment-focused", "guided-match"], default_language: true, immediate_toggle: true, header_nav_buttons_badges_filters_forms: true, legacy_content_backfill_calls: legacyBackfillCalls, backfill_cached_after_reload: legacyBackfillCalls === 1, session_override_after_reload: true }, null, 2));
 } finally {
   socket.close();
 }

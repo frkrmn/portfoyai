@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import tr from "../../locales/site/tr.json";
 import en from "../../locales/site/en.json";
 import type { TemplateConfig } from "./types";
+import { resolveStoredContent } from "./content-localization";
 
 export type SiteLocale = "tr" | "en";
 type Messages = {
@@ -17,6 +18,8 @@ const SiteLocaleContext = createContext<SiteLocaleContextValue | null>(null);
 
 export function SiteLocaleProvider({ children, defaultLocale, slug }: { children: ReactNode; defaultLocale: SiteLocale; slug: string }) {
   const [locale, setLocaleState] = useState<SiteLocale>(() => {
+    const requested = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("siteLocale");
+    if (requested === "tr" || requested === "en") return requested;
     const stored = typeof window === "undefined" ? null : sessionStorage.getItem(storageKey(slug));
     return stored === "tr" || stored === "en" ? stored : defaultLocale;
   });
@@ -35,9 +38,15 @@ export function useSiteLocale() {
 
 export function localizeSiteConfig(config: TemplateConfig, messages: Messages, locale: SiteLocale): TemplateConfig {
   const customTeamLabel = config.teamSectionLabel !== "Danışmanımız" && config.teamSectionLabel !== "Ekibimiz";
+  const dynamicContent = resolveStoredContent<Partial<TemplateConfig["content"]>>(config.storedContent, locale);
+  const narrativeKeys: Array<keyof TemplateConfig["content"]> = ["headline", "bio", "tagline", "neighborhoods", "feelings", "timings", "teamMembers", "services", "processSteps"];
+  const narrativeContent = Object.fromEntries(narrativeKeys.filter((key) => dynamicContent[key] !== undefined).map((key) => [key, dynamicContent[key]]));
+  const content = { ...config.content, ...dynamicContent, ...messages.content, ...(messages.templates?.[config.templateId] || {}), ...narrativeContent } as TemplateConfig["content"];
+  const generatedTeam = Array.isArray(dynamicContent.teamMembers) ? dynamicContent.teamMembers : [];
   return {
     ...config,
-    content: { ...config.content, ...messages.content, ...(messages.templates?.[config.templateId] || {}) } as TemplateConfig["content"],
+    content,
+    teamMembers: config.teamMembers.map((member, index) => ({ ...member, role: generatedTeam[index]?.role || member.role, bio: generatedTeam[index]?.bio || member.bio })),
     teamSectionLabel: customTeamLabel ? config.teamSectionLabel : (config.teamMembers.length === 1 ? (locale === "en" ? "Our Advisor" : "Danışmanımız") : (locale === "en" ? "Our Team" : "Ekibimiz")),
   };
 }

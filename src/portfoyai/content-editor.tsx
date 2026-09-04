@@ -5,15 +5,21 @@ import { Card } from "@/components/ui/card";
 import type { ContentFieldDescriptor } from "@/templates/content-schema";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { isLocalizedText, isTranslatableContentPath, resolveStoredContent, type LocalizedText } from "@/templates/content-localization";
 
 type ContentValue = string | ContentRecord | ContentValue[];
 export type ContentRecord = { [key: string]: ContentValue };
 type EditableEntry = { key: string; value: string };
 
 const relativePath = (key: string) => key.replace(/^content\./, "").split(".").filter(Boolean);
-const editableEntries = (content: ContentRecord): EditableEntry[] => {
+export const editableEntries = (content: ContentRecord, locale: "tr" | "en"): EditableEntry[] => {
   const entries: EditableEntry[] = [];
   const visit = (value: ContentValue, parts: string[]) => {
+    if (isLocalizedText(value)) {
+      const resolved = resolveStoredContent<string>(value, locale);
+      if (resolved.trim()) entries.push({ key: `content.${parts.join(".")}`, value: resolved });
+      return;
+    }
     if (typeof value === "string") {
       if (value.trim()) entries.push({ key: `content.${parts.join(".")}`, value });
       return;
@@ -25,7 +31,7 @@ const editableEntries = (content: ContentRecord): EditableEntry[] => {
   return entries.sort((a, b) => b.value.length - a.value.length);
 };
 
-const setInstanceValue = (content: ContentRecord, key: string, value: string): ContentRecord => {
+export const setInstanceValue = (content: ContentRecord, key: string, value: string, locale: "tr" | "en"): ContentRecord => {
   const next = structuredClone(content);
   const parts = relativePath(key);
   let cursor: ContentRecord | ContentValue[] = next;
@@ -33,8 +39,12 @@ const setInstanceValue = (content: ContentRecord, key: string, value: string): C
     const last = index === parts.length - 1;
     const arrayIndex = Array.isArray(cursor) ? Number(part) : null;
     if (last) {
-      if (Array.isArray(cursor)) cursor[arrayIndex!] = value;
-      else cursor[part] = value;
+      const current = Array.isArray(cursor) ? cursor[arrayIndex!] : cursor[part];
+      const localized = isLocalizedText(current) || isTranslatableContentPath(parts)
+        ? { ...(isLocalizedText(current) ? current : { tr: String(current || "") }), [locale]: value } as LocalizedText
+        : value;
+      if (Array.isArray(cursor)) cursor[arrayIndex!] = localized as ContentValue;
+      else cursor[part] = localized as ContentValue;
       return;
     }
     const nextPart = parts[index + 1];
@@ -49,22 +59,43 @@ const setInstanceValue = (content: ContentRecord, key: string, value: string): C
   return next;
 };
 
-export function ContentEditor({ schema: _schema, content, previewUrl, previewVersion, onChange, onSave, saving, dirty }: { schema: ContentFieldDescriptor[]; content: ContentRecord; previewUrl: string; previewVersion: number; onChange: (content: ContentRecord) => void; onSave: () => void; saving: boolean; dirty: boolean }) {
+export function ContentEditor({ schema: _schema, content, previewUrl, previewVersion, onChange, onBackfilled, onSave, saving, dirty }: { schema: ContentFieldDescriptor[]; content: ContentRecord; previewUrl: string; previewVersion: number; onChange: (content: ContentRecord) => void; onBackfilled?: (content: ContentRecord) => void; onSave: () => void; saving: boolean; dirty: boolean }) {
   const { t } = useTranslation();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const contentRef = useRef(content);
   const onChangeRef = useRef(onChange);
+  const onBackfilledRef = useRef(onBackfilled);
   const observerRef = useRef<MutationObserver | null>(null);
   const guardedDocumentRef = useRef<Document | null>(null);
   const editingRef = useRef(false);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  const [contentLocale, setContentLocale] = useState<"tr" | "en">("tr");
   const [editing, setEditing] = useState(false);
   const [hideLocked, setHideLocked] = useState(false);
   const [lockedCount, setLockedCount] = useState(0);
 
   useEffect(() => { contentRef.current = content; }, [content]);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  useEffect(() => { onBackfilledRef.current = onBackfilled; }, [onBackfilled]);
   useEffect(() => () => observerRef.current?.disconnect(), []);
+  useEffect(() => {
+    if (contentLocale !== "en" || !previewUrl.startsWith("/site/")) return;
+    const slug = previewUrl.split("/")[2]?.split(/[?#]/)[0];
+    if (!slug) return;
+    const controller = new AbortController();
+    const load = async () => {
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const response = await fetch(`/api/public-sites/${encodeURIComponent(slug)}/content-backfill`, { method: "POST", signal: controller.signal });
+        const body = await response.json();
+        if (response.ok && body.theme_config?.content) { onBackfilledRef.current?.(body.theme_config.content as ContentRecord); return; }
+        if (response.status !== 202) throw new Error(body.error || "Content translation failed.");
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+      }
+      throw new Error("Content translation timed out.");
+    };
+    void load().catch((error) => { if (!(error instanceof DOMException && error.name === "AbortError")) console.error("[content-editor] English content backfill failed", error); });
+    return () => controller.abort();
+  }, [contentLocale, previewUrl]);
 
   const preparePreview = useCallback(() => {
     const document = iframeRef.current?.contentDocument;
@@ -81,7 +112,7 @@ export function ContentEditor({ schema: _schema, content, previewUrl, previewVer
       document.addEventListener("click", (event) => { event.preventDefault(); event.stopImmediatePropagation(); }, true);
       document.addEventListener("submit", (event) => { event.preventDefault(); event.stopImmediatePropagation(); }, true);
     }
-    const entries = editableEntries(contentRef.current);
+    const entries = editableEntries(contentRef.current, contentLocale);
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     const nodes: Text[] = [];
     let node = walker.nextNode();
@@ -105,6 +136,7 @@ export function ContentEditor({ schema: _schema, content, previewUrl, previewVer
       }
       const editor = document.createElement("span");
       editor.dataset.fastateEditable = entry.key;
+      editor.dataset.contentLocale = contentLocale;
       editor.title = t("dashboard.content.doubleClickHint");
       editor.textContent = text;
       textNode.replaceWith(editor);
@@ -113,7 +145,7 @@ export function ContentEditor({ schema: _schema, content, previewUrl, previewVer
         document.getSelection()?.selectAllChildren(editor); editingRef.current = true; setEditing(true);
       });
       editor.addEventListener("input", () => {
-        const next = setInstanceValue(contentRef.current, entry.key, editor.textContent || "");
+        const next = setInstanceValue(contentRef.current, entry.key, editor.textContent || "", contentLocale);
         contentRef.current = next; onChangeRef.current(next);
       });
       editor.addEventListener("keydown", (event) => {
@@ -127,7 +159,7 @@ export function ContentEditor({ schema: _schema, content, previewUrl, previewVer
     const observer = new MutationObserver(() => window.setTimeout(preparePreview, 50));
     observer.observe(document.body, { childList: true, subtree: true });
     observerRef.current = observer;
-  }, [hideLocked, t]);
+  }, [contentLocale, hideLocked, t]);
 
   useEffect(() => {
     if (!editing && iframeRef.current?.contentDocument?.body) {
@@ -139,9 +171,9 @@ export function ContentEditor({ schema: _schema, content, previewUrl, previewVer
   return <Card className="relative overflow-hidden rounded-[2rem] border-[#173f32]/10 bg-[#e9e7e1] shadow-none">
     <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-white px-5 py-4">
       <div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-full bg-[#fff1e9] text-[#d86f45]"><Pencil className="h-4 w-4" /></span><div><div className="text-sm font-semibold">{t("dashboard.content.previewTitle")}</div><div className="text-xs text-[#69756e]">{editing ? t("dashboard.content.editingHelp") : t("dashboard.content.previewHelp")}</div></div></div>
-      <div className="flex flex-wrap items-center gap-2"><button type="button" role="switch" aria-checked={hideLocked} onClick={() => setHideLocked((value) => !value)} className="flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium text-[#52606d]"><Info className="h-3.5 w-3.5" /><span>{t("dashboard.content.hideLocked", { count: lockedCount })}</span><span className={cn("h-5 w-9 rounded-full p-0.5 transition", hideLocked ? "bg-[#173f32]" : "bg-slate-200")}><span className={cn("block h-4 w-4 rounded-full bg-white shadow transition-transform", hideLocked && "translate-x-4")} /></span></button><Button type="button" variant={device === "desktop" ? "secondary" : "ghost"} size="icon" onClick={() => setDevice("desktop")} aria-label={t("dashboard.content.desktop")}><Monitor className="h-4 w-4" /></Button><Button type="button" variant={device === "mobile" ? "secondary" : "ghost"} size="icon" onClick={() => setDevice("mobile")} aria-label={t("dashboard.content.mobile")}><Smartphone className="h-4 w-4" /></Button><Button asChild variant="ghost" size="icon"><a href={previewUrl} target="_blank" rel="noreferrer" aria-label={t("dashboard.content.openPreview")}><ExternalLink className="h-4 w-4" /></a></Button></div>
+      <div className="flex flex-wrap items-center gap-2"><div data-content-language-tabs className="inline-flex rounded-full border bg-slate-50 p-1"><button type="button" aria-pressed={contentLocale === "tr"} onClick={() => setContentLocale("tr")} className={cn("rounded-full px-3 py-1.5 text-xs font-semibold", contentLocale === "tr" && "bg-[#173f32] text-white")}>TR</button><button type="button" aria-pressed={contentLocale === "en"} onClick={() => setContentLocale("en")} className={cn("rounded-full px-3 py-1.5 text-xs font-semibold", contentLocale === "en" && "bg-[#173f32] text-white")}>EN</button></div><button type="button" role="switch" aria-checked={hideLocked} onClick={() => setHideLocked((value) => !value)} className="flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium text-[#52606d]"><Info className="h-3.5 w-3.5" /><span>{t("dashboard.content.hideLocked", { count: lockedCount })}</span><span className={cn("h-5 w-9 rounded-full p-0.5 transition", hideLocked ? "bg-[#173f32]" : "bg-slate-200")}><span className={cn("block h-4 w-4 rounded-full bg-white shadow transition-transform", hideLocked && "translate-x-4")} /></span></button><Button type="button" variant={device === "desktop" ? "secondary" : "ghost"} size="icon" onClick={() => setDevice("desktop")} aria-label={t("dashboard.content.desktop")}><Monitor className="h-4 w-4" /></Button><Button type="button" variant={device === "mobile" ? "secondary" : "ghost"} size="icon" onClick={() => setDevice("mobile")} aria-label={t("dashboard.content.mobile")}><Smartphone className="h-4 w-4" /></Button><Button asChild variant="ghost" size="icon"><a href={previewUrl} target="_blank" rel="noreferrer" aria-label={t("dashboard.content.openPreview")}><ExternalLink className="h-4 w-4" /></a></Button></div>
     </div>
-    <div className="flex h-[calc(100vh-210px)] min-h-[680px] justify-center overflow-auto p-3 sm:p-5"><iframe ref={iframeRef} key={previewVersion} title={t("dashboard.content.previewTitle")} src={previewUrl} onLoad={() => window.setTimeout(preparePreview, 300)} className={cn("h-full bg-white shadow-xl transition-all", device === "mobile" ? "w-[390px] max-w-full rounded-[1.5rem]" : "w-full rounded-xl")} /></div>
+    <div className="flex h-[calc(100vh-210px)] min-h-[680px] justify-center overflow-auto p-3 sm:p-5"><iframe ref={iframeRef} key={`${previewVersion}-${contentLocale}`} title={t("dashboard.content.previewTitle")} src={`${previewUrl}${previewUrl.includes("?") ? "&" : "?"}siteLocale=${contentLocale}`} onLoad={() => window.setTimeout(preparePreview, 300)} className={cn("h-full bg-white shadow-xl transition-all", device === "mobile" ? "w-[390px] max-w-full rounded-[1.5rem]" : "w-full rounded-xl")} /></div>
     <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center px-5"><div className="pointer-events-auto flex items-center gap-3 rounded-full border bg-white/95 p-2 pl-5 shadow-xl backdrop-blur"><span className={cn("text-xs", dirty ? "text-amber-700" : "text-[#69756e]")}>{dirty ? t("dashboard.content.unsaved") : t("dashboard.content.savedState")}</span><Button className="rounded-full" onClick={onSave} disabled={saving || !dirty}>{dirty ? t(saving ? "common.saving" : "dashboard.content.save") : <><Check className="mr-2 h-4 w-4" />{t("dashboard.content.savedState")}</>}</Button></div></div>
   </Card>;
 }
