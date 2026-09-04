@@ -17,8 +17,17 @@ export function resolveStoredContent<T = unknown>(value: unknown, locale: SiteLo
   return value as T;
 }
 
-const translatableRootFields = new Set(["headline", "bio", "tagline"]);
+export const translatableRootFields = new Set([
+  "eyebrow", "headline", "headlineAccent", "bio", "featuredEyebrow", "featuredTitle", "categoriesEyebrow", "categoriesTitle",
+  "tourTitle", "tourDescription", "tagline", "showcaseEyebrow", "showcaseTitle", "whyEyebrow", "whyTitle",
+  "testimonialQuote", "testimonialAuthor", "testimonialRole", "listingsTitle", "listingsDescription", "findHomeTitle", "findHomeDescription",
+  "neighborhoodsTitle", "neighborhoodsDescription", "featuredStripTitle", "aboutTitle", "aboutDescription", "investmentWhyTitle",
+  "dealsSectionTitle", "dealsSectionDescription", "matchEyebrow", "matchTitle", "matchDescription", "matchResultsTitle", "matchResultsDescription",
+  "guideTitle", "guideQuote", "servicesTitle", "servicesDescription", "teamTitle", "teamDescription", "processTitle",
+]);
 const translatableNestedFields: Record<string, Set<string>> = {
+  stats: new Set(["label"]),
+  whyItems: new Set(["title", "description"]),
   neighborhoods: new Set(["description"]),
   teamMembers: new Set(["role", "bio"]),
   services: new Set(["title", "description"]),
@@ -41,4 +50,23 @@ export function contentNeedsEnglishBackfill(content: unknown) {
   return Object.entries(translatableNestedFields).some(([key, fields]) => Array.isArray(record[key]) && (record[key] as unknown[]).some((item) => (
     item && typeof item === "object" && [...fields].some((field) => missing((item as Record<string, unknown>)[field]))
   )));
+}
+
+export function countMissingEnglish(content: unknown) {
+  if (!content || typeof content !== "object") return 0;
+  const record = content as Record<string, unknown>;
+  const missing = (value: unknown) => typeof value === "string" ? Number(Boolean(value.trim())) : isLocalizedText(value) ? Number(!value.en?.trim()) : 0;
+  let count = [...translatableRootFields].reduce((total, key) => total + missing(record[key]), 0);
+  for (const key of ["feelings", "timings"]) if (Array.isArray(record[key])) count += (record[key] as unknown[]).reduce((total, item) => total + missing(item), 0);
+  for (const [key, fields] of Object.entries(translatableNestedFields)) if (Array.isArray(record[key])) count += (record[key] as unknown[]).reduce((total, item) => total + (item && typeof item === "object" ? [...fields].reduce((sum, field) => sum + missing((item as Record<string, unknown>)[field]), 0) : 0), 0);
+  return count;
+}
+
+export function materializeTranslatableContent(defaults: Record<string, unknown>, stored: StoredContentRecord) {
+  const next = structuredClone(stored || {});
+  for (const key of translatableRootFields) if (next[key] === undefined && typeof defaults[key] === "string") next[key] = defaults[key] as string;
+  for (const key of ["stats", "whyItems", "neighborhoods", "teamMembers", "services", "processSteps", "feelings", "timings"]) {
+    if (next[key] === undefined && Array.isArray(defaults[key]) && defaults[key].length) next[key] = structuredClone(defaults[key]) as StoredContentValue[];
+  }
+  return next;
 }

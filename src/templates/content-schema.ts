@@ -39,11 +39,11 @@ const labels: Record<string, string> = {
   usageLabel: "Kullanım türü etiketi", urgentSaleLabel: "Acil satılık etiketi", whyEyebrow: "Neden biz üst başlığı", whyTitle: "Neden biz başlığı",
 };
 
-const humanLabel = (key: string) => labels[key] || key.replace(/([a-z])([A-Z])/g, "$1 $2");
+export const contentFieldLabel = (key: string) => labels[key] || key.replace(/([a-z])([A-Z])/g, "$1 $2");
 
 export const contentFields = (keys: string[], textareaKeys: string[] = []): ContentFieldDescriptor[] => keys.map((key) => ({
   key: `content.${key}`,
-  label: humanLabel(key),
+  label: contentFieldLabel(key),
   type: textareaKeys.includes(key) ? "textarea" : "text",
 }));
 

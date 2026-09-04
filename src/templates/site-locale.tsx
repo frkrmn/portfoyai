@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import tr from "../../locales/site/tr.json";
 import en from "../../locales/site/en.json";
 import type { TemplateConfig } from "./types";
-import { resolveStoredContent } from "./content-localization";
+import { resolveStoredContent, translatableRootFields } from "./content-localization";
 
 export type SiteLocale = "tr" | "en";
 type Messages = {
@@ -39,7 +39,10 @@ export function useSiteLocale() {
 export function localizeSiteConfig(config: TemplateConfig, messages: Messages, locale: SiteLocale): TemplateConfig {
   const customTeamLabel = config.teamSectionLabel !== "Danışmanımız" && config.teamSectionLabel !== "Ekibimiz";
   const dynamicContent = resolveStoredContent<Partial<TemplateConfig["content"]>>(config.storedContent, locale);
-  const narrativeKeys: Array<keyof TemplateConfig["content"]> = ["headline", "bio", "tagline", "neighborhoods", "feelings", "timings", "teamMembers", "services", "processSteps"];
+  const narrativeKeys: Array<keyof TemplateConfig["content"]> = [
+    ...translatableRootFields,
+    "stats", "whyItems", "neighborhoods", "feelings", "timings", "teamMembers", "services", "processSteps",
+  ] as Array<keyof TemplateConfig["content"]>;
   const narrativeContent = Object.fromEntries(narrativeKeys.filter((key) => dynamicContent[key] !== undefined).map((key) => [key, dynamicContent[key]]));
   const content = { ...config.content, ...dynamicContent, ...messages.content, ...(messages.templates?.[config.templateId] || {}), ...narrativeContent } as TemplateConfig["content"];
   const generatedTeam = Array.isArray(dynamicContent.teamMembers) ? dynamicContent.teamMembers : [];

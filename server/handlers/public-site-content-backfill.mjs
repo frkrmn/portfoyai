@@ -3,14 +3,16 @@ import { getSupabaseClient, handleKnownError, methodNotAllowed, routeParam, send
 import { buildContentTranslationRequest, contentBackfillInstruction, mergeTranslatedContent, needsContentEnglishBackfill } from "../site-content-i18n.mjs";
 import { siteConfigModel } from "./generate-theme.mjs";
 
-const version = 1;
+const version = 2;
 const activeWindowMs = 5 * 60 * 1000;
 
-export async function backfillPublicSiteContent(slug, { supabase = getSupabaseClient(), generate } = {}) {
-  const result = await supabase.from("sites").select("id, slug, status, theme_config").eq("slug", slug).maybeSingle();
+export async function backfillPublicSiteContent(slug, { supabase = getSupabaseClient(), generate, siteId, userId } = {}) {
+  let lookup = supabase.from("sites").select("id, slug, status, theme_config");
+  lookup = siteId && userId ? lookup.eq("id", siteId).eq("user_id", userId) : lookup.eq("slug", slug);
+  const result = await lookup.maybeSingle();
   if (result.error) throw new Error(`Failed to load site for content translation: ${result.error.message}`);
   const site = result.data;
-  if (!site || site.status !== "published") return { status: 404, body: { error: "Published site not found." } };
+  if (!site || (!siteId && site.status !== "published")) return { status: 404, body: { error: siteId ? "Owned site not found." : "Published site not found." } };
   const metadata = site.theme_config?.site_content_i18n;
   if (!needsContentEnglishBackfill(site.theme_config?.content)) return { status: 200, body: { backfilled: false, cached: true, theme_config: site.theme_config } };
   if (metadata?.status === "translating" && Date.now() - Date.parse(metadata.started_at || 0) < activeWindowMs) return { status: 202, body: { backfilled: false, cached: false, pending: true } };

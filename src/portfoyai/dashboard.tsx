@@ -22,6 +22,8 @@ import { ListingForm, Shell } from "./views";
 import { LocationHierarchyFields } from "./location-fields";
 import { useTranslation } from "react-i18next";
 import { getTemplateFamily } from "@/templates/registry";
+import { materializeTranslatableContent } from "@/templates/content-localization";
+import { templateContentFallbacks } from "@/templates/types";
 import { ContentEditor, type ContentRecord } from "./content-editor";
 import { ImageEditor, type SiteMedia } from "./image-editor";
 
@@ -304,6 +306,7 @@ export function DashboardPage() {
   const [savingListing, setSavingListing] = useState(false);
   const [updatingListingStatusId, setUpdatingListingStatusId] = useState("");
   const [savingSite, setSavingSite] = useState(false);
+  const [translatingContent, setTranslatingContent] = useState(false);
   const [plan, setPlan] = useState<"free" | "pro">("free");
   const [openingPaywall, setOpeningPaywall] = useState(false);
   const [refineRequest, setRefineRequest] = useState("");
@@ -422,7 +425,8 @@ export function DashboardPage() {
         }
         if (contentDraftSiteId.current !== activeSite.id) {
           contentDraftSiteId.current = activeSite.id;
-          const content = structuredClone(activeSite.theme_config?.content || {}) as ContentRecord;
+          const stored = structuredClone(activeSite.theme_config?.content || {}) as ContentRecord;
+          const content = materializeTranslatableContent(templateContentFallbacks(activeSite.theme_config?.template_id) as unknown as Record<string, unknown>, stored) as ContentRecord;
           setContentDraft(content);
           setPersistedContent(content);
           const media = structuredClone(activeSite.theme_config?.media || {}) as SiteMedia;
@@ -672,6 +676,35 @@ export function DashboardPage() {
     }
   };
 
+  const translateMissingContent = async () => {
+    if (!session || !activeSite || translatingContent) return;
+    setTranslatingContent(true);
+    try {
+      const saveResponse = await fetch(`/api/sites/${activeSite.id}`, { method: "PATCH", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ content: contentDraft }) });
+      const savedPayload = await readApiJson<{ error?: string; site?: DashboardSite }>(saveResponse);
+      if (!saveResponse.ok || !savedPayload.site) throw new Error(savedPayload.error || t("dashboard.site.saveError"));
+      let translatedContent: ContentRecord | undefined;
+      for (let attempt = 0; attempt < 30; attempt += 1) {
+        const response = await fetch(`/api/sites/${activeSite.id}/content-backfill`, { method: "POST", headers: authHeaders });
+        const payload = await readApiJson<{ error?: string; theme_config?: DashboardSite["theme_config"] }>(response);
+        if (response.ok && payload.theme_config?.content) { translatedContent = payload.theme_config.content; break; }
+        if (response.status !== 202) throw new Error(payload.error || t("dashboard.content.translateError"));
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+      }
+      if (!translatedContent) throw new Error(t("dashboard.content.translateTimeout"));
+      const nextContent = structuredClone(translatedContent);
+      setContentDraft(nextContent);
+      setPersistedContent(nextContent);
+      setSites((current) => current.map((site) => site.id === activeSite.id ? { ...site, theme_config: { ...site.theme_config, content: nextContent } } : site));
+      setPreviewVersion((value) => value + 1);
+      toast.success(t("dashboard.content.translateSuccess"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("dashboard.content.translateError"));
+    } finally {
+      setTranslatingContent(false);
+    }
+  };
+
   const saveMedia = async () => {
     const saved = await patchSite({ media: mediaDraft }, t("dashboard.images.saved"));
     if (saved) {
@@ -744,7 +777,7 @@ export function DashboardPage() {
 
       {activeSite && activeTab === "leads" ? <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between gap-4"><div><CardTitle>{t("dashboard.leads.title")}</CardTitle><CardDescription>{t("dashboard.leads.description")}</CardDescription></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void loadLeads()}><RefreshCw className="mr-2 h-4 w-4" />{t("common.refresh")}</Button><Button variant="outline" disabled={openingPaywall} onClick={() => plan === "free" ? void openPaywall("lead_export") : toast.info(t("dashboard.leads.exporting"))}><Download className="mr-2 h-4 w-4" />{t("dashboard.leads.export")}{plan === "free" ? <Lock className="ml-2 h-3.5 w-3.5" /> : null}</Button></div></CardHeader><CardContent>{siteLeads.length ? <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left"><thead className="border-y text-xs text-[#7a857e]"><tr><th className="py-4">{t("dashboard.leads.name")}</th><th>{t("dashboard.leads.phone")}</th><th>{t("dashboard.leads.message")}</th><th>{t("dashboard.leads.date")}</th></tr></thead><tbody>{siteLeads.map((lead) => <tr key={lead.id} className="border-b"><td className="py-5 font-semibold">{lead.name}</td><td><a href={`tel:${lead.phone}`}>{lead.phone}</a></td><td className="max-w-sm text-sm">{lead.message || "—"}</td><td className="text-xs text-[#7a857e]">{new Intl.DateTimeFormat(i18n.resolvedLanguage === "en" ? "en-US" : "tr-TR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(lead.created_at))}</td></tr>)}</tbody></table></div> : <p className="p-5 text-sm text-[#69756e]">{t("dashboard.leads.empty")}</p>}</CardContent></Card> : null}
 
-      {activeSite && activeTab === "content" ? <ContentEditor schema={contentSchema} content={contentDraft} previewUrl={`/site/${activeSite.slug}`} previewVersion={previewVersion} onChange={setContentDraft} onBackfilled={(content) => { setContentDraft(content); setPersistedContent(content); }} onSave={() => void saveContent()} saving={savingSite} dirty={contentDirty} /> : null}
+      {activeSite && activeTab === "content" ? <ContentEditor schema={contentSchema} content={contentDraft} previewUrl={`/site/${activeSite.slug}`} previewVersion={previewVersion} onChange={setContentDraft} onSave={() => void saveContent()} onTranslateMissing={() => void translateMissingContent()} saving={savingSite} translating={translatingContent} dirty={contentDirty} /> : null}
 
       {activeSite && activeTab === "images" ? <ImageEditor schema={imageSchema} media={mediaDraft} previewUrl={`/site/${activeSite.slug}`} previewVersion={previewVersion} onChange={setMediaDraft} onSave={() => void saveMedia()} saving={savingSite} dirty={mediaDirty} /> : null}
 

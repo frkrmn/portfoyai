@@ -12,6 +12,8 @@ const originalTheme = {
     tagline: "Doğru eve birlikte ulaşalım.",
     feelings: ["Sakin", "Enerjik"],
     timings: ["Hemen", "Henüz araştırıyorum"],
+    whyTitle: "Neden bizimle çalışmalısınız?",
+    whyItems: [{ title: "Yerel uzmanlık", description: "Doğru mahalleyi birlikte seçelim." }],
   },
 };
 const translated = {
@@ -20,13 +22,18 @@ const translated = {
   tagline: { tr: "Doğru eve birlikte ulaşalım.", en: "Let's find your way home, together." },
   feelings: [{ tr: "Sakin", en: "Calm" }, { tr: "Enerjik", en: "Vibrant" }],
   timings: [{ tr: "Hemen", en: "Right away" }, { tr: "Henüz araştırıyorum", en: "Just exploring" }],
+  whyTitle: { tr: "Neden bizimle çalışmalısınız?", en: "Why work with us?" },
+  whyItems: [{ title: { tr: "Yerel uzmanlık", en: "Local expertise" }, description: { tr: "Doğru mahalleyi birlikte seçelim.", en: "Let's find the neighborhood that fits." } }],
 };
 
 assert.equal(needsContentEnglishBackfill(originalTheme.content), true);
 const request = buildContentTranslationRequest(originalTheme.content);
 assert.deepEqual(request.source.feelings, ["Sakin", "Enerjik"]);
+assert.equal(request.source.whyItems[0].title, "Yerel uzmanlık");
 const merged = mergeTranslatedContent(originalTheme.content, translated);
 assert.equal(merged.headline.en, translated.headline.en);
+assert.equal(merged.whyTitle.en, translated.whyTitle.en);
+assert.equal(merged.whyItems[0].description.en, translated.whyItems[0].description.en);
 assert.equal(needsContentEnglishBackfill(merged), false);
 const generatedTheme = buildThemeConfig({ template_id: "guided-match", business_name: "Test", primary_color: "#173f32", accent_color: "#d7a84b", headline: translated.headline, tone: translated.bio, content: { feelings: translated.feelings, timings: translated.timings } });
 assert.deepEqual(generatedTheme.content.headline, translated.headline);

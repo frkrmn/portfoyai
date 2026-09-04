@@ -568,6 +568,22 @@ export const guidedMatchFallbacks: TemplateContent = {
   matchResultsDescription: "Paylaştığın tercihlere göre öne çıkan güncel portföyler.",
 };
 
+export const templateContentFallbacks = (templateId?: string) => templateId === "bold-luxury"
+  ? boldLuxuryFallbacks
+  : templateId === "clean-modern"
+    ? cleanModernFallbacks
+    : templateId === "neighborhood-friendly"
+      ? neighborhoodFriendlyFallbacks
+      : templateId === "investment-focused"
+        ? investmentFocusedFallbacks
+        : templateId === "urgent-deals"
+          ? urgentDealsFallbacks
+          : templateId === "guided-match"
+            ? guidedMatchFallbacks
+            : templateId === "land-plots"
+              ? landPlotsFallbacks
+              : warmEditorialFallbacks;
+
 /**
  * Keeps the existing flat ThemeConfig contract as the source of truth while
  * presenting every template with one stable, renderer-friendly config prop.
@@ -578,21 +594,7 @@ export function createTemplateConfig(
   listing?: Listing,
 ): TemplateConfig {
   const raw = (payload.config.theme_config || {}) as NestedThemeConfig;
-  const defaults = payload.config.template_id === "bold-luxury"
-    ? boldLuxuryFallbacks
-    : payload.config.template_id === "clean-modern"
-      ? cleanModernFallbacks
-      : payload.config.template_id === "neighborhood-friendly"
-        ? neighborhoodFriendlyFallbacks
-        : payload.config.template_id === "investment-focused"
-          ? investmentFocusedFallbacks
-          : payload.config.template_id === "urgent-deals"
-            ? urgentDealsFallbacks
-            : payload.config.template_id === "guided-match"
-              ? guidedMatchFallbacks
-              : payload.config.template_id === "land-plots"
-                ? landPlotsFallbacks
-      : warmEditorialFallbacks;
+  const defaults = templateContentFallbacks(payload.config.template_id);
   const isBoldLuxury = payload.config.template_id === "bold-luxury";
   const isCleanModern = payload.config.template_id === "clean-modern";
   const isNeighborhoodFriendly = payload.config.template_id === "neighborhood-friendly";

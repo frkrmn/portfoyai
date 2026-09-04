@@ -1,7 +1,13 @@
 const pairSchema = { type: "object", additionalProperties: false, properties: { tr: { type: "string" }, en: { type: "string" } }, required: ["tr", "en"] };
-const rootFields = ["headline", "bio", "tagline"];
+const rootFields = [
+  "eyebrow", "headline", "headlineAccent", "bio", "featuredEyebrow", "featuredTitle", "categoriesEyebrow", "categoriesTitle", "tourTitle", "tourDescription", "tagline",
+  "showcaseEyebrow", "showcaseTitle", "whyEyebrow", "whyTitle", "testimonialQuote", "testimonialAuthor", "testimonialRole", "listingsTitle", "listingsDescription",
+  "findHomeTitle", "findHomeDescription", "neighborhoodsTitle", "neighborhoodsDescription", "featuredStripTitle", "aboutTitle", "aboutDescription", "investmentWhyTitle",
+  "dealsSectionTitle", "dealsSectionDescription", "matchEyebrow", "matchTitle", "matchDescription", "matchResultsTitle", "matchResultsDescription", "guideTitle", "guideQuote",
+  "servicesTitle", "servicesDescription", "teamTitle", "teamDescription", "processTitle",
+];
 const primitiveArrays = ["feelings", "timings"];
-const objectArrays = { neighborhoods: ["description"], teamMembers: ["role", "bio"], services: ["title", "description"], processSteps: ["title", "description"] };
+const objectArrays = { stats: ["label"], whyItems: ["title", "description"], neighborhoods: ["description"], teamMembers: ["role", "bio"], services: ["title", "description"], processSteps: ["title", "description"] };
 
 export const localizedTurkish = (value) => typeof value === "string" ? value : value?.tr || "";
 export const localizedMissingEnglish = (value) => Boolean(localizedTurkish(value).trim()) && !(value && typeof value === "object" && typeof value.en === "string" && value.en.trim());
