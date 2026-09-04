@@ -13,6 +13,7 @@ import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField } from "../content-schema";
 import { imageSlots } from "../image-schema";
+import { SiteCredit, SiteLanguageToggle } from "../site-locale";
 
 export const imageSchema = imageSlots([
   { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
@@ -47,12 +48,12 @@ const friendlyStyle = (config: TemplateConfig) => ({
 
 function Header({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="relative z-30 bg-[var(--nf-bg)]"><div className="mx-auto flex h-20 max-w-[1360px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--nf-heading)] text-xl font-extrabold tracking-[-0.025em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-sm font-semibold md:flex"><a href="#mahalleler">{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">{c.navContact}</a></nav><a data-site-button href={`https://wa.me/${c.phone.replace(/\D/g, "")}`} className="flex items-center gap-2 rounded-full bg-[var(--nf-primary)] px-5 py-3 text-xs font-bold text-[var(--nf-on-primary)]"><MessageCircle className="h-4 w-4" />{c.directContactLabel}</a></div></header>;
+  return <header className="relative z-30 bg-[var(--nf-bg)]"><div className="mx-auto flex h-20 max-w-[1360px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--nf-heading)] text-xl font-extrabold tracking-[-0.025em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-sm font-semibold md:flex"><a href="#mahalleler">{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">{c.navContact}</a></nav><div className="flex items-center gap-3"><SiteLanguageToggle /><a data-site-button href={`https://wa.me/${c.phone.replace(/\D/g, "")}`} className="hidden items-center gap-2 rounded-full bg-[var(--nf-primary)] px-5 py-3 text-xs font-bold text-[var(--nf-on-primary)] sm:flex"><MessageCircle className="h-4 w-4" />{c.directContactLabel}</a></div></div></header>;
 }
 
 function Footer({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <><SharedTeamSection config={config} /><footer className="border-t border-[var(--nf-line)] bg-[var(--nf-soft)] px-5 py-12 sm:px-8 lg:px-10"><div className="mx-auto max-w-[1360px]"><div><div className="font-[family-name:var(--nf-heading)] text-2xl font-extrabold">{c.agentName}</div><p className="mt-2 max-w-md text-sm opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div></div><SharedFooterContact config={config} /></footer></>;
+  return <><SharedTeamSection config={config} /><footer className="border-t border-[var(--nf-line)] bg-[var(--nf-soft)] px-5 py-12 sm:px-8 lg:px-10"><div className="mx-auto max-w-[1360px]"><div><div className="font-[family-name:var(--nf-heading)] text-2xl font-extrabold">{c.agentName}</div><p className="mt-2 max-w-md text-sm opacity-65">{c.tagline}</p><SiteCredit /></div></div><SharedFooterContact config={config} /></footer></>;
 }
 
 function Specs({ config, listing }: { config: TemplateConfig; listing: Listing }) {

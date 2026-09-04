@@ -1,0 +1,27 @@
+{
+  "content": {
+    "navListings": "Portföyler", "navAbout": "Hakkımızda", "navContact": "İletişim", "ctaText": "Portföyleri İncele",
+    "fullNameLabel": "Ad Soyad", "emailLabel": "E-posta", "phoneLabel": "Telefon", "messageLabel": "Mesajınız",
+    "formSubmit": "Gönder", "formSubmitting": "Gönderiliyor...", "formSuccess": "Talebiniz alındı, en kısa sürede sizinle iletişime geçilecek.", "formError": "Talebiniz gönderilemedi. Lütfen tekrar deneyin.",
+    "saleLabel": "Satılık", "rentLabel": "Kiralık", "searchLabel": "Portföy Ara", "typeLabel": "İlan Türü", "locationLabel": "Konum", "allLabel": "Tümü", "emptyListings": "Aramanızla eşleşen aktif portföy bulunamadı.",
+    "backLabel": "Tüm Portföyler", "listingAboutLabel": "Portföy Hakkında", "listingFeaturesLabel": "Öne Çıkan Özellikler", "keywordLabel": "Anahtar Kelime", "propertyTypeLabel": "Gayrimenkul Türü", "allPropertyTypesLabel": "Tüm Emlak Türleri",
+    "residentialLabel": "Konut", "landLabel": "Arsa", "commercialLabel": "İş Yeri", "apartmentLabel": "Daire", "detachedHouseLabel": "Müstakil Ev", "villaLabel": "Villa", "residenceLabel": "Rezidans", "residentialZonedLabel": "Konut İmarlı", "commercialZonedLabel": "Ticari İmarlı", "agriculturalFieldLabel": "Tarla / Tarımsal", "villaZonedLabel": "Villa İmarlı", "urbanRenewalLabel": "Kentsel Dönüşüm", "houseLabel": "Müstakil Ev", "duplexLabel": "Dubleks",
+    "roomLabel": "Oda Sayısı", "priceRangeLabel": "Fiyat Aralığı", "detailsLabel": "Detayları Gör", "areaLabel": "Alan", "bedLabel": "Oda", "bathLabel": "Banyo", "neighborhoodListingLabel": "ilan", "directContactLabel": "Hemen Ara",
+    "averageYieldLabel": "Ortalama Kira Getirisi", "regionalGrowthLabel": "Bölgesel Değer Artışı", "activePortfolioLabel": "Aktif Portföy", "rentalYieldLabel": "Kira Getirisi", "roiLabel": "Yatırım Görünümü", "pricePerM2Label": "m² Fiyatı", "cardViewLabel": "Kart Görünümü", "comparisonViewLabel": "Karşılaştırma Görünümü",
+    "priceDroppedLabel": "Fiyat Düştü", "urgentSaleLabel": "Acil Satılık", "daysOnlineLabel": "gündür yayında", "originalPriceLabel": "Önceki Fiyat", "opportunityLabel": "Fırsat",
+    "matchEyebrow": "Kişisel Ev Eşleştirme", "matchTitle": "Ne Arıyorsunuz?", "feelingLabel": "Nasıl Bir His?", "budgetMinLabel": "En Düşük Bütçe", "budgetMaxLabel": "En Yüksek Bütçe", "timingLabel": "Ne Zaman Taşınmak İstiyorsunuz?", "matchSubmitLabel": "Bana Uygun Evleri Bul", "matchResultsTitle": "Size Uygun Eşleşmeler",
+    "feelings": ["Sakin", "Enerjik", "Aile Dostu", "Şehirli"], "timings": ["Hemen", "1–3 Ay İçinde", "3–6 Ay İçinde", "Henüz Araştırıyorum"],
+    "usageLabel": "Kullanım", "contactActionLabel": "İletişime Geç"
+  },
+  "templates": {
+    "warm-editorial": { "navAbout": "Yaklaşımımız", "ctaText": "Portföyleri İncele" },
+    "bold-luxury": { "navAbout": "Yaklaşımımız", "ctaText": "Özel Görüşme Talep Et" },
+    "clean-modern": { "navAbout": "Hakkımızda", "ctaText": "Portföyleri Görüntüle" },
+    "neighborhood-friendly": { "navAbout": "Mahalleler", "ctaText": "Mahalleleri Keşfet", "directContactLabel": "WhatsApp’tan Yaz" },
+    "investment-focused": { "navAbout": "Yatırım Yaklaşımı", "ctaText": "Yatırım Fırsatlarını İncele" },
+    "urgent-deals": { "navAbout": "Bugünün Fırsatları", "ctaText": "Fırsatları İncele" },
+    "guided-match": { "navAbout": "Rehberiniz", "ctaText": "Eşleşmeni Başlat" },
+    "land-plots": { "navAbout": "Hizmetlerimiz", "ctaText": "Portföyü İncele" }
+  },
+  "ui": { "languageLabel": "Site Dili", "active": "Aktif", "status": "Durum", "filter": "Filtrele", "previous": "Önceki", "next": "Sonraki", "address": "Adres", "map": "Haritada Göster", "phone": "Telefon", "email": "E-Posta", "sold": "Satıldı", "rented": "Kiralandı", "soldGroup": "Satılanlar", "rentedGroup": "Kiralananlar", "credit": "Fastate AI ile hazırlandı", "favorite": "Favorilere ekle" }
+}

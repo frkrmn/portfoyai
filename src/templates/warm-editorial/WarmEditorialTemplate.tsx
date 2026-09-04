@@ -24,6 +24,7 @@ import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields } from "../content-schema";
 import { imageSlots } from "../image-schema";
+import { SiteLanguageToggle, useSiteLocale } from "../site-locale";
 
 export const imageSchema = imageSlots([
   { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
@@ -32,39 +33,21 @@ export const imageSchema = imageSlots([
 
 export const contentSchema = contentFields(["agentName", "eyebrow", "headlineAccent", "ctaText", "featuredEyebrow", "featuredTitle", "categoriesEyebrow", "categoriesTitle", "tourTitle", "tourDescription", "teamDescription"], ["tourDescription", "teamDescription"]);
 
-const labels = {
-  navListings: "Portföyler",
-  navAbout: "Hakkımızda",
-  navContact: "İletişim",
-  status: "Durum",
-  type: "Tür",
-  location: "Konum",
-  all: "Tümü",
-  sale: "Satılık",
-  rent: "Kiralık",
-  search: "Ara",
-  details: "İlanı incele",
-  listingsTitle: "Tüm Portföyler",
-  listingsDescription: "Güncel portföyleri konum ve ilan türüne göre keşfedin.",
-  empty: "Aramanızla eşleşen aktif portföy bulunamadı.",
-  previous: "Önceki",
-  next: "Sonraki",
-  about: "Portföy hakkında",
-  features: "Öne çıkan özellikler",
-  back: "Tüm portföyler",
-  name: "Ad Soyad",
-  contact: "E-posta veya telefon",
-  message: "Mesajınız",
-  submit: "Randevu talebi gönder",
-  submitting: "Gönderiliyor...",
-  success: "Talebiniz alındı, en kısa sürede sizinle iletişime geçilecek.",
-  genericError: "Talebiniz gönderilemedi. Lütfen tekrar deneyin.",
-  address: "Adres",
-  categoryApartment: "Daire",
-  categoryHouse: "Müstakil Ev",
-  categoryDuplex: "Dubleks",
-  footerCredit: "Fastate AI ile hazırlandı",
-} as const;
+const useLabels = () => {
+  const { messages } = useSiteLocale();
+  const c = messages.content;
+  const value = (key: string) => String(c[key] || "");
+  return {
+    navListings: value("navListings"), navAbout: value("navAbout"), navContact: value("navContact"),
+    status: messages.ui.status, active: messages.ui.active, type: value("typeLabel"), location: value("locationLabel"), all: value("allLabel"),
+    sale: value("saleLabel"), rent: value("rentLabel"), search: value("searchLabel"), details: value("detailsLabel"), listingsTitle: value("listingsTitle"), listingsDescription: value("listingsDescription"),
+    empty: value("emptyListings"), previous: messages.ui.previous, next: messages.ui.next, about: value("listingAboutLabel"),
+    features: value("listingFeaturesLabel"), back: value("backLabel"), name: value("fullNameLabel"),
+    contact: `${value("emailLabel")} / ${value("phoneLabel")}`, message: value("messageLabel"), submit: value("formSubmit"),
+    submitting: value("formSubmitting"), success: value("formSuccess"), genericError: value("formError"), address: messages.ui.address,
+    categoryApartment: value("apartmentLabel"), categoryHouse: value("houseLabel"), categoryDuplex: value("duplexLabel"), footerCredit: messages.ui.credit, favorite: messages.ui.favorite,
+  };
+};
 
 const getBedroomCount = (listing: Listing) =>
   listing.bedroom_count ?? (Number.parseInt(listing.room_count, 10) || 1);
@@ -86,6 +69,7 @@ const templateStyle = (config: TemplateConfig) =>
   }) as CSSProperties;
 
 function Header({ config }: SiteTemplateProps) {
+  const labels = useLabels();
   return (
     <header className="relative z-30 border-b border-[color:color-mix(in_srgb,var(--we-text)_14%,transparent)] bg-[var(--we-bg)]/95">
       <div className="mx-auto flex h-20 max-w-[1380px] items-center justify-between px-5 sm:px-8 lg:px-12">
@@ -98,15 +82,14 @@ function Header({ config }: SiteTemplateProps) {
           <a href="#hakkimizda">{labels.navAbout}</a>
           <a href="#iletisim">{labels.navContact}</a>
         </nav>
-        <a data-site-button href="#iletisim" className="rounded-full bg-[var(--we-primary)] px-5 py-3 text-xs font-semibold text-white">
-          {config.content.ctaText}
-        </a>
+        <div className="flex items-center gap-3"><SiteLanguageToggle /><a data-site-button href="#iletisim" className="hidden rounded-full bg-[var(--we-primary)] px-5 py-3 text-xs font-semibold text-white sm:block">{config.content.ctaText}</a></div>
       </div>
     </header>
   );
 }
 
 function Footer({ config }: SiteTemplateProps) {
+  const labels = useLabels();
   return (
     <><SharedTeamSection config={config} /><footer className="border-t border-[color:color-mix(in_srgb,var(--we-text)_14%,transparent)] px-5 py-12 sm:px-8 lg:px-12">
       <div className="mx-auto grid max-w-[1380px] gap-8 text-sm md:grid-cols-[1fr_auto_auto] md:items-end">
@@ -121,6 +104,7 @@ function Footer({ config }: SiteTemplateProps) {
 }
 
 function SearchPanel({ config, compact = false }: SiteTemplateProps & { compact?: boolean }) {
+  const labels = useLabels();
   const navigate = useNavigate();
   const [type, setType] = useState("all");
   const [location, setLocation] = useState("");
@@ -134,7 +118,7 @@ function SearchPanel({ config, compact = false }: SiteTemplateProps & { compact?
   const fieldClass = "min-w-0 border-0 bg-transparent px-0 pt-1 text-sm font-medium outline-none placeholder:text-[var(--we-text)]/45";
   return (
     <form onSubmit={submit} className={`grid items-end gap-4 bg-white p-4 shadow-[0_24px_70px_rgba(33,28,20,0.13)] ${compact ? "md:grid-cols-[1fr_1fr_auto]" : "md:grid-cols-[0.8fr_1fr_1.35fr_auto]"}`}>
-      {!compact ? <label className="border-b border-black/10 px-3 pb-2"><span className="block text-[10px] uppercase tracking-[0.16em] opacity-50">{labels.status}</span><select className={`${fieldClass} w-full`} defaultValue="active"><option value="active">Aktif</option></select></label> : null}
+      {!compact ? <label className="border-b border-black/10 px-3 pb-2"><span className="block text-[10px] uppercase tracking-[0.16em] opacity-50">{labels.status}</span><select className={`${fieldClass} w-full`} defaultValue="active"><option value="active">{labels.active}</option></select></label> : null}
       <label className="border-b border-black/10 px-3 pb-2"><span className="block text-[10px] uppercase tracking-[0.16em] opacity-50">{labels.type}</span><select className={`${fieldClass} w-full`} value={type} onChange={(event) => setType(event.target.value)}><option value="all">{labels.all}</option><option value="sale">{labels.sale}</option><option value="rent">{labels.rent}</option></select></label>
       <label className="border-b border-black/10 px-3 pb-2"><span className="block text-[10px] uppercase tracking-[0.16em] opacity-50">{labels.location}</span><input className={`${fieldClass} w-full`} value={location} onChange={(event) => setLocation(event.target.value)} placeholder={config.content.address} /></label>
       <button data-site-button className="grid h-14 w-full place-items-center bg-[var(--we-primary)] px-7 text-white md:w-auto" aria-label={labels.search}><Search className="h-4 w-4" /></button>
@@ -143,13 +127,14 @@ function SearchPanel({ config, compact = false }: SiteTemplateProps & { compact?
 }
 
 export function WarmListingCard({ config, listing }: { config: TemplateConfig; listing: Listing }) {
+  const labels = useLabels();
   return (
     <article className="group min-w-0">
       <Link to={`/site/${config.slug}/listings/${listing.id}`} className="relative block overflow-hidden bg-black/5">
         <img src={getListingImage(listing)} alt={listing.title} className="aspect-[1.25/1] w-full object-cover transition duration-700 group-hover:scale-[1.035]" />
         <span className="absolute left-4 top-4 bg-[var(--we-primary)] px-3 py-2 text-[9px] font-bold uppercase tracking-[0.16em] text-white">{listing.listing_type === "sale" ? labels.sale : labels.rent}</span>
         <PropertyTaxonomyBadge config={config} listing={listing} className="absolute bottom-4 left-4 bg-white/95 px-3 py-2 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--we-text)]" />
-        <button data-site-button type="button" aria-label="Favorilere ekle" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/90"><Heart className="h-4 w-4" /></button>
+        <button data-site-button type="button" aria-label={labels.favorite} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/90"><Heart className="h-4 w-4" /></button>
       </Link>
       <div className="pt-5">
         <div className="text-[10px] uppercase tracking-[0.15em] opacity-48">{formatListingLocation(listing)}</div>
@@ -167,6 +152,7 @@ export function WarmListingCard({ config, listing }: { config: TemplateConfig; l
 }
 
 function TourForm({ config, listing }: { config: TemplateConfig; listing?: Listing }) {
+  const labels = useLabels();
   const [form, setForm] = useState({ name: "", contact: "", message: "" });
   const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const submit = async (event: FormEvent) => {
@@ -222,6 +208,7 @@ function ContactSection({ config, listing }: { config: TemplateConfig; listing?:
 }
 
 function CategoryExplorer({ config }: SiteTemplateProps) {
+  const labels = useLabels();
   const categories = [
     { key: "apartment", label: labels.categoryApartment },
     { key: "house", label: labels.categoryHouse },
@@ -272,6 +259,7 @@ export function WarmEditorialHome({ config }: SiteTemplateProps) {
 }
 
 export function WarmEditorialListings({ config }: SiteTemplateProps) {
+  const labels = useLabels();
   const [params] = useSearchParams();
   const category = params.get("category") || "";
   const [type, setType] = useState(params.get("type") || "all");
@@ -293,6 +281,7 @@ export function WarmEditorialListings({ config }: SiteTemplateProps) {
 }
 
 export function WarmEditorialDetail({ config }: SiteTemplateProps) {
+  const labels = useLabels();
   const listing = config.listing;
   if (!listing) return null;
   return (

@@ -13,6 +13,7 @@ import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, propertyTaxonomyLabel, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField } from "../content-schema";
 import { imageSlots } from "../image-schema";
+import { SiteCredit, SiteLanguageToggle } from "../site-locale";
 
 export const imageSchema = imageSlots([]);
 
@@ -46,12 +47,12 @@ const investmentStyle = (config: TemplateConfig) => ({
 
 function Header({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="border-b border-[var(--if-line)] bg-[var(--if-bg)]"><div className="mx-auto flex h-[74px] max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--if-heading)] text-xl font-extrabold tracking-[-0.025em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-semibold md:flex"><a href="#yaklasim">{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">{c.navContact}</a></nav><Link data-site-button to={`/site/${config.slug}/listings`} className="flex items-center gap-2 bg-[var(--if-primary)] px-5 py-3 text-xs font-bold text-[var(--if-on-primary)]">{c.ctaText}<ArrowRight className="h-4 w-4" /></Link></div></header>;
+  return <header className="border-b border-[var(--if-line)] bg-[var(--if-bg)]"><div className="mx-auto flex h-[74px] max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--if-heading)] text-xl font-extrabold tracking-[-0.025em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-semibold md:flex"><a href="#yaklasim">{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">{c.navContact}</a></nav><div className="flex items-center gap-3"><SiteLanguageToggle /><Link data-site-button to={`/site/${config.slug}/listings`} className="hidden items-center gap-2 bg-[var(--if-primary)] px-5 py-3 text-xs font-bold text-[var(--if-on-primary)] sm:flex">{c.ctaText}<ArrowRight className="h-4 w-4" /></Link></div></div></header>;
 }
 
 function Footer({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <><SharedTeamSection config={config} /><footer className="border-t border-[var(--if-line)] bg-[var(--if-soft)] px-5 py-12 sm:px-8 lg:px-10"><div className="mx-auto max-w-[1400px]"><div><div className="font-[family-name:var(--if-heading)] text-xl font-extrabold">{c.agentName}</div><p className="mt-2 max-w-lg text-sm opacity-60">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div></div><SharedFooterContact config={config} /></footer></>;
+  return <><SharedTeamSection config={config} /><footer className="border-t border-[var(--if-line)] bg-[var(--if-soft)] px-5 py-12 sm:px-8 lg:px-10"><div className="mx-auto max-w-[1400px]"><div><div className="font-[family-name:var(--if-heading)] text-xl font-extrabold">{c.agentName}</div><p className="mt-2 max-w-lg text-sm opacity-60">{c.tagline}</p><SiteCredit /></div></div><SharedFooterContact config={config} /></footer></>;
 }
 
 function Specs({ config, listing }: { config: TemplateConfig; listing: Listing }) {

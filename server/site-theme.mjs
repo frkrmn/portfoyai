@@ -74,6 +74,12 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
   const topLevel = {};
   const appliedFields = [];
 
+  if (patch.language !== undefined) {
+    if (!["tr", "en"].includes(patch.language)) throw new Error("VALIDATION:Language must be tr or en.");
+    themeConfig.language = patch.language;
+    appliedFields.push("language");
+  }
+
   if (patch.business_name !== undefined) {
     const value = textValue(patch.business_name, "Business name", 160);
     topLevel.business_name = value;

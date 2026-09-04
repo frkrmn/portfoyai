@@ -29,6 +29,7 @@ const updateSite = async (request, response, siteId) => {
   if (!current) return sendJson(response, 404, { error: "Owned site not found." });
   const updates = {};
   const themePatch = {};
+  if (body.language !== undefined) themePatch.language = body.language;
   if (body.status !== undefined) {
     if (!["draft", "published"].includes(body.status)) return sendJson(response, 400, { error: "Status must be draft or published." });
     updates.status = body.status;

@@ -138,6 +138,7 @@ export type TemplateContent = {
 };
 
 export type TemplateConfig = {
+  language: "tr" | "en";
   templateId: string;
   view: TemplateView;
   siteId: string;
@@ -189,6 +190,7 @@ export type TemplateFamily = {
 export type PublicSitePayload = {
   id: string;
   slug: string;
+  language?: "tr" | "en" | null;
   config: {
     template_id?: string;
     business_name: string;
@@ -206,6 +208,7 @@ export type PublicSitePayload = {
 };
 
 type NestedThemeConfig = {
+  language?: "tr" | "en";
   colors?: Partial<TemplateConfig["colors"]>;
   fonts?: Partial<TemplateConfig["fonts"]>;
   content?: Partial<TemplateContent>;
@@ -613,6 +616,7 @@ export function createTemplateConfig(
   const button = buttonColorSource === "primary" ? primary : buttonColorSource === "custom" && customButton ? customButton : accent;
 
   return {
+    language: payload.language === "en" || raw.language === "en" ? "en" : "tr",
     templateId: payload.config.template_id || "tm_01",
     view,
     siteId: payload.id,

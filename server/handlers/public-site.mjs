@@ -18,6 +18,7 @@ export async function loadPublicSite(slug) {
   return {
     id: site.id,
     slug: site.slug,
+    language: site.theme_config?.language === "en" ? "en" : "tr",
     config: { template_id: site.theme_config?.template_id, business_name: site.business_name, tone: site.tone, primary_color: site.primary_color, accent_color: site.accent_color, headline: site.headline, theme_config: site.theme_config },
     listings: (listings || []).map(serializeListing),
     status: site.status,

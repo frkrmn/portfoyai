@@ -13,6 +13,7 @@ import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField } from "../content-schema";
 import { imageSlots } from "../image-schema";
+import { SiteCredit, SiteLanguageToggle } from "../site-locale";
 
 export const imageSchema = imageSlots([
   { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
@@ -43,12 +44,12 @@ const luxuryStyle = (config: TemplateConfig) => ({
 
 function LuxuryHeader({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="relative z-30 border-b border-[color:color-mix(in_srgb,var(--lux-text)_14%,transparent)] bg-[var(--lux-dark)]"><div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--lux-heading)] text-2xl font-bold uppercase tracking-[0.08em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs uppercase tracking-[0.14em] md:flex"><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#yaklasim">{c.navAbout}</a><a href="#iletisim">{c.navContact}</a></nav><a data-site-button href="#iletisim" className="bg-[var(--lux-accent)] px-5 py-3 text-xs font-semibold text-[var(--lux-ink)]">{c.formSubmit}</a></div></header>;
+  return <header className="relative z-30 border-b border-[color:color-mix(in_srgb,var(--lux-text)_14%,transparent)] bg-[var(--lux-dark)]"><div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--lux-heading)] text-2xl font-bold uppercase tracking-[0.08em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs uppercase tracking-[0.14em] md:flex"><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#yaklasim">{c.navAbout}</a><a href="#iletisim">{c.navContact}</a></nav><div className="flex items-center gap-3"><SiteLanguageToggle /><a data-site-button href="#iletisim" className="hidden bg-[var(--lux-accent)] px-5 py-3 text-xs font-semibold text-[var(--lux-ink)] sm:block">{c.formSubmit}</a></div></div></header>;
 }
 
 function LuxuryFooter({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <><SharedTeamSection config={config} /><footer className="border-t border-[color:color-mix(in_srgb,var(--lux-text)_14%,transparent)] bg-[var(--lux-dark)] px-5 py-14 sm:px-8 lg:px-12"><div className="mx-auto grid max-w-[1440px] gap-10 md:grid-cols-[1fr_auto]"><div><div className="font-[family-name:var(--lux-heading)] text-3xl font-bold uppercase tracking-[0.06em]">{c.businessName}</div><p className="mt-4 max-w-md text-sm leading-6 opacity-55">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div><nav className="space-y-3 text-sm"><Link className="block" to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a className="block" href="#yaklasim">{c.navAbout}</a><a className="block" href="#iletisim">{c.navContact}</a></nav></div><SharedFooterContact config={config} /></footer></>;
+  return <><SharedTeamSection config={config} /><footer className="border-t border-[color:color-mix(in_srgb,var(--lux-text)_14%,transparent)] bg-[var(--lux-dark)] px-5 py-14 sm:px-8 lg:px-12"><div className="mx-auto grid max-w-[1440px] gap-10 md:grid-cols-[1fr_auto]"><div><div className="font-[family-name:var(--lux-heading)] text-3xl font-bold uppercase tracking-[0.06em]">{c.businessName}</div><p className="mt-4 max-w-md text-sm leading-6 opacity-55">{c.tagline}</p><SiteCredit /></div><nav className="space-y-3 text-sm"><Link className="block" to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a className="block" href="#yaklasim">{c.navAbout}</a><a className="block" href="#iletisim">{c.navContact}</a></nav></div><SharedFooterContact config={config} /></footer></>;
 }
 
 function LeadForm({ config, listing, hero = false, dark = false }: { config: TemplateConfig; listing?: Listing; hero?: boolean; dark?: boolean }) {

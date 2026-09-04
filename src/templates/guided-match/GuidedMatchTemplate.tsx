@@ -13,6 +13,7 @@ import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField, stringArrayField } from "../content-schema";
 import { imageSlots } from "../image-schema";
+import { SiteCredit, SiteLanguageToggle } from "../site-locale";
 
 export const imageSchema = imageSlots([
   { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
@@ -48,12 +49,12 @@ const guidedStyle = (config: TemplateConfig) => ({
 
 function Header({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="relative z-30 border-b border-[var(--gm-line)] bg-[var(--gm-bg)]/95 backdrop-blur"><div className="mx-auto flex h-20 max-w-[1360px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--gm-heading)] text-2xl font-semibold italic">{c.businessName}</Link><nav className="hidden items-center gap-8 text-sm md:flex"><a href="#eslesme">{c.matchTitle}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#rehber">{c.navAbout}</a></nav><a data-site-button href="#eslesme" className="rounded-full bg-[var(--gm-primary)] px-5 py-3 text-xs font-bold text-[var(--gm-on-primary)]">{c.ctaText}</a></div></header>;
+  return <header className="relative z-30 border-b border-[var(--gm-line)] bg-[var(--gm-bg)]/95 backdrop-blur"><div className="mx-auto flex h-20 max-w-[1360px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--gm-heading)] text-2xl font-semibold italic">{c.businessName}</Link><nav className="hidden items-center gap-8 text-sm md:flex"><a href="#eslesme">{c.matchTitle}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#rehber">{c.navAbout}</a></nav><div className="flex items-center gap-3"><SiteLanguageToggle /><a data-site-button href="#eslesme" className="hidden rounded-full bg-[var(--gm-primary)] px-5 py-3 text-xs font-bold text-[var(--gm-on-primary)] sm:block">{c.ctaText}</a></div></div></header>;
 }
 
 function Footer({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <><SharedTeamSection config={config} /><footer id="iletisim" className="border-t border-[var(--gm-line)] bg-[var(--gm-soft)] px-5 py-12 sm:px-8 lg:px-10"><div className="mx-auto max-w-[1360px]"><div><div className="font-[family-name:var(--gm-heading)] text-3xl italic">{c.agentName}</div><p className="mt-3 max-w-lg text-sm leading-6 opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div></div><SharedFooterContact config={config} /></footer></>;
+  return <><SharedTeamSection config={config} /><footer id="iletisim" className="border-t border-[var(--gm-line)] bg-[var(--gm-soft)] px-5 py-12 sm:px-8 lg:px-10"><div className="mx-auto max-w-[1360px]"><div><div className="font-[family-name:var(--gm-heading)] text-3xl italic">{c.agentName}</div><p className="mt-3 max-w-lg text-sm leading-6 opacity-65">{c.tagline}</p><SiteCredit /></div></div><SharedFooterContact config={config} /></footer></>;
 }
 
 function Specs({ config, listing }: { config: TemplateConfig; listing: Listing }) {

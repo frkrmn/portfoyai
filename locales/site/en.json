@@ -1,0 +1,27 @@
+{
+  "content": {
+    "navListings": "Listings", "navAbout": "About", "navContact": "Contact", "ctaText": "View Portfolio",
+    "fullNameLabel": "Full Name", "emailLabel": "Email", "phoneLabel": "Phone", "messageLabel": "Your Message",
+    "formSubmit": "Send", "formSubmitting": "Sending...", "formSuccess": "We received your request and will contact you shortly.", "formError": "Your request could not be sent. Please try again.",
+    "saleLabel": "For Sale", "rentLabel": "For Rent", "searchLabel": "Search Listings", "typeLabel": "Listing Type", "locationLabel": "Location", "allLabel": "All", "emptyListings": "No active listings match your search.",
+    "backLabel": "All Listings", "listingAboutLabel": "About This Listing", "listingFeaturesLabel": "Featured Amenities", "keywordLabel": "Keyword", "propertyTypeLabel": "Property Type", "allPropertyTypesLabel": "All Property Types",
+    "residentialLabel": "Residential", "landLabel": "Land", "commercialLabel": "Commercial", "apartmentLabel": "Apartment", "detachedHouseLabel": "Detached House", "villaLabel": "Villa", "residenceLabel": "Residence", "residentialZonedLabel": "Residential Zoned", "commercialZonedLabel": "Commercial Zoned", "agriculturalFieldLabel": "Agricultural Land", "villaZonedLabel": "Villa Zoned", "urbanRenewalLabel": "Urban Renewal", "houseLabel": "Detached House", "duplexLabel": "Duplex",
+    "roomLabel": "Rooms", "priceRangeLabel": "Price", "detailsLabel": "View Details", "areaLabel": "Area", "bedLabel": "Bedrooms", "bathLabel": "Bathrooms", "neighborhoodListingLabel": "listing", "directContactLabel": "Call Now",
+    "averageYieldLabel": "Average Rental Yield", "regionalGrowthLabel": "Regional Growth", "activePortfolioLabel": "Active Listings", "rentalYieldLabel": "Rental Yield", "roiLabel": "Investment View", "pricePerM2Label": "Price per m²", "cardViewLabel": "Card View", "comparisonViewLabel": "Comparison View",
+    "priceDroppedLabel": "Price Reduced", "urgentSaleLabel": "Urgent Sale", "daysOnlineLabel": "days online", "originalPriceLabel": "Previous Price", "opportunityLabel": "Opportunity",
+    "matchEyebrow": "Personal Home Matching", "matchTitle": "What Are You Looking For?", "feelingLabel": "Desired Feel", "budgetMinLabel": "Minimum Budget", "budgetMaxLabel": "Maximum Budget", "timingLabel": "When Do You Want to Move?", "matchSubmitLabel": "Find My Matches", "matchResultsTitle": "Your Matches",
+    "feelings": ["Calm", "Energetic", "Family Friendly", "Urban"], "timings": ["Now", "Within 1–3 Months", "Within 3–6 Months", "Just Exploring"],
+    "usageLabel": "Use", "contactActionLabel": "Get in Touch"
+  },
+  "templates": {
+    "warm-editorial": { "navAbout": "Our Approach", "ctaText": "View Listings" },
+    "bold-luxury": { "navAbout": "Our Approach", "ctaText": "Request a Private Consultation" },
+    "clean-modern": { "navAbout": "About", "ctaText": "View Listings" },
+    "neighborhood-friendly": { "navAbout": "Neighborhoods", "ctaText": "Explore Neighborhoods", "directContactLabel": "Message on WhatsApp" },
+    "investment-focused": { "navAbout": "Investment Approach", "ctaText": "Explore Investments" },
+    "urgent-deals": { "navAbout": "Today's Deals", "ctaText": "Explore Deals" },
+    "guided-match": { "navAbout": "Your Guide", "ctaText": "Start Matching" },
+    "land-plots": { "navAbout": "Services", "ctaText": "View Portfolio" }
+  },
+  "ui": { "languageLabel": "Site Language", "active": "Active", "status": "Status", "filter": "Filter", "previous": "Previous", "next": "Next", "address": "Address", "map": "Show on Google Maps", "phone": "Phone", "email": "Email", "sold": "Sold", "rented": "Rented", "soldGroup": "Sold Listings", "rentedGroup": "Rented Listings", "credit": "Built with Fastate AI", "favorite": "Add to favorites" }
+}

@@ -13,6 +13,7 @@ import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields } from "../content-schema";
 import { imageSlots } from "../image-schema";
+import { SiteCredit, SiteLanguageToggle } from "../site-locale";
 
 export const imageSchema = imageSlots([]);
 
@@ -45,12 +46,12 @@ const dealStyle = (config: TemplateConfig) => ({
 
 function Header({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="border-b border-[var(--ud-line)] bg-[var(--ud-bg)]"><div className="mx-auto flex h-[74px] max-w-[1380px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--ud-heading)] text-xl font-black tracking-[-0.035em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-bold md:flex"><a href="#firsatlar">{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">{c.navContact}</a></nav><Link data-site-button to={`/site/${config.slug}/listings`} className="flex items-center gap-2 rounded-full bg-[var(--ud-primary)] px-5 py-3 text-xs font-bold text-[var(--ud-on-primary)]">{c.ctaText}<ArrowRight className="h-4 w-4" /></Link></div></header>;
+  return <header className="border-b border-[var(--ud-line)] bg-[var(--ud-bg)]"><div className="mx-auto flex h-[74px] max-w-[1380px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--ud-heading)] text-xl font-black tracking-[-0.035em]">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-bold md:flex"><a href="#firsatlar">{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">{c.navContact}</a></nav><div className="flex items-center gap-3"><SiteLanguageToggle /><Link data-site-button to={`/site/${config.slug}/listings`} className="hidden items-center gap-2 rounded-full bg-[var(--ud-primary)] px-5 py-3 text-xs font-bold text-[var(--ud-on-primary)] sm:flex">{c.ctaText}<ArrowRight className="h-4 w-4" /></Link></div></div></header>;
 }
 
 function Footer({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <><SharedTeamSection config={config} /><footer className="border-t border-[var(--ud-line)] bg-[var(--ud-primary)] px-5 py-12 text-[var(--ud-on-primary)] sm:px-8 lg:px-10"><div className="mx-auto max-w-[1380px]"><div><div className="font-[family-name:var(--ud-heading)] text-2xl font-black">{c.businessName}</div><p className="mt-3 max-w-lg text-sm opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-45">Fastate AI ile hazırlandı</div></div></div><SharedFooterContact config={config} /></footer></>;
+  return <><SharedTeamSection config={config} /><footer className="border-t border-[var(--ud-line)] bg-[var(--ud-primary)] px-5 py-12 text-[var(--ud-on-primary)] sm:px-8 lg:px-10"><div className="mx-auto max-w-[1380px]"><div><div className="font-[family-name:var(--ud-heading)] text-2xl font-black">{c.businessName}</div><p className="mt-3 max-w-lg text-sm opacity-65">{c.tagline}</p><SiteCredit /></div></div><SharedFooterContact config={config} /></footer></>;
 }
 
 function UrgencyBadges({ config, listing, large = false }: { config: TemplateConfig; listing: Listing; large?: boolean }) {

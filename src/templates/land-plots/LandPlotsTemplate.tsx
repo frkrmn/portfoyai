@@ -12,6 +12,7 @@ import { propertySubtypeFor, propertyTaxonomyLabel } from "../PropertyTaxonomy";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { contentFields, objectArrayField } from "../content-schema";
 import { imageSlots } from "../image-schema";
+import { SiteCredit, SiteLanguageToggle } from "../site-locale";
 
 export const imageSchema = imageSlots([
   { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
@@ -38,12 +39,12 @@ const landStyle = (config: TemplateConfig) => ({
 
 function Header({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <header className="border-b border-[var(--lp-line)] bg-[var(--lp-bg)]"><div className="mx-auto flex h-20 max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--lp-heading)] text-2xl font-bold">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-semibold md:flex"><a href={`/site/${config.slug}#hizmetler`}>{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">{c.navContact}</a></nav><Link data-site-button to={`/site/${config.slug}/listings`} className="bg-[var(--site-button)] px-5 py-3 text-xs font-bold text-[var(--site-button-text)]">{c.ctaText}</Link></div></header>;
+  return <header className="border-b border-[var(--lp-line)] bg-[var(--lp-bg)]"><div className="mx-auto flex h-20 max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-10"><Link to={`/site/${config.slug}`} className="font-[family-name:var(--lp-heading)] text-2xl font-bold">{c.businessName}</Link><nav className="hidden items-center gap-8 text-xs font-semibold md:flex"><a href={`/site/${config.slug}#hizmetler`}>{c.navAbout}</a><Link to={`/site/${config.slug}/listings`}>{c.navListings}</Link><SharedTeamHeaderLink config={config} /><a href="#iletisim">{c.navContact}</a></nav><div className="flex items-center gap-3"><SiteLanguageToggle /><Link data-site-button to={`/site/${config.slug}/listings`} className="hidden bg-[var(--site-button)] px-5 py-3 text-xs font-bold text-[var(--site-button-text)] sm:block">{c.ctaText}</Link></div></div></header>;
 }
 
 function Footer({ config }: SiteTemplateProps) {
   const c = config.content;
-  return <><SharedTeamSection config={config} /><footer id="iletisim" className="bg-[var(--lp-primary)] px-5 py-14 text-white sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1400px] gap-10 md:grid-cols-[1fr_auto]"><div><div className="font-[family-name:var(--lp-heading)] text-3xl font-bold">{c.businessName}</div><p className="mt-3 max-w-md text-sm leading-7 opacity-65">{c.tagline}</p><div className="mt-5 text-xs opacity-40">Fastate AI ile hazırlandı</div></div><nav className="space-y-3 text-sm opacity-75"><Link className="block" to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a className="block" href={`/site/${config.slug}#hizmetler`}>{c.navAbout}</a></nav></div><SharedFooterContact config={config} /></footer></>;
+  return <><SharedTeamSection config={config} /><footer id="iletisim" className="bg-[var(--lp-primary)] px-5 py-14 text-white sm:px-8 lg:px-10"><div className="mx-auto grid max-w-[1400px] gap-10 md:grid-cols-[1fr_auto]"><div><div className="font-[family-name:var(--lp-heading)] text-3xl font-bold">{c.businessName}</div><p className="mt-3 max-w-md text-sm leading-7 opacity-65">{c.tagline}</p><SiteCredit /></div><nav className="space-y-3 text-sm opacity-75"><Link className="block" to={`/site/${config.slug}/listings`}>{c.navListings}</Link><a className="block" href={`/site/${config.slug}#hizmetler`}>{c.navAbout}</a></nav></div><SharedFooterContact config={config} /></footer></>;
 }
 
 function FeatureList({ listing, compact = false }: { listing: Listing; compact?: boolean }) {

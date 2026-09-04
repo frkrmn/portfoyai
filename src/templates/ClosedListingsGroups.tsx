@@ -1,15 +1,14 @@
 import type { ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 import type { Listing } from "@/portfoyai/types";
 import type { TemplateConfig } from "./types";
+import { useSiteLocale } from "./site-locale";
 
 export function ClosedListingsGroups({ config, renderListing }: { config: TemplateConfig; renderListing: (listing: Listing) => ReactNode }) {
-  const { i18n } = useTranslation();
+  const { messages } = useSiteLocale();
   if (!config.showClosedListings || !config.closedListings.length) return null;
-  const english = i18n.resolvedLanguage === "en";
   const groups = [
-    { status: "sold" as const, title: english ? "Sold" : "Satılanlar", badge: english ? "Sold" : "Satıldı" },
-    { status: "rented" as const, title: english ? "Rented" : "Kiralananlar", badge: english ? "Rented" : "Kiralandı" },
+    { status: "sold" as const, title: messages.ui.soldGroup, badge: messages.ui.sold },
+    { status: "rented" as const, title: messages.ui.rentedGroup, badge: messages.ui.rented },
   ];
 
   return <section data-closed-listings className="border-t border-current/10 px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
