@@ -45,7 +45,8 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
     const controller = new AbortController();
     setPayload(null);
     setError("");
-    fetch(`/api/public-sites/${encodeURIComponent(slug)}`, { signal: controller.signal })
+    const params = view === "detail" && listingId ? `?listingId=${encodeURIComponent(listingId)}` : "";
+    fetch(`/api/public-sites/${encodeURIComponent(slug)}${params}`, { signal: controller.signal })
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "Site yüklenemedi.");
@@ -61,7 +62,7 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
         setError(reason instanceof Error ? reason.message : "Site yüklenemedi.");
       });
     return () => controller.abort();
-  }, [slug]);
+  }, [listingId, slug, view]);
 
   const listing = useMemo(
     () => payload?.listings?.find((item) => item.id === listingId),

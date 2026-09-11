@@ -23,6 +23,7 @@
     "test:image-schema": "node server/image-schema-audit.mjs",
     "migrate:media": "node server/migrate-base64-media.mjs",
     "test:media-storage": "node server/media-storage.test.mjs",
+    "test:public-payload": "node server/public-site-payload.test.mjs",
     "test:platform-content": "node server/platform-content.browser.e2e.mjs"
   },
   "dependencies": {
