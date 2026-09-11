@@ -21,9 +21,9 @@ import { formatListingPrice } from "@/lib/listing-price";
 import { ListingForm, Shell } from "./views";
 import { LocationHierarchyFields } from "./location-fields";
 import { useTranslation } from "react-i18next";
-import { getTemplateFamily } from "@/templates/registry";
+import { loadTemplateFamily } from "@/templates/registry";
 import { materializeTranslatableContent } from "@/templates/content-localization";
-import { templateContentFallbacks } from "@/templates/types";
+import { templateContentFallbacks, type TemplateFamily } from "@/templates/types";
 import { ContentEditor, type ContentRecord } from "./content-editor";
 import { ImageEditor, type SiteMedia } from "./image-editor";
 import { uploadImage } from "@/lib/media-storage";
@@ -319,19 +319,28 @@ export function DashboardPage() {
   const [fonts, setFonts] = useState<GoogleFont[]>([]);
   const [fontsLoading, setFontsLoading] = useState(false);
   const [fontsError, setFontsError] = useState("");
+  const [templateFamily, setTemplateFamily] = useState<TemplateFamily | null>(null);
   const siteDraftSiteId = useRef("");
   const contentDraftSiteId = useRef("");
   const navigate = useNavigate();
 
   const authHeaders = useMemo(() => session ? { Authorization: `Bearer ${session.access_token}` } : {}, [session]);
   const activeSite = sites.find((site) => site.id === selectedSiteId) || sites[0] || null;
+  const activeTemplateId = activeSite?.theme_config?.template_id;
   const siteLeads = leads.filter((lead) => lead.site_id === activeSite?.id);
   const persistedSiteDraft = activeSite ? siteDraftFrom(activeSite) : null;
   const themeDirty = Boolean(siteDraft && persistedSiteDraft && themeFields.some((field) => siteDraft[field] !== persistedSiteDraft[field]));
-  const contentSchema = activeSite ? getTemplateFamily(activeSite.theme_config?.template_id).contentSchema : [];
-  const imageSchema = activeSite ? getTemplateFamily(activeSite.theme_config?.template_id).imageSchema : [];
+  const contentSchema = templateFamily?.contentSchema || [];
+  const imageSchema = templateFamily?.imageSchema || [];
   const contentDirty = JSON.stringify(contentDraft) !== JSON.stringify(persistedContent);
   const mediaDirty = JSON.stringify(mediaDraft) !== JSON.stringify(persistedMedia);
+
+  useEffect(() => {
+    if (!activeSite) { setTemplateFamily(null); return; }
+    let active = true;
+    void loadTemplateFamily(activeTemplateId).then((family) => { if (active) setTemplateFamily(family); });
+    return () => { active = false; };
+  }, [activeSite, activeTemplateId]);
 
   useEffect(() => {
     if (!session) return;

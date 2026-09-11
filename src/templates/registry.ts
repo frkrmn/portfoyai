@@ -1,109 +1,39 @@
 import type { TemplateFamily } from "./types";
-import {
-  WarmEditorialDetail,
-  WarmEditorialHome,
-  WarmEditorialListings,
-  contentSchema as warmEditorialContentSchema,
-  imageSchema as warmEditorialImageSchema,
-} from "./warm-editorial/WarmEditorialTemplate";
-import { LegacyDetail, LegacyHome, LegacyListings } from "./legacy/LegacyTemplate";
-import { BoldLuxuryDetail, BoldLuxuryHome, BoldLuxuryListings, contentSchema as boldLuxuryContentSchema, imageSchema as boldLuxuryImageSchema } from "./bold-luxury/BoldLuxuryTemplate";
-import { CleanModernDetail, CleanModernHome, CleanModernListings, contentSchema as cleanModernContentSchema, imageSchema as cleanModernImageSchema } from "./clean-modern/CleanModernTemplate";
-import { NeighborhoodFriendlyDetail, NeighborhoodFriendlyHome, NeighborhoodFriendlyListings, contentSchema as neighborhoodFriendlyContentSchema, imageSchema as neighborhoodFriendlyImageSchema } from "./neighborhood-friendly/NeighborhoodFriendlyTemplate";
-import { InvestmentFocusedDetail, InvestmentFocusedHome, InvestmentFocusedListings, contentSchema as investmentFocusedContentSchema, imageSchema as investmentFocusedImageSchema } from "./investment-focused/InvestmentFocusedTemplate";
-import { UrgentDealsDetail, UrgentDealsHome, UrgentDealsListings, contentSchema as urgentDealsContentSchema, imageSchema as urgentDealsImageSchema } from "./urgent-deals/UrgentDealsTemplate";
-import { GuidedMatchDetail, GuidedMatchHome, GuidedMatchListings, contentSchema as guidedMatchContentSchema, imageSchema as guidedMatchImageSchema } from "./guided-match/GuidedMatchTemplate";
-import { LandPlotsDetail, LandPlotsHome, LandPlotsListings, contentSchema as landPlotsContentSchema, imageSchema as landPlotsImageSchema } from "./land-plots/LandPlotsTemplate";
 
 export const defaultTemplateId = "tm_01";
+type TemplateModule = Record<string, unknown>;
 
-const warmEditorialFamily: TemplateFamily = {
-  Home: WarmEditorialHome,
-  Listings: WarmEditorialListings,
-  Detail: WarmEditorialDetail,
-  contentSchema: warmEditorialContentSchema,
-  imageSchema: warmEditorialImageSchema,
+const loaders: Record<string, () => Promise<TemplateModule>> = {
+  "warm-editorial": () => import("./warm-editorial/WarmEditorialTemplate"),
+  "bold-luxury": () => import("./bold-luxury/BoldLuxuryTemplate"),
+  "clean-modern": () => import("./clean-modern/CleanModernTemplate"),
+  "neighborhood-friendly": () => import("./neighborhood-friendly/NeighborhoodFriendlyTemplate"),
+  "investment-focused": () => import("./investment-focused/InvestmentFocusedTemplate"),
+  "urgent-deals": () => import("./urgent-deals/UrgentDealsTemplate"),
+  "guided-match": () => import("./guided-match/GuidedMatchTemplate"),
+  "land-plots": () => import("./land-plots/LandPlotsTemplate"),
+};
+const cache = new Map<string, Promise<TemplateFamily>>();
+const normalizedId = (templateId?: string) => templateId && loaders[templateId] ? templateId : templateId?.startsWith("tm_") ? "legacy" : "warm-editorial";
+
+const familyFrom = (id: string, module: TemplateModule): TemplateFamily => {
+  const prefix = id.split("-").map((part) => `${part[0].toUpperCase()}${part.slice(1)}`).join("");
+  return {
+    Home: module[`${prefix}Home`] as TemplateFamily["Home"],
+    Listings: module[`${prefix}Listings`] as TemplateFamily["Listings"],
+    Detail: module[`${prefix}Detail`] as TemplateFamily["Detail"],
+    contentSchema: module.contentSchema as TemplateFamily["contentSchema"],
+    imageSchema: module.imageSchema as TemplateFamily["imageSchema"],
+  };
 };
 
-const legacyFamily: TemplateFamily = {
-  Home: LegacyHome,
-  Listings: LegacyListings,
-  Detail: LegacyDetail,
-  contentSchema: warmEditorialContentSchema,
-  imageSchema: warmEditorialImageSchema,
-};
-
-const boldLuxuryFamily: TemplateFamily = {
-  Home: BoldLuxuryHome,
-  Listings: BoldLuxuryListings,
-  Detail: BoldLuxuryDetail,
-  contentSchema: boldLuxuryContentSchema,
-  imageSchema: boldLuxuryImageSchema,
-};
-
-const cleanModernFamily: TemplateFamily = {
-  Home: CleanModernHome,
-  Listings: CleanModernListings,
-  Detail: CleanModernDetail,
-  contentSchema: cleanModernContentSchema,
-  imageSchema: cleanModernImageSchema,
-};
-
-const neighborhoodFriendlyFamily: TemplateFamily = {
-  Home: NeighborhoodFriendlyHome,
-  Listings: NeighborhoodFriendlyListings,
-  Detail: NeighborhoodFriendlyDetail,
-  contentSchema: neighborhoodFriendlyContentSchema,
-  imageSchema: neighborhoodFriendlyImageSchema,
-};
-
-const investmentFocusedFamily: TemplateFamily = {
-  Home: InvestmentFocusedHome,
-  Listings: InvestmentFocusedListings,
-  Detail: InvestmentFocusedDetail,
-  contentSchema: investmentFocusedContentSchema,
-  imageSchema: investmentFocusedImageSchema,
-};
-
-const urgentDealsFamily: TemplateFamily = {
-  Home: UrgentDealsHome,
-  Listings: UrgentDealsListings,
-  Detail: UrgentDealsDetail,
-  contentSchema: urgentDealsContentSchema,
-  imageSchema: urgentDealsImageSchema,
-};
-
-const guidedMatchFamily: TemplateFamily = {
-  Home: GuidedMatchHome,
-  Listings: GuidedMatchListings,
-  Detail: GuidedMatchDetail,
-  contentSchema: guidedMatchContentSchema,
-  imageSchema: guidedMatchImageSchema,
-};
-
-const landPlotsFamily: TemplateFamily = {
-  Home: LandPlotsHome,
-  Listings: LandPlotsListings,
-  Detail: LandPlotsDetail,
-  contentSchema: landPlotsContentSchema,
-  imageSchema: landPlotsImageSchema,
-};
-
-export const templates: Record<string, TemplateFamily> = {
-  "warm-editorial": warmEditorialFamily,
-  "bold-luxury": boldLuxuryFamily,
-  "clean-modern": cleanModernFamily,
-  "neighborhood-friendly": neighborhoodFriendlyFamily,
-  "investment-focused": investmentFocusedFamily,
-  "urgent-deals": urgentDealsFamily,
-  "guided-match": guidedMatchFamily,
-  "land-plots": landPlotsFamily,
-  tm_01: legacyFamily,
-  tm_02: legacyFamily,
-  tm_03: legacyFamily,
-  tm_04: legacyFamily,
-};
-
-export function getTemplateFamily(templateId?: string): TemplateFamily {
-  return templateId && templates[templateId] ? templates[templateId] : templates[defaultTemplateId];
+export function loadTemplateFamily(templateId?: string): Promise<TemplateFamily> {
+  const id = normalizedId(templateId);
+  if (!cache.has(id)) cache.set(id, id === "legacy"
+    ? Promise.all([import("./legacy/LegacyTemplate"), import("./warm-editorial/WarmEditorialTemplate")]).then(([legacy, warm]) => ({
+      Home: legacy.LegacyHome, Listings: legacy.LegacyListings, Detail: legacy.LegacyDetail,
+      contentSchema: warm.contentSchema, imageSchema: warm.imageSchema,
+    }))
+    : loaders[id]().then((module) => familyFrom(id, module)));
+  return cache.get(id)!;
 }

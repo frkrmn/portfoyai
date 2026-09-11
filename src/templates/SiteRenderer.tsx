@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { usePageMeta } from "@/lib/page-meta";
 import { publicSitePageMetadata } from "@/lib/site-metadata.js";
-import { createTemplateConfig, type PublicSitePayload, type TemplateView } from "./types";
-import { getTemplateFamily } from "./registry";
+import { createTemplateConfig, type PublicSitePayload, type TemplateFamily, type TemplateView } from "./types";
+import { loadTemplateFamily } from "./registry";
 import { GoogleFontStylesheet } from "./GoogleFontStylesheet";
 import { localizeSiteConfig, SiteLocaleProvider, useSiteLocale } from "./site-locale";
 import { contentNeedsEnglishBackfill } from "./content-localization";
 
-function LocalizedSite({ config, Component, listingStatus, onBackfilled }: { config: ReturnType<typeof createTemplateConfig>; Component: ReturnType<typeof getTemplateFamily>["Home"]; listingStatus?: string; onBackfilled: (themeConfig: Record<string, unknown>) => void }) {
+function LocalizedSite({ config, Component, listingStatus, onBackfilled }: { config: ReturnType<typeof createTemplateConfig>; Component: TemplateFamily["Home"]; listingStatus?: string; onBackfilled: (themeConfig: Record<string, unknown>) => void }) {
   const { locale, messages } = useSiteLocale();
   const requestedBackfill = useRef(false);
   const localizedConfig = useMemo(() => localizeSiteConfig(config, messages, locale), [config, locale, messages]);
@@ -38,6 +38,7 @@ function RendererMessage({ children }: { children: string }) {
 export function SiteRenderer({ view }: { view: TemplateView }) {
   const { slug = "", listingId } = useParams();
   const [payload, setPayload] = useState<PublicSitePayload | null>(null);
+  const [family, setFamily] = useState<TemplateFamily | null>(null);
   const [error, setError] = useState("");
   const applyBackfilledTheme = (themeConfig: Record<string, unknown>) => setPayload((current) => current ? { ...current, config: { ...current.config, theme_config: themeConfig } } : current);
 
@@ -68,6 +69,13 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
     () => payload?.listings?.find((item) => item.id === listingId),
     [listingId, payload],
   );
+  const templateId = payload?.config.template_id;
+  useEffect(() => {
+    if (!payload) { setFamily(null); return; }
+    let active = true;
+    void loadTemplateFamily(templateId).then((loaded) => { if (active) setFamily(loaded); }).catch(() => { if (active) setError("Site teması yüklenemedi."); });
+    return () => { active = false; };
+  }, [payload, templateId]);
   const metadata = useMemo(() => payload
     ? publicSitePageMetadata({ payload, view, listing, locale: payload.language === "en" ? "en" : "tr" })
     : { title: "", description: "" }, [listing, payload, view]);
@@ -79,11 +87,10 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
   }, [payload, view]);
 
   if (error) return <RendererMessage>{error}</RendererMessage>;
-  if (!payload) return <RendererMessage>Site yükleniyor...</RendererMessage>;
+  if (!payload || !family) return <RendererMessage>Site yükleniyor...</RendererMessage>;
   if (view === "detail" && !listing) return <RendererMessage>İlan bulunamadı.</RendererMessage>;
 
   const config = createTemplateConfig(payload, view, listing);
-  const family = getTemplateFamily(config.templateId);
   if (view === "team" && (!config.showTeamSection || !config.teamMembers.length)) return <RendererMessage>Sayfa bulunamadı.</RendererMessage>;
   if (view === "team") return <Navigate to={`/site/${slug}#ekibimiz`} replace />;
   const Component = view === "home" ? family.Home : view === "listings" ? family.Listings : family.Detail;

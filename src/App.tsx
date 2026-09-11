@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -7,20 +7,20 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { PortfoyAIProvider } from "./portfoyai/store";
 import { AuthProvider } from "./portfoyai/auth";
 import { useAuth } from "./portfoyai/auth";
-import { LoginPage, SignupPage } from "./portfoyai/auth-pages";
-import {
-  AuthPage,
-  GeneratedSitePreviewPage,
-  LandingPage,
-  NotFoundPage,
-} from "./portfoyai/views";
-import { DashboardPage } from "./portfoyai/dashboard";
-import { PricingPage } from "./portfoyai/pricing";
-import { PlatformContentAdminPage } from "./portfoyai/platform-content-admin";
-import { SiteRenderer } from "./templates/SiteRenderer";
 import { useTranslation } from "react-i18next";
 
 const queryClient = new QueryClient();
+const LandingPage = lazy(() => import("./portfoyai/views").then((module) => ({ default: module.LandingPage })));
+const AuthPage = lazy(() => import("./portfoyai/views").then((module) => ({ default: module.AuthPage })));
+const GeneratedSitePreviewPage = lazy(() => import("./portfoyai/views").then((module) => ({ default: module.GeneratedSitePreviewPage })));
+const NotFoundPage = lazy(() => import("./portfoyai/views").then((module) => ({ default: module.NotFoundPage })));
+const LoginPage = lazy(() => import("./portfoyai/auth-pages").then((module) => ({ default: module.LoginPage })));
+const SignupPage = lazy(() => import("./portfoyai/auth-pages").then((module) => ({ default: module.SignupPage })));
+const DashboardPage = lazy(() => import("./portfoyai/dashboard").then((module) => ({ default: module.DashboardPage })));
+const PricingPage = lazy(() => import("./portfoyai/pricing").then((module) => ({ default: module.PricingPage })));
+const PlatformContentAdminPage = lazy(() => import("./portfoyai/platform-content-admin").then((module) => ({ default: module.PlatformContentAdminPage })));
+const SiteRenderer = lazy(() => import("./templates/SiteRenderer").then((module) => ({ default: module.SiteRenderer })));
+const RouteLoading = () => <div className="grid min-h-screen place-items-center bg-[#f4f1ea] text-sm text-slate-600">Yükleniyor...</div>;
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
@@ -40,7 +40,7 @@ export default function App() {
         <AuthProvider>
         <PortfoyAIProvider>
           <BrowserRouter>
-            <Routes>
+            <Suspense fallback={<RouteLoading />}><Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/auth" element={<RequireAuth><AuthPage /></RequireAuth>} />
               <Route path="/login" element={<LoginPage />} />
@@ -55,7 +55,7 @@ export default function App() {
               <Route path="/site/:slug/team" element={<SiteRenderer view="team" />} />
               <Route path="/home" element={<Navigate to="/" replace />} />
               <Route path="*" element={<NotFoundPage />} />
-            </Routes>
+            </Routes></Suspense>
           </BrowserRouter>
         </PortfoyAIProvider>
         </AuthProvider>
