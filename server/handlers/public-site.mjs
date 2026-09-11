@@ -20,9 +20,14 @@ export const serializePublicListing = (row) => {
   return listing;
 };
 
+export const applySiteVisibility = (query, options = {}) => options.ownerId
+  ? query.eq("id", options.siteId).eq("user_id", options.ownerId)
+  : query.eq("slug", options.slug).eq("status", "published");
+
 export async function loadPublicSite(slug, options = {}) {
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error("VALIDATION:A valid slug is required.");
-  const { data: site, error } = await getSupabaseClient().from("sites").select("id, slug, theme_config, business_name, tone, primary_color, accent_color, headline, show_closed_listings, show_team_section, team_section_label").eq("slug", slug).maybeSingle();
+  if (!options.siteId && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error("VALIDATION:A valid slug is required.");
+  const siteQuery = getSupabaseClient().from("sites").select("id, slug, theme_config, business_name, tone, primary_color, accent_color, headline, show_closed_listings, show_team_section, team_section_label");
+  const { data: site, error } = await applySiteVisibility(siteQuery, { ...options, slug }).maybeSingle();
   if (error) throw new Error(`Failed to load public site: ${error.message}`);
   if (!site) return null;
   let listingsQuery = getSupabaseClient().from("listings").select(publicListingSelect).eq("site_id", site.id).in("status", ["active", "sold"]);

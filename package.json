@@ -24,6 +24,7 @@
     "migrate:media": "node server/migrate-base64-media.mjs",
     "test:media-storage": "node server/media-storage.test.mjs",
     "test:public-payload": "node server/public-site-payload.test.mjs",
+    "test:public-access": "node server/public-site-access.test.mjs",
     "test:bundle-splitting": "npm run build && node server/bundle-splitting-audit.mjs",
     "test:platform-content": "node server/platform-content.browser.e2e.mjs"
   },

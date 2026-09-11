@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 import { usePageMeta } from "@/lib/page-meta";
 import { publicSitePageMetadata } from "@/lib/site-metadata.js";
 import { createTemplateConfig, type PublicSitePayload, type TemplateFamily, type TemplateView } from "./types";
@@ -37,6 +38,8 @@ function RendererMessage({ children }: { children: string }) {
 
 export function SiteRenderer({ view }: { view: TemplateView }) {
   const { slug = "", listingId } = useParams();
+  const [searchParams] = useSearchParams();
+  const previewSiteId = searchParams.get("previewSiteId");
   const [payload, setPayload] = useState<PublicSitePayload | null>(null);
   const [family, setFamily] = useState<TemplateFamily | null>(null);
   const [error, setError] = useState("");
@@ -46,8 +49,13 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
     const controller = new AbortController();
     setPayload(null);
     setError("");
-    const params = view === "detail" && listingId ? `?listingId=${encodeURIComponent(listingId)}` : "";
-    fetch(`/api/public-sites/${encodeURIComponent(slug)}${params}`, { signal: controller.signal })
+    const load = async () => {
+      const params = view === "detail" && listingId ? `?listingId=${encodeURIComponent(listingId)}` : "";
+      if (!previewSiteId) return fetch(`/api/public-sites/${encodeURIComponent(slug)}${params}`, { signal: controller.signal });
+      const { data: { session } } = await supabase.auth.getSession();
+      return fetch(`/api/sites/${encodeURIComponent(previewSiteId)}/preview${params}`, { signal: controller.signal, headers: session ? { Authorization: `Bearer ${session.access_token}` } : {} });
+    };
+    load()
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "Site yüklenemedi.");
@@ -63,7 +71,7 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
         setError(reason instanceof Error ? reason.message : "Site yüklenemedi.");
       });
     return () => controller.abort();
-  }, [listingId, slug, view]);
+  }, [listingId, previewSiteId, slug, view]);
 
   const listing = useMemo(
     () => payload?.listings?.find((item) => item.id === listingId),

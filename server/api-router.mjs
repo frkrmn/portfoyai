@@ -10,6 +10,7 @@ import publicSite from "./handlers/public-site.mjs";
 import publicSiteContentBackfill from "./handlers/public-site-content-backfill.mjs";
 import renderPage from "./handlers/render-page.mjs";
 import site from "./handlers/site.mjs";
+import sitePreview from "./handlers/site-preview.mjs";
 import siteListings from "./handlers/site-listings.mjs";
 import refineSite from "./handlers/site-refine.mjs";
 import backfillSiteContent from "./handlers/site-content-backfill.mjs";
@@ -39,6 +40,7 @@ export const apiRouteInventory = [
   { pattern: new RegExp(`^/api/team-members/${uuidSource}$`, "i"), methods: ["PATCH", "DELETE"], params: ["memberId"], handler: teamMembers },
   { pattern: new RegExp(`^/api/sites/${uuidSource}/refine$`, "i"), methods: ["POST"], params: ["id"], handler: refineSite },
   { pattern: new RegExp(`^/api/sites/${uuidSource}/content-backfill$`, "i"), methods: ["POST"], params: ["id"], handler: backfillSiteContent },
+  { pattern: new RegExp(`^/api/sites/${uuidSource}/preview$`, "i"), methods: ["GET"], params: ["id"], handler: sitePreview },
   { pattern: new RegExp(`^/api/sites/${uuidSource}$`, "i"), methods: ["GET", "PATCH"], params: ["id"], handler: site },
   { pattern: /^\/api\/sites$/, methods: ["GET"], handler: sites },
 ];
