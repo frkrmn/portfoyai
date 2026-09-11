@@ -1,23 +1,38 @@
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../api-utils.mjs";
+import { claimLeadRateLimit, hashLeadIp, isDuplicateLead, requestIp, verifyTurnstile } from "../lead-protection.mjs";
 
-const createLead = async (request, response) => {
+export const createLead = async (request, response, { supabase = getSupabaseClient(), verifyCaptcha = verifyTurnstile, claimRate = claimLeadRateLimit, duplicateCheck = isDuplicateLead, hashIp = hashLeadIp } = {}) => {
   const body = await readJsonBody(request);
   const siteId = typeof body.site_id === "string" ? body.site_id.trim() : "";
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const phone = typeof body.phone === "string" ? body.phone.trim() : "";
   const message = typeof body.message === "string" ? body.message.trim() : "";
+  const captchaToken = typeof body.turnstile_token === "string" ? body.turnstile_token : "";
+  if (typeof body.website === "string" && body.website.trim()) return sendJson(response, 400, { error: "Spam submission rejected." });
   if (!uuidPattern.test(siteId)) return sendJson(response, 400, { error: "A valid site_id is required." });
   if (!name) return sendJson(response, 400, { error: "Name is required." });
   if (!phone) return sendJson(response, 400, { error: "Phone is required." });
   if (name.length > 120) return sendJson(response, 400, { error: "Name must be 120 characters or fewer." });
   if (phone.length < 5 || phone.length > 40) return sendJson(response, 400, { error: "Phone must be between 5 and 40 characters." });
   if (message.length > 2000) return sendJson(response, 400, { error: "Message must be 2000 characters or fewer." });
-  const { data: site, error: siteError } = await getSupabaseClient().from("sites").select("id").eq("id", siteId).maybeSingle();
+  const { data: site, error: siteError } = await supabase.from("sites").select("id").eq("id", siteId).eq("status", "published").maybeSingle();
   if (siteError) throw new Error(`Failed to validate lead site: ${siteError.message}`);
-  if (!site) return sendJson(response, 404, { error: "Site not found." });
-  let { data: lead, error } = await getSupabaseClient().from("leads").insert({ site_id: site.id, name, phone, message: message || null }).select("id, created_at").single();
+  if (!site) return sendJson(response, 404, { error: "Published site not found." });
+  const ip = requestIp(request);
+  const allowed = await claimRate(supabase, site.id, hashIp(ip));
+  if (!allowed) {
+    response.setHeader("Retry-After", "600");
+    return sendJson(response, 429, { error: "Too many requests. Please try again later." });
+  }
+  const captcha = await verifyCaptcha(captchaToken, ip);
+  if (!captcha.success) {
+    console.warn(`[leads] Turnstile rejected site=${site.id} errors=${captcha.errors.join(",")}`);
+    return sendJson(response, 400, { error: "CAPTCHA verification failed. Please try again." });
+  }
+  if (await duplicateCheck(supabase, site.id, phone)) return sendJson(response, 409, { error: "This request was already received recently." });
+  let { data: lead, error } = await supabase.from("leads").insert({ site_id: site.id, name, phone, message: message || null }).select("id, created_at").single();
   if (error?.code === "23502" && error.message.includes("source")) {
-    const retry = await getSupabaseClient().from("leads").insert({ site_id: site.id, name, phone, message: message || null, source: "public-site" }).select("id, created_at").single();
+    const retry = await supabase.from("leads").insert({ site_id: site.id, name, phone, message: message || null, source: "public-site" }).select("id, created_at").single();
     lead = retry.data;
     error = retry.error;
   }

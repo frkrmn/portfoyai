@@ -25,6 +25,7 @@ import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect 
 import { contentFields } from "../content-schema";
 import { imageSlots } from "../image-schema";
 import { SiteLanguageToggle, useSiteLocale } from "../site-locale";
+import { protectedLeadPayload } from "../lead-protection-payload";
 
 export const imageSchema = imageSlots([
   { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
@@ -155,7 +156,7 @@ function TourForm({ config, listing }: { config: TemplateConfig; listing?: Listi
   const labels = useLabels();
   const [form, setForm] = useState({ name: "", contact: "", message: "" });
   const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setState("submitting");
     const message = [listing ? `Portföy: ${listing.title}` : "", form.message].filter(Boolean).join("\n\n");
@@ -163,7 +164,7 @@ function TourForm({ config, listing }: { config: TemplateConfig; listing?: Listi
       const response = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ site_id: config.siteId, name: form.name, phone: form.contact, message }),
+        body: JSON.stringify(protectedLeadPayload(event, { site_id: config.siteId, name: form.name, phone: form.contact, message })),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || labels.genericError);

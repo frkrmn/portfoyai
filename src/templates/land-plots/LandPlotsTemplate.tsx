@@ -13,6 +13,7 @@ import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type T
 import { contentFields, objectArrayField } from "../content-schema";
 import { imageSlots } from "../image-schema";
 import { SiteCredit, SiteLanguageToggle } from "../site-locale";
+import { protectedLeadPayload } from "../lead-protection-payload";
 
 export const imageSchema = imageSlots([
   { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
@@ -61,7 +62,7 @@ function LeadDialog({ config, listing, open, onClose }: { config: TemplateConfig
   const [form, setForm] = useState({ name: "", phone: "", message: "" });
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   if (!open) return null;
-  const submit = async (event: FormEvent) => { event.preventDefault(); setStatus("submitting"); try { const response = await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ site_id: config.siteId, listing_id: listing.id, ...form }) }); if (!response.ok) throw new Error(); setStatus("success"); } catch { setStatus("error"); } };
+  const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setStatus("submitting"); try { const response = await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(protectedLeadPayload(event, { site_id: config.siteId, listing_id: listing.id, ...form })) }); if (!response.ok) throw new Error(); setStatus("success"); } catch { setStatus("error"); } };
   const field = "w-full border border-[var(--lp-line)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--lp-accent)]";
   return <div className="fixed inset-0 z-[100] grid place-items-center bg-black/55 p-5" role="dialog" aria-modal="true"><div className="relative w-full max-w-md bg-[var(--lp-bg)] p-7 shadow-2xl"><button onClick={onClose} aria-label={c.backLabel} className="absolute right-4 top-4"><X className="h-5 w-5" /></button><h2 className="font-[family-name:var(--lp-heading)] text-3xl font-bold">{c.tourTitle}</h2><p className="mt-3 text-sm leading-6 opacity-60">{c.tourDescription}</p><form onSubmit={submit} className="mt-6 space-y-3"><input className={field} placeholder={c.fullNameLabel} required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /><input className={field} placeholder={c.phoneLabel} required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /><textarea className={`${field} min-h-24`} placeholder={c.messageLabel} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /><button data-site-button className="w-full bg-[var(--site-button)] px-5 py-3 text-sm font-bold text-[var(--site-button-text)]">{status === "submitting" ? c.formSubmitting : c.formSubmit}</button>{status === "success" ? <p className="text-sm text-[var(--lp-accent)]">{c.formSuccess}</p> : null}{status === "error" ? <p className="text-sm">{c.formError}</p> : null}</form></div></div>;
 }

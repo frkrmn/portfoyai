@@ -6,13 +6,14 @@ import { publicSitePageMetadata } from "@/lib/site-metadata.js";
 import { createTemplateConfig, type PublicSitePayload, type TemplateFamily, type TemplateView } from "./types";
 import { loadTemplateFamily } from "./registry";
 import { GoogleFontStylesheet } from "./GoogleFontStylesheet";
+import { LeadProtection } from "./LeadProtection";
 import { localizeSiteConfig, SiteLocaleProvider, useSiteLocale } from "./site-locale";
 
 function LocalizedSite({ config, Component, listingStatus }: { config: ReturnType<typeof createTemplateConfig>; Component: TemplateFamily["Home"]; listingStatus?: string }) {
   const { locale, messages } = useSiteLocale();
   const localizedConfig = useMemo(() => localizeSiteConfig(config, messages, locale), [config, locale, messages]);
   const closedLabel = listingStatus === "sold" ? messages.ui.sold : listingStatus === "rented" ? messages.ui.rented : "";
-  return <><GoogleFontStylesheet fonts={localizedConfig.fonts} />{closedLabel ? <div data-listing-status={listingStatus} className="fixed right-5 top-5 z-[100] rounded-full bg-slate-950 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-xl">{closedLabel}</div> : null}<Component config={localizedConfig} /></>;
+  return <><GoogleFontStylesheet fonts={localizedConfig.fonts} /><LeadProtection />{closedLabel ? <div data-listing-status={listingStatus} className="fixed right-5 top-5 z-[100] rounded-full bg-slate-950 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-xl">{closedLabel}</div> : null}<Component config={localizedConfig} /></>;
 }
 
 function RendererMessage({ children }: { children: string }) {
