@@ -4,17 +4,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import type { ImageSlotDescriptor } from "@/templates/image-schema";
 import { useTranslation } from "react-i18next";
+import { uploadImage } from "@/lib/media-storage";
 
 export type SiteMedia = Record<string, string | string[]>;
 const slotName = (key: string) => key.replace(/^media\./, "");
 
-export function ImageEditor({ schema, media, previewUrl, previewVersion, saving, dirty, onChange, onSave }: { schema: ImageSlotDescriptor[]; media: SiteMedia; previewUrl: string; previewVersion: number; saving: boolean; dirty: boolean; onChange: (media: SiteMedia) => void; onSave: () => void }) {
+export function ImageEditor({ siteId, schema, media, previewUrl, previewVersion, saving, dirty, onChange, onSave }: { siteId: string; schema: ImageSlotDescriptor[]; media: SiteMedia; previewUrl: string; previewVersion: number; saving: boolean; dirty: boolean; onChange: (media: SiteMedia) => void; onSave: () => void }) {
   const { t } = useTranslation();
   const readFiles = async (files: FileList | null, max: number) => {
     if (!files?.length) return [];
     const selected = Array.from(files).slice(0, max);
-    if (selected.some((file) => file.size > 1_500_000 || !["image/jpeg", "image/png", "image/webp"].includes(file.type))) throw new Error(t("dashboard.images.invalid"));
-    return Promise.all(selected.map((file) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result || "")); reader.onerror = reject; reader.readAsDataURL(file); })));
+    if (selected.some((file) => file.size > 10_000_000 || !["image/jpeg", "image/png", "image/webp"].includes(file.type))) throw new Error(t("dashboard.images.invalid"));
+    const uploaded = await Promise.all(selected.map((file, index) => uploadImage(file, siteId, "site", index)));
+    return uploaded.map((item) => item.url);
   };
   const set = (slot: ImageSlotDescriptor, value: string | string[]) => onChange({ ...media, [slotName(slot.key)]: value });
   const upload = async (slot: ImageSlotDescriptor, files: FileList | null) => {

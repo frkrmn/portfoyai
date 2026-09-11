@@ -102,6 +102,8 @@ export type MediaItem = {
   url: string;
   thumbUrl: string;
   alt: string;
+  size?: number;
+  order?: number;
 };
 
 export type Listing = {

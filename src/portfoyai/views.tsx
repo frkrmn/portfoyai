@@ -52,6 +52,7 @@ import { getListingImage } from "@/templates/mediaFallbacks";
 import { LocationHierarchyFields } from "./location-fields";
 import { useTranslation } from "react-i18next";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { uploadImage } from "@/lib/media-storage";
 
 const getThemeStyles = (theme: Pick<ThemeConfig, "primary" | "accent" | "fontPairing">) =>
   ({
@@ -282,23 +283,11 @@ export function ListingForm({
   const handleFiles = async (files: FileList | null) => {
     if (!files?.length) return;
     const selected = Array.from(files).slice(0, Math.max(0, 10 - draft.media.length));
-    if (selected.some((file) => file.size > 1_500_000)) {
+    if (selected.some((file) => file.size > 10_000_000)) {
       toast.error(t("dashboard.listingForm.photoTooLarge"));
       return;
     }
-    const next = await Promise.all(
-      selected.map(
-        (file) =>
-          new Promise<{ url: string; thumbUrl: string; alt: string; id: string }>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const url = String(reader.result);
-              resolve({ url, thumbUrl: url, alt: file.name, id: `media_${Math.random().toString(36).slice(2, 9)}` });
-            };
-            reader.readAsDataURL(file);
-          }),
-      ),
-    );
+    const next = await Promise.all(selected.map((file, index) => uploadImage(file, siteId, "listing", draft.media.length + index)));
     onDraftChange({ media: [...draft.media, ...next] });
   };
 

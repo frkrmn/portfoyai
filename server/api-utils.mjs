@@ -297,7 +297,10 @@ export const listingPayload = (body, siteId) => {
     url: String(item?.url || ""),
     thumbUrl: String(item?.thumbUrl || item?.url || ""),
     alt: String(item?.alt || title).slice(0, 200),
+    size: Number.isFinite(Number(item?.size)) ? Number(item.size) : null,
+    order: Number.isInteger(Number(item?.order)) ? Number(item.order) : index,
   })).filter((item) => item.url) : [];
+  if (media.some((item) => item.url.startsWith("data:") || item.thumbUrl.startsWith("data:"))) throw new Error("VALIDATION:Images must be uploaded before saving.");
   return {
     site_id: siteId,
     title,

@@ -1,4 +1,5 @@
 import { getAuthenticatedUser, getOwnedSite, getSupabaseClient, handleKnownError, listingPayload, listingSelect, methodNotAllowed, readJsonBody, routeParam, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
+import { removeReplacedMedia } from "../media-storage.mjs";
 
 export const config = { api: { bodyParser: { sizeLimit: "8mb" } } };
 
@@ -14,6 +15,7 @@ export default async function handler(request, response) {
     if (request.method === "DELETE") {
       const { error } = await getSupabaseClient().from("listings").delete().eq("id", listingId).eq("site_id", existing.site_id);
       if (error) throw new Error(`Failed to delete listing: ${error.message}`);
+      await removeReplacedMedia(existing.media, []);
       return sendJson(response, 200, { deleted: true, id: listingId });
     }
     const body = await readJsonBody(request, 8 * 1024 * 1024);
@@ -21,6 +23,7 @@ export default async function handler(request, response) {
     delete payload.site_id;
     const { data, error } = await getSupabaseClient().from("listings").update(payload).eq("id", listingId).eq("site_id", existing.site_id).select(listingSelect).single();
     if (error) throw new Error(`Failed to update listing: ${error.message}`);
+    await removeReplacedMedia(existing.media, data.media);
     return sendJson(response, 200, { listing: serializeListing(data) });
   } catch (error) {
     return handleKnownError(response, error, "[listings] Listing mutation failed");

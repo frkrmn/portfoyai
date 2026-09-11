@@ -53,7 +53,8 @@ const sanitizeMedia = (value) => {
   if (entries.length > 30) throw new Error("VALIDATION:media has too many slots.");
   const cleanUrl = (url, path) => {
     if (typeof url !== "string" || url.length > 2_200_000) throw new Error(`VALIDATION:${path} is invalid.`);
-    if (url && !url.startsWith("data:image/") && !url.startsWith("https://") && !url.startsWith("http://") && !url.startsWith("/")) throw new Error(`VALIDATION:${path} is invalid.`);
+    if (url?.startsWith("data:")) throw new Error(`VALIDATION:${path} must be uploaded before saving.`);
+    if (url && !url.startsWith("https://") && !url.startsWith("http://") && !url.startsWith("/")) throw new Error(`VALIDATION:${path} is invalid.`);
     return url;
   };
   return Object.fromEntries(entries.map(([key, item]) => {

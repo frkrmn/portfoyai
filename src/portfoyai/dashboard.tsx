@@ -26,6 +26,7 @@ import { materializeTranslatableContent } from "@/templates/content-localization
 import { templateContentFallbacks } from "@/templates/types";
 import { ContentEditor, type ContentRecord } from "./content-editor";
 import { ImageEditor, type SiteMedia } from "./image-editor";
+import { uploadImage } from "@/lib/media-storage";
 
 type DashboardTab = "overview" | "site" | "content" | "images" | "listings" | "leads";
 
@@ -634,21 +635,15 @@ export function DashboardPage() {
     } catch { setTeamMembers(teamMembers); toast.error(t("dashboard.team.reorderError")); }
   };
 
-  const loadTeamPhoto = (file?: File) => {
+  const loadTeamPhoto = async (file?: File) => {
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) return toast.error(t("dashboard.teamPhoto.type"));
     if (file.size > 1_500_000) return toast.error(t("dashboard.teamPhoto.tooLarge"));
-    const objectUrl = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      if (image.naturalWidth > 2000 || image.naturalHeight > 2000) return toast.error(t("dashboard.teamPhoto.dimensions"));
-      const reader = new FileReader();
-      reader.onload = () => setTeamDraft((current) => ({ ...current, photo_url: String(reader.result || "") }));
-      reader.readAsDataURL(file);
-    };
-    image.onerror = () => { URL.revokeObjectURL(objectUrl); toast.error(t("dashboard.teamPhoto.invalid")); };
-    image.src = objectUrl;
+    if (!activeSite) return;
+    try {
+      const uploaded = await uploadImage(file, activeSite.id, "team");
+      setTeamDraft((current) => ({ ...current, photo_url: uploaded.url }));
+    } catch (error) { toast.error(error instanceof Error ? error.message : t("dashboard.teamPhoto.invalid")); }
   };
 
   const saveThemeSettings = async () => {
@@ -779,7 +774,7 @@ export function DashboardPage() {
 
       {activeSite && activeTab === "content" ? <ContentEditor schema={contentSchema} content={contentDraft} previewUrl={`/site/${activeSite.slug}`} previewVersion={previewVersion} onChange={setContentDraft} onSave={() => void saveContent()} onTranslateMissing={() => void translateMissingContent()} saving={savingSite} translating={translatingContent} dirty={contentDirty} /> : null}
 
-      {activeSite && activeTab === "images" ? <ImageEditor schema={imageSchema} media={mediaDraft} previewUrl={`/site/${activeSite.slug}`} previewVersion={previewVersion} onChange={setMediaDraft} onSave={() => void saveMedia()} saving={savingSite} dirty={mediaDirty} /> : null}
+      {activeSite && activeTab === "images" ? <ImageEditor siteId={activeSite.id} schema={imageSchema} media={mediaDraft} previewUrl={`/site/${activeSite.slug}`} previewVersion={previewVersion} onChange={setMediaDraft} onSave={() => void saveMedia()} saving={savingSite} dirty={mediaDirty} /> : null}
 
       {activeSite && activeTab === "site" && siteDraft ? (
         <div className="grid gap-6 xl:grid-cols-2">

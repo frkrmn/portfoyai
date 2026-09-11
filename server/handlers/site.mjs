@@ -1,5 +1,6 @@
 import { dashboardSite, getAuthenticatedUser, getSupabaseClient, handleKnownError, hexColorPattern, methodNotAllowed, readJsonBody, routeParam, sendJson, uuidPattern } from "../api-utils.mjs";
 import { mergeThemeConfig } from "../site-theme.mjs";
+import { removeReplacedMedia } from "../media-storage.mjs";
 
 const getSite = async (request, response, siteId) => {
   const user = await getAuthenticatedUser(request);
@@ -120,6 +121,7 @@ const updateSite = async (request, response, siteId) => {
   const { data: site, error } = await getSupabaseClient().from("sites").update(updates).eq("id", siteId).eq("user_id", user.id).select("id, slug, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, show_closed_listings, show_team_section, team_section_label, country_id, province_id, district_id, neighborhood_id, created_at").maybeSingle();
   if (error) throw new Error(`Failed to update site: ${error.message}`);
   if (!site) return sendJson(response, 404, { error: "Owned site not found." });
+  await removeReplacedMedia(current.theme_config?.media, site.theme_config?.media);
   return sendJson(response, 200, { site: dashboardSite(site) });
 };
 

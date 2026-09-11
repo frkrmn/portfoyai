@@ -21,6 +21,8 @@
     "test:content-visual": "node server/content-visual-editor.browser.e2e.mjs"
     ,"test:image-editor": "node server/image-editor.browser.e2e.mjs",
     "test:image-schema": "node server/image-schema-audit.mjs",
+    "migrate:media": "node server/migrate-base64-media.mjs",
+    "test:media-storage": "node server/media-storage.test.mjs",
     "test:platform-content": "node server/platform-content.browser.e2e.mjs"
   },
   "dependencies": {
