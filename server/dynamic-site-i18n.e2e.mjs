@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createServer } from "vite";
-import { backfillPublicSiteContent } from "./handlers/public-site-content-backfill.mjs";
+import { backfillSiteContent, contentBackfillDailyQuota } from "./site-content-backfill.mjs";
 import { buildContentTranslationRequest, mergeTranslatedContent, needsContentEnglishBackfill } from "./site-content-i18n.mjs";
 import { buildThemeConfig } from "./site-persistence.mjs";
 
@@ -57,14 +57,26 @@ const generate = async ({ source }) => {
   return JSON.stringify({ content: translated });
 };
 
-const first = await backfillPublicSiteContent("legacy-site", { supabase, generate });
+const first = await backfillSiteContent({ siteId: "site-1", userId: "owner-1", supabase, generate });
 assert.equal(first.body.backfilled, true);
 assert.equal(first.body.cached, false);
 assert.equal(row.theme_config.site_content_i18n.status, "complete");
-const second = await backfillPublicSiteContent("legacy-site", { supabase, generate });
+const second = await backfillSiteContent({ siteId: "site-1", userId: "owner-1", supabase, generate });
 assert.equal(second.body.backfilled, false);
 assert.equal(second.body.cached, true);
 assert.equal(generationCalls, 1);
+
+row.theme_config = { ...structuredClone(originalTheme), site_content_i18n: { status: "failed", attempts: contentBackfillDailyQuota, window_started_at: new Date().toISOString() } };
+const limited = await backfillSiteContent({ siteId: "site-1", userId: "owner-1", supabase, generate });
+assert.equal(limited.status, 429);
+assert(limited.body.retry_after_seconds > 0);
+assert.equal(generationCalls, 1);
+
+row.theme_config = structuredClone(originalTheme);
+await assert.rejects(() => backfillSiteContent({ siteId: "site-1", userId: "owner-1", supabase, generate: async () => { throw new Error("provider unavailable"); } }), /provider unavailable/);
+assert.equal(row.theme_config.site_content_i18n.status, "failed");
+assert.equal(row.theme_config.site_content_i18n.attempts, 1);
+assert.equal(row.theme_config.site_content_i18n.last_error, "provider unavailable");
 
 const vite = await createServer({ server: { middlewareMode: true }, appType: "custom", logLevel: "silent" });
 try {
@@ -79,4 +91,4 @@ try {
   await vite.close();
 }
 
-console.info(JSON.stringify({ one_time_backfill: true, persisted_cache_prevents_second_generation: generationCalls === 1, independent_editor_languages: true, legacy_turkish_fallback_preserved: true }, null, 2));
+console.info(JSON.stringify({ one_time_backfill: true, persisted_cache_prevents_second_generation: true, authenticated_daily_quota: true, observable_failure_metadata: true, independent_editor_languages: true, legacy_turkish_fallback_preserved: true }, null, 2));
