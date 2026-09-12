@@ -29,6 +29,8 @@ import { ImageEditor, type SiteMedia } from "./image-editor";
 import { uploadImage } from "@/lib/media-storage";
 import { ListingManagementRow, OverviewMetric as Metric } from "./dashboard/sections";
 import { dashboardSections } from "./dashboard/index";
+import { applyLeadRealtimeChange, LEAD_FALLBACK_INTERVAL_MS, type DashboardLead } from "@/lib/lead-realtime";
+import { supabase } from "@/lib/supabase";
 
 type DashboardTab = "overview" | "site" | "content" | "images" | "listings" | "leads";
 
@@ -67,15 +69,6 @@ type DashboardSite = {
   show_closed_listings: boolean;
   show_team_section: boolean;
   team_section_label: string | null;
-  created_at: string;
-};
-
-type DashboardLead = {
-  id: string;
-  site_id: string;
-  name: string;
-  phone: string;
-  message: string | null;
   created_at: string;
 };
 
@@ -442,10 +435,47 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (!session) return;
-    const refresh = () => void loadLeads().catch((error) => toast.error(error.message));
-    const timer = window.setInterval(refresh, 3000);
+    let disposed = false;
+    let fallbackTimer: number | undefined;
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      void loadLeads().catch((error) => console.warn("[leads-realtime] refresh failed", error));
+    };
+    const stopFallback = () => {
+      if (fallbackTimer !== undefined) window.clearInterval(fallbackTimer);
+      fallbackTimer = undefined;
+    };
+    const startFallback = () => {
+      if (disposed || fallbackTimer !== undefined) return;
+      fallbackTimer = window.setInterval(refresh, LEAD_FALLBACK_INTERVAL_MS);
+      refresh();
+    };
+
+    void supabase.realtime.setAuth(session.access_token);
+    const channel = supabase
+      .channel(`dashboard-leads:${session.user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, (payload) => {
+        setLeads((current) => applyLeadRealtimeChange(current, payload));
+      })
+      .subscribe((status) => {
+        if (disposed) return;
+        if (status === "SUBSCRIBED") {
+          stopFallback();
+          refresh();
+          return;
+        }
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") startFallback();
+      });
+
     window.addEventListener("focus", refresh);
-    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
+    window.addEventListener("online", refresh);
+    return () => {
+      disposed = true;
+      stopFallback();
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      void supabase.removeChannel(channel);
+    };
   }, [loadLeads, session]);
 
   const selectSite = (siteId: string) => {
