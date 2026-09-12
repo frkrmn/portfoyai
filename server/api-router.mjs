@@ -15,6 +15,7 @@ import siteListings from "./handlers/site-listings.mjs";
 import refineSite from "./handlers/site-refine.mjs";
 import backfillSiteContent from "./handlers/site-content-backfill.mjs";
 import sites from "./handlers/sites.mjs";
+import seoFiles from "./handlers/seo-files.mjs";
 import teamMembers from "./handlers/team-members.mjs";
 import adminPlatformContent, { publicPlatformContent } from "./handlers/platform-content.mjs";
 import { methodNotAllowed, sendJson } from "./api-utils.mjs";
@@ -23,6 +24,7 @@ import { withRequestObservability } from "./observability.mjs";
 const uuidSource = "([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})";
 
 export const apiRouteInventory = [
+  { pattern: /^\/api\/(sitemap\.xml|robots\.txt)$/, methods: ["GET", "HEAD"], handler: seoFiles },
   { pattern: /^\/api\/render-page$/, methods: ["GET", "HEAD"], handler: renderPage },
   { pattern: /^\/api\/experiment$/, methods: ["POST"], handler: experiment },
   { pattern: /^\/api\/fonts$/, methods: ["GET"], handler: fonts },

@@ -1,4 +1,5 @@
 const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
+const localized = (value, locale) => normalizeText(value && typeof value === "object" ? value[locale] || value.tr || value.en : value);
 
 export const truncateMetaDescription = (value, maxLength = 160) => {
   const text = normalizeText(value);
@@ -32,23 +33,25 @@ export const publicSitePageMetadata = ({ payload, view = "home", listing, locale
     .filter((value, index, values) => value && values.indexOf(value) === index)
     .map((value) => value.replace(/[.!?]+$/g, ""))
     .join(". "));
+  const siteSeo = payload?.config?.theme_config?.seo || {};
+  const listingSeo = listing?.seo || {};
+  const custom = view === "detail" ? listingSeo : siteSeo;
+  const customTitle = localized(custom.title, locale);
+  const customDescription = truncateMetaDescription(localized(custom.description, locale));
+  const shared = {
+    ogImage: normalizeText(custom.og_image || siteSeo.og_image),
+    favicon: normalizeText(siteSeo.favicon),
+    canonicalUrl: normalizeText(view === "detail" ? listingSeo.canonical_url : view === "home" ? siteSeo.canonical_url : ""),
+    robots: custom.robots_index === false || siteSeo.robots_index === false ? "noindex,nofollow" : "index,follow",
+  };
 
   if (view === "detail" && listing) {
-    return {
-      title: `${normalizeText(listing.title)} — ${businessName}`,
-      description: truncateMetaDescription(listing.description || `${listing.title}, ${businessName}`),
-    };
+    return { title: customTitle || `${normalizeText(listing.title)} — ${businessName}`, description: customDescription || truncateMetaDescription(listing.description || `${listing.title}, ${businessName}`), ...shared };
   }
 
   if (view === "listings") {
-    return {
-      title: `${businessName} — ${locale === "en" ? "All Listings" : "Tüm İlanlar"}`,
-      description: siteDescription,
-    };
+    return { title: customTitle || `${businessName} — ${locale === "en" ? "All Listings" : "Tüm İlanlar"}`, description: customDescription || siteDescription, ...shared };
   }
 
-  return {
-    title: headline ? `${businessName} — ${headline}` : businessName,
-    description: siteDescription,
-  };
+  return { title: customTitle || (headline ? `${businessName} — ${headline}` : businessName), description: customDescription || siteDescription, ...shared };
 };

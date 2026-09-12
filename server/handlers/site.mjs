@@ -1,4 +1,4 @@
-import { dashboardSite, getAuthenticatedUser, getSupabaseClient, handleKnownError, hexColorPattern, methodNotAllowed, readJsonBody, routeParam, sendJson, uuidPattern } from "../api-utils.mjs";
+import { dashboardSite, getAuthenticatedUser, getSupabaseClient, handleKnownError, hexColorPattern, methodNotAllowed, readJsonBody, routeParam, sanitizeSeo, sendJson, uuidPattern } from "../api-utils.mjs";
 import { mergeThemeConfig } from "../site-theme.mjs";
 import { removeReplacedMedia } from "../media-storage.mjs";
 import { siteSelect } from "../site-source-of-truth.mjs";
@@ -107,6 +107,7 @@ const updateSite = async (request, response, siteId) => {
   }
   if (body.content !== undefined) themePatch.content = body.content;
   if (body.media !== undefined) themePatch.media = body.media;
+  if (body.seo !== undefined) themePatch.seo = sanitizeSeo(body.seo);
   if (Object.keys(updates).length === 0 && Object.keys(body).length === 0) return sendJson(response, 400, { error: "No site changes were supplied." });
   const { themeConfig, topLevel } = mergeThemeConfig(current.theme_config, themePatch);
   Object.assign(updates, topLevel, { theme_config: themeConfig, draft_revision: Number(current.draft_revision || 1) + 1 });

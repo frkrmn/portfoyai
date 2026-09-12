@@ -19,6 +19,10 @@ const platformHtmlPaths = new Set(["/", "/pricing", "/auth", "/login", "/signup"
 
 const server = createHttpServer(async (request, response) => {
   const pathname = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`).pathname;
+  if (pathname === "/sitemap.xml" || pathname === "/robots.txt") {
+    request.routedApiPath = `/api${pathname}`;
+    return apiHandler(request, response);
+  }
   if (pathname === "/api" || pathname.startsWith("/api/")) return apiHandler(request, response);
   if ((request.method === "GET" || request.method === "HEAD") && (platformHtmlPaths.has(pathname) || pathname.startsWith("/site/"))) {
     request.query = { route: "render-page", pagePath: pathname.replace(/^\//, "") };

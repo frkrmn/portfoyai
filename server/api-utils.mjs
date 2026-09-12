@@ -217,6 +217,7 @@ export const serializeListing = (listing) => {
     property_subtype: listing.property_category === "isyeri" ? null : (["daire", "mustakil_ev", "villa", "rezidans", "konut_imarli", "ticari_imarli", "tarla_tarimsal", "villa_imarli", "kentsel_donusum"].includes(listing.property_subtype) ? listing.property_subtype : listing.property_category === "arsa" ? "konut_imarli" : "daire"),
     created_at: listing.created_at,
     features,
+    seo: listing.seo && typeof listing.seo === "object" ? listing.seo : {},
     address: listing.address || `${listing.district}, Türkiye`,
     category: listing.category || (/dubleks/i.test(listing.title) ? "duplex" : /müstakil|villa/i.test(listing.title) ? "house" : "apartment"),
     bedroom_count: listing.bedroom_count ?? (Number.parseInt(listing.room_count, 10) || 1),
@@ -315,9 +316,25 @@ export const listingPayload = (body, siteId) => {
     status: body.status || "active",
     listing_status: listingStatus,
     features: Array.isArray(body.features) ? body.features.map(String).map((value) => value.trim()).filter(Boolean).slice(0, 30) : [],
+    seo: sanitizeSeo(body.seo),
     price_reduced_from: priceReducedFrom,
     urgent_sale: body.urgent_sale === true,
   };
+};
+
+export const sanitizeSeo = (value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const localized = (field, max) => Object.fromEntries(["tr", "en"].map((locale) => [locale, String(field?.[locale] || "").trim().slice(0, max)]).filter(([, text]) => text));
+  const seo = { title: localized(value.title, 70), description: localized(value.description, 170) };
+  for (const key of ["og_image", "favicon", "canonical_url"]) {
+    const raw = String(value[key] || "").trim().slice(0, 1000);
+    if (raw) {
+      try { const url = new URL(raw); if (!["http:", "https:"].includes(url.protocol)) throw new Error(); } catch { throw new Error(`VALIDATION:${key} must be a valid http or https URL.`); }
+      seo[key] = raw;
+    }
+  }
+  seo.robots_index = value.robots_index !== false;
+  return seo;
 };
 
 export const handleKnownError = (response, error, scope) => {

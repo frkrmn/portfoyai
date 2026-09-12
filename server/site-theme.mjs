@@ -185,6 +185,11 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
     themeConfig.media = sanitizeMedia(patch.media);
     appliedFields.push(...Object.keys(themeConfig.media).map((key) => `media.${key}`));
   }
+  if (patch.seo !== undefined) {
+    if (!patch.seo || typeof patch.seo !== "object" || Array.isArray(patch.seo)) throw new Error("VALIDATION:seo must be an object.");
+    themeConfig.seo = structuredClone(patch.seo);
+    appliedFields.push("seo");
+  }
 
   themeConfig.schema_version = CURRENT_THEME_SCHEMA_VERSION;
   for (const duplicate of ["businessName", "phone", "email", "address", "regionFocus", "mapUrl"]) delete themeConfig.content[duplicate];

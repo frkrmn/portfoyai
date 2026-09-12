@@ -9,6 +9,8 @@
     }
   },
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api?route=sitemap.xml" },
+    { "source": "/robots.txt", "destination": "/api?route=robots.txt" },
     {
       "source": "/site/:pagePath*",
       "destination": "/api?route=render-page&pagePath=site/:pagePath*"

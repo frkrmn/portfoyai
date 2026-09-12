@@ -15,7 +15,7 @@ import { trackExperimentEvent } from "@/lib/experiment";
 import { getAgentImage, getListingImage } from "@/templates/mediaFallbacks";
 import { GoogleFontStylesheet } from "@/templates/GoogleFontStylesheet";
 import { useAuth } from "./auth";
-import type { Listing, ListingDraft, TeamMember } from "./types";
+import type { Listing, ListingDraft, SeoConfig, TeamMember } from "./types";
 import { formatListingLocation } from "./listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
 import { ListingForm, Shell } from "./views";
@@ -49,6 +49,7 @@ type DashboardSite = {
     content?: ContentRecord;
     media?: SiteMedia;
     layout?: Record<string, unknown>;
+    seo?: SeoConfig;
     layout_fine_tune?: {
       buttonStyle?: "solid" | "outline" | "pill" | "sharp";
       navAlignment?: "left" | "center" | "split";
@@ -95,6 +96,7 @@ type SiteDraft = {
   body_italic: boolean;
   buttonColorSource: "accent" | "primary" | "custom";
   buttonColorCustom: string;
+  seo: SeoConfig;
 };
 
 type GoogleFont = { family: string; variants: string[] };
@@ -235,6 +237,7 @@ const blankListing = (siteId: string, district = ""): ListingDraft & { id?: stri
   status: "active",
   listing_status: "active",
   features: [],
+  seo: { title: {}, description: {}, robots_index: true },
 });
 
 const siteDraftFrom = (site: DashboardSite): SiteDraft => ({
@@ -260,6 +263,7 @@ const siteDraftFrom = (site: DashboardSite): SiteDraft => ({
   body_italic: site.theme_config?.fonts?.bodyItalic === true,
   buttonColorSource: site.theme_config?.colors?.buttonColorSource || "accent",
   buttonColorCustom: site.theme_config?.colors?.buttonColorCustom || site.accent_color,
+  seo: site.theme_config?.seo || { title: {}, description: {}, robots_index: true },
 });
 
 const themeFields = ["primary_color", "accent_color", "heading_font", "body_font", "heading_weight", "heading_italic", "body_weight", "body_italic", "buttonColorSource", "buttonColorCustom"] as const;
@@ -840,6 +844,7 @@ export function DashboardPage() {
               <div><Label htmlFor="site-map-url">{t("dashboard.site.mapUrl")}</Label><Input id="site-map-url" type="url" inputMode="url" placeholder="https://maps.app.goo.gl/..." value={siteDraft.map_url} onChange={(e) => setSiteDraft({ ...siteDraft, map_url: e.target.value })} /><p className="mt-1 text-xs text-[#69756e]">{t("dashboard.site.mapUrlHelp")}</p></div>
               <div><Label>{t("dashboard.site.region")}</Label><p className="mt-1 text-xs text-[#69756e]">{t("dashboard.site.regionHelp")}</p></div>
               <LocationHierarchyFields idPrefix="site-region" value={siteDraft} onChange={(selection, names) => setSiteDraft({ ...siteDraft, ...selection, region_focus: [names.neighborhood, names.district, names.province].filter(Boolean).join(", ") })} />
+              <section className="space-y-3 rounded-2xl border bg-white p-4"><div className="font-semibold">{t("dashboard.seo.siteTitle")}</div><div className="grid gap-3 sm:grid-cols-2"><div><Label>{t("dashboard.seo.titleTr")}</Label><Input maxLength={70} value={siteDraft.seo.title?.tr || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, title: { ...siteDraft.seo.title, tr: event.target.value } } })} /></div><div><Label>{t("dashboard.seo.titleEn")}</Label><Input maxLength={70} value={siteDraft.seo.title?.en || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, title: { ...siteDraft.seo.title, en: event.target.value } } })} /></div></div><div className="grid gap-3 sm:grid-cols-2"><div><Label>{t("dashboard.seo.descriptionTr")}</Label><Textarea maxLength={170} value={siteDraft.seo.description?.tr || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, description: { ...siteDraft.seo.description, tr: event.target.value } } })} /></div><div><Label>{t("dashboard.seo.descriptionEn")}</Label><Textarea maxLength={170} value={siteDraft.seo.description?.en || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, description: { ...siteDraft.seo.description, en: event.target.value } } })} /></div></div><div><Label>{t("dashboard.seo.ogImage")}</Label><Input type="url" value={siteDraft.seo.og_image || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, og_image: event.target.value } })} /></div><div><Label>{t("dashboard.seo.favicon")}</Label><Input type="url" value={siteDraft.seo.favicon || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, favicon: event.target.value } })} /></div><div><Label>{t("dashboard.seo.canonical")}</Label><Input type="url" value={siteDraft.seo.canonical_url || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, canonical_url: event.target.value } })} /></div><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={siteDraft.seo.robots_index !== false} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, robots_index: event.target.checked } })} />{t("dashboard.seo.index")}</label></section>
               <div className="flex flex-wrap gap-2"><Button onClick={saveIdentity} disabled={savingSite}>{t("dashboard.site.save")}</Button><Button variant="outline" onClick={togglePublication} disabled={savingSite}>{t(activeSite.status === "published" ? "dashboard.site.unpublish" : "dashboard.site.publish")}</Button></div>
               <div className="flex items-center justify-between gap-4 rounded-2xl border bg-white p-4">
                 <div><div className="font-semibold">{t("dashboard.site.showClosedListings")}</div><p className="mt-1 text-xs text-slate-500">{t("dashboard.site.showClosedListingsDescription")}</p></div>

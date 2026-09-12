@@ -106,6 +106,15 @@ export type MediaItem = {
   order?: number;
 };
 
+export type SeoConfig = {
+  title?: { tr?: string; en?: string };
+  description?: { tr?: string; en?: string };
+  og_image?: string;
+  favicon?: string;
+  canonical_url?: string;
+  robots_index?: boolean;
+};
+
 export type Listing = {
   id: string;
   site_id: string;
@@ -132,6 +141,7 @@ export type Listing = {
   media: MediaItem[];
   status: "active" | "passive" | "sold";
   listing_status: "active" | "sold" | "rented";
+  seo?: SeoConfig;
   created_at: string;
   features: string[];
   address?: string | null;

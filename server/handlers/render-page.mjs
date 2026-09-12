@@ -31,6 +31,12 @@ const replaceMeta = (html, attribute, key, content) => {
   if (pattern.test(html)) return html.replace(pattern, `<meta ${attribute}="${key}" content="${escaped}" />`);
   return html.replace("</head>", `    <meta ${attribute}="${key}" content="${escaped}" />\n  </head>`);
 };
+const replaceLink = (html, rel, href, attributes = "") => {
+  if (!href) return html;
+  const tag = `<link rel="${rel}" href="${escapeHtml(href)}"${attributes} />`;
+  const pattern = new RegExp(`<link\\s+[^>]*rel=["']${rel}["'][^>]*>`, "i");
+  return pattern.test(html) ? html.replace(pattern, tag) : html.replace("</head>", `    ${tag}\n  </head>`);
+};
 
 export const injectPageMetadata = (html, metadata, locale) => {
   let output = html
@@ -41,9 +47,18 @@ export const injectPageMetadata = (html, metadata, locale) => {
   output = replaceMeta(output, "property", "og:title", metadata.title);
   output = replaceMeta(output, "property", "og:description", metadata.description);
   output = replaceMeta(output, "property", "og:type", "website");
+  output = replaceMeta(output, "property", "og:locale", locale === "en" ? "en_US" : "tr_TR");
+  output = replaceMeta(output, "name", "robots", metadata.robots || "index,follow");
   output = replaceMeta(output, "name", "twitter:card", "summary_large_image");
   output = replaceMeta(output, "name", "twitter:title", metadata.title);
   output = replaceMeta(output, "name", "twitter:description", metadata.description);
+  if (metadata.ogImage) {
+    output = replaceMeta(output, "property", "og:image", metadata.ogImage);
+    output = replaceMeta(output, "name", "twitter:image", metadata.ogImage);
+  }
+  output = replaceLink(output, "canonical", metadata.canonicalUrl);
+  output = replaceLink(output, "icon", metadata.favicon);
+  if (metadata.structuredData) output = output.replace("</head>", `    <script type="application/ld+json">${JSON.stringify(metadata.structuredData).replace(/</g, "\\u003c")}</script>\n  </head>`);
   return output;
 };
 
@@ -63,6 +78,11 @@ const resolveSubdomainSlug = (request, pathname) => {
   const slug = hostname.slice(0, -(baseDomain.length + 1));
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? slug : null;
 };
+const requestOrigin = (request) => {
+  const protocol = String(request.headers["x-forwarded-proto"] || "https").split(",")[0] === "http" ? "http" : "https";
+  const host = String(request.headers["x-forwarded-host"] || request.headers.host || "localhost").split(",")[0];
+  return `${protocol}://${host}`;
+};
 
 export async function resolvePageMetadata(request) {
   const locale = resolveRequestLocale(request);
@@ -72,12 +92,20 @@ export async function resolvePageMetadata(request) {
   if (!slug) return { locale, metadata: platformPageMetadata(locale), statusCode: 200 };
 
   const payload = await loadPublicSite(slug);
-  if (!payload) return { locale, metadata: platformPageMetadata(locale), statusCode: 404 };
+  if (!payload) return { locale, metadata: { ...platformPageMetadata(locale), robots: "noindex,nofollow" }, statusCode: 404 };
   const listingId = match?.[2];
   const view = listingId ? "detail" : match && pathname.includes("/listings") ? "listings" : "home";
   const listing = listingId ? payload.listings.find((item) => item.id === listingId) : undefined;
-  if (view === "detail" && !listing) return { locale, metadata: publicSitePageMetadata({ payload, view: "listings", locale }), statusCode: 404 };
-  return { locale, metadata: publicSitePageMetadata({ payload, view, listing, locale }), statusCode: 200 };
+  if (view === "detail" && !listing) return { locale, metadata: { ...publicSitePageMetadata({ payload, view: "listings", locale }), robots: "noindex,nofollow" }, statusCode: 404 };
+  const metadata = publicSitePageMetadata({ payload, view, listing, locale });
+  const canonicalPath = view === "detail" ? `/site/${slug}/listings/${listing.id}` : view === "listings" ? `/site/${slug}/listings` : `/site/${slug}`;
+  metadata.canonicalUrl ||= `${requestOrigin(request)}${canonicalPath}`;
+  metadata.structuredData = view === "detail" ? {
+    "@context": "https://schema.org", "@type": "Residence", name: listing.title, description: listing.description, url: metadata.canonicalUrl,
+    image: listing.media?.map((item) => item.url).filter(Boolean), address: { "@type": "PostalAddress", addressLocality: listing.district, addressCountry: "TR" },
+    offers: { "@type": "Offer", price: listing.price, priceCurrency: listing.currency || "TRY", availability: "https://schema.org/InStock" },
+  } : { "@context": "https://schema.org", "@type": "RealEstateAgent", name: payload.config.business_name, url: metadata.canonicalUrl, image: metadata.ogImage || undefined, telephone: payload.config.theme_config?.content?.phone || undefined };
+  return { locale, metadata, statusCode: 200 };
 }
 
 export default async function handler(request, response) {
