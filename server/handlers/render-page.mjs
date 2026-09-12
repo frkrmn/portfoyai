@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { structuredLog } from "../observability.mjs";
 import { join } from "node:path";
 import { loadPublicSite } from "./public-site.mjs";
 import { platformPageMetadata, publicSitePageMetadata } from "../../src/lib/site-metadata.js";
@@ -91,7 +92,7 @@ export default async function handler(request, response) {
     response.setHeader("Vary", "Accept-Language, Cookie");
     response.end(request.method === "HEAD" ? "" : rendered);
   } catch (error) {
-    console.error("[render-page] HTML metadata rendering failed", error);
+    structuredLog("error", "render_page.failed", { error });
     response.statusCode = 500;
     response.setHeader("Content-Type", "text/plain; charset=utf-8");
     response.end("Page metadata could not be rendered.");

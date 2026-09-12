@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { formatListingPrice, normalizeListingCurrency } from "../../src/lib/listing-price.js";
 import { getAuthenticatedUser, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
+import { trackAiCall } from "../observability.mjs";
 
 export const listingCopyModel = "gemini-3.5-flash-lite";
 
@@ -60,7 +61,7 @@ export const listingFactsFromBody = (body) => {
 export async function generateListingCopy(facts, apiKey = process.env.GEMINI_API_KEY) {
   if (!apiKey) throw new Error("GEMINI_API_KEY environment variable is not set.");
   const gemini = new GoogleGenAI({ apiKey });
-  const response = await gemini.models.generateContent({
+  const response = await trackAiCall({ operation: "listing.generate_copy", model: listingCopyModel, call: () => gemini.models.generateContent({
     model: listingCopyModel,
     contents: `İLAN VERİLERİ:\n${JSON.stringify(facts, null, 2)}`,
     config: {
@@ -75,7 +76,7 @@ export async function generateListingCopy(facts, apiKey = process.env.GEMINI_API
       responseMimeType: "application/json",
       responseSchema: listingCopySchema,
     },
-  });
+  }) });
   if (!response.text) throw new Error("Gemini returned an empty response.");
   const result = JSON.parse(response.text);
   if (!cleanText(result.platform_style) || !cleanText(result.seo_style)) throw new Error("Gemini did not return both copy variants.");

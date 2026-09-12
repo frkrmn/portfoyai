@@ -1,4 +1,4 @@
-import { getSupabaseClient, methodNotAllowed, sendJson, uuidPattern } from "../api-utils.mjs";
+import { getSupabaseClient, handleKnownError, methodNotAllowed, sendJson, uuidPattern } from "../api-utils.mjs";
 
 const queryValue = (request, name) => {
   const value = request.query?.[name];
@@ -36,7 +36,6 @@ export default async function handler(request, response) {
     }
     return sendJson(response, 404, { error: "Location resource not found." });
   } catch (error) {
-    console.error("[locations] Fetch failed", error);
-    return sendJson(response, 500, { error: error instanceof Error ? error.message : String(error) });
+    return handleKnownError(response, error, "[locations] Fetch failed");
   }
 }

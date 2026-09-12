@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { randomInt } from "node:crypto";
 import { canonicalSiteProjection, siteSelect } from "./site-source-of-truth.mjs";
+import { requestContext, structuredLog } from "./observability.mjs";
 
 export const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export const hexColorPattern = /^#[0-9a-f]{6}$/i;
@@ -320,9 +321,10 @@ export const listingPayload = (body, siteId) => {
 };
 
 export const handleKnownError = (response, error, scope) => {
-  if (error instanceof Error && error.message === "AUTH_REQUIRED") return sendJson(response, 401, { error: "Authentication required." });
-  if (error instanceof Error && error.message.startsWith("VALIDATION:")) return sendJson(response, 400, { error: error.message.slice(11) });
+  const requestId = requestContext().requestId;
+  if (error instanceof Error && error.message === "AUTH_REQUIRED") return sendJson(response, 401, { error: "Authentication required.", code: "AUTH_REQUIRED", request_id: requestId });
+  if (error instanceof Error && error.message.startsWith("VALIDATION:")) return sendJson(response, 400, { error: error.message.slice(11), code: "VALIDATION_ERROR", request_id: requestId });
   if (error instanceof Error && error.message.includes("FREE_LISTING_LIMIT")) return sendJson(response, 402, { error: "Ücretsiz planda en fazla 5 aktif ilan yayınlayabilirsiniz.", code: "FREE_LISTING_LIMIT", context: "listing_limit", limit: 5, plan: "free" });
-  console.error(scope, error);
-  return sendJson(response, 500, { error: error instanceof Error ? error.message : String(error) });
+  structuredLog("error", "api.error", { scope, error, error_code: "INTERNAL_ERROR" });
+  return sendJson(response, 500, { error: "Unexpected server error.", code: "INTERNAL_ERROR", request_id: requestId });
 };

@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { dashboardSite, getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../api-utils.mjs";
 import { buttonColorSources, fineTuneEnums, mergeThemeConfig } from "../site-theme.mjs";
+import { trackAiCall } from "../observability.mjs";
 
 export const siteRefineModel = "gemini-3.5-flash-lite";
 const allowedFonts = [
@@ -44,11 +45,11 @@ const systemInstruction = [
 export async function mapRefinementRequest(requestText, apiKey = process.env.GEMINI_API_KEY) {
   if (!apiKey) throw new Error("GEMINI_API_KEY environment variable is not set.");
   const gemini = new GoogleGenAI({ apiKey });
-  const result = await gemini.models.generateContent({
+  const result = await trackAiCall({ operation: "site.refine", model: siteRefineModel, call: () => gemini.models.generateContent({
     model: siteRefineModel,
     contents: `İNCE AYAR İSTEĞİ:\n${requestText}`,
     config: { systemInstruction, responseMimeType: "application/json", responseSchema: siteRefineSchema },
-  });
+  }) });
   if (!result.text) throw new Error("Gemini returned an empty refinement response.");
   const mapped = JSON.parse(result.text);
   const unsupportedNote = typeof mapped.unsupported_note === "string" && mapped.unsupported_note.trim()

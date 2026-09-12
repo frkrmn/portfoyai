@@ -1,4 +1,4 @@
-import { getAuthenticatedUser, methodNotAllowed, routeParam, sendJson, uuidPattern } from "../api-utils.mjs";
+import { getAuthenticatedUser, handleKnownError, methodNotAllowed, routeParam, sendJson, uuidPattern } from "../api-utils.mjs";
 import { loadPublicSite } from "./public-site.mjs";
 
 export default async function handler(request, response) {
@@ -12,8 +12,6 @@ export default async function handler(request, response) {
     response.setHeader("Cache-Control", "private, no-store");
     return sendJson(response, 200, payload);
   } catch (error) {
-    if (error instanceof Error && error.message === "AUTH_REQUIRED") return sendJson(response, 401, { error: "Authentication required." });
-    console.error("[site-preview] Preview failed", error);
-    return sendJson(response, 500, { error: "Site preview failed." });
+    return handleKnownError(response, error, "[site-preview] Preview failed");
   }
 }

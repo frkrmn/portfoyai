@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { GoogleGenAI } from "@google/genai";
+import { trackAiCall } from "../observability.mjs";
 import { adminEmails } from "../admin-auth.mjs";
 import { insertGeneratedSite } from "../site-persistence.mjs";
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
@@ -94,17 +95,14 @@ export default async function handler(request, response) {
     if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY environment variable is not set.");
 
     const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    console.info(`[generate-theme] Starting Gemini generation with ${siteConfigModel}`);
-    const startedAt = Date.now();
-    const result = await gemini.models.generateContent({
+    const result = await trackAiCall({ operation: "site.generate_theme", model: siteConfigModel, call: () => gemini.models.generateContent({
       model: siteConfigModel,
       contents: `USER BUSINESS DESCRIPTION:\n${prompt}`,
       config: { systemInstruction: siteConfigSystemPrompt, responseMimeType: "application/json", responseSchema: siteConfigSchema },
-    });
+    }) });
     if (!result.text) throw new Error("Gemini returned an empty response.");
     const config = validateGeneratedSiteConfig(ensureLandPlotsContent(JSON.parse(result.text)));
     const model = result.modelVersion || siteConfigModel;
-    console.info(`[generate-theme] Gemini structured response received in ${Date.now() - startedAt}ms; model=${model}`);
     let site;
     try {
       site = await insertGeneratedSite(getSupabaseClient(), config, user.id, { siteLimitExempt: isAdmin });

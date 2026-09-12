@@ -1,4 +1,4 @@
-import { getSupabaseClient, methodNotAllowed, routeParam, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
+import { getSupabaseClient, handleKnownError, methodNotAllowed, routeParam, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
 import { canonicalSiteProjection, siteSelect } from "../site-source-of-truth.mjs";
 
 export const publicListingSelect = "id,title,description,price,currency,m2,room_count,listing_type,district,lat,lng,media,status,listing_status,property_category,property_subtype,created_at,features,country:countries(name),province:provinces(name),structured_district:districts(name),neighborhood:neighborhoods(name)";
@@ -73,7 +73,6 @@ export default async function handler(request, response) {
     return sendJson(response, 200, payload);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("VALIDATION:")) return sendJson(response, 400, { error: error.message.slice("VALIDATION:".length) });
-    console.error("[public-sites] Site fetch failed", error);
-    return sendJson(response, 500, { error: error instanceof Error ? error.message : String(error) });
+    return handleKnownError(response, error, "[public-sites] Site fetch failed");
   }
 }

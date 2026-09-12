@@ -18,6 +18,7 @@ import sites from "./handlers/sites.mjs";
 import teamMembers from "./handlers/team-members.mjs";
 import adminPlatformContent, { publicPlatformContent } from "./handlers/platform-content.mjs";
 import { methodNotAllowed, sendJson } from "./api-utils.mjs";
+import { withRequestObservability } from "./observability.mjs";
 
 const uuidSource = "([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})";
 
@@ -53,17 +54,19 @@ const requestPathname = (request) => request.routedApiPath || new URL(
 
 export async function dispatchApiRequest(request, response) {
   const pathname = requestPathname(request);
-  for (const route of apiRouteInventory) {
-    const match = pathname.match(route.pattern);
-    if (!match) continue;
-    if (!route.methods.includes(request.method || "")) return methodNotAllowed(response, route.methods);
-    request.query = { ...(request.query || {}) };
-    route.params?.forEach((name, index) => {
-      request.query[name] = decodeURIComponent(match[index + 1]);
-    });
-    return route.handler(request, response);
-  }
-  return sendJson(response, 404, { error: "Not found" });
+  return withRequestObservability(request, response, pathname, async () => {
+    for (const route of apiRouteInventory) {
+      const match = pathname.match(route.pattern);
+      if (!match) continue;
+      if (!route.methods.includes(request.method || "")) return methodNotAllowed(response, route.methods);
+      request.query = { ...(request.query || {}) };
+      route.params?.forEach((name, index) => {
+        request.query[name] = decodeURIComponent(match[index + 1]);
+      });
+      return route.handler(request, response);
+    }
+    return sendJson(response, 404, { error: "Not found" });
+  });
 }
 
 export default dispatchApiRequest;
