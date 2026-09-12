@@ -29,6 +29,7 @@
     "test:site-source-of-truth": "node server/site-source-of-truth.test.mjs",
     "test:bundle-splitting": "npm run build && node server/bundle-splitting-audit.mjs",
     "test:production-performance": "node server/production-performance-audit.mjs",
+    "test:a11y-responsive": "node server/responsive-accessibility.e2e.mjs",
     "test:platform-content": "node server/platform-content.browser.e2e.mjs"
   },
   "dependencies": {
@@ -63,6 +64,7 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "axe-core": "^4.13.0",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",

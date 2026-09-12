@@ -240,6 +240,11 @@ All colors MUST be HSL.
   .site-fine-tune[data-body-italic="false"] :is(p, nav, address, label, input, select, textarea, button) {
     font-style: normal !important;
   }
+
+  /* Template secondary copy must retain AA contrast on light surfaces. */
+  .site-fine-tune :is(.opacity-45, .opacity-50, .opacity-55, .opacity-60, .opacity-62, .opacity-65, .opacity-68) {
+    opacity: 0.75;
+  }
 }
 
 @layer base {
@@ -272,5 +277,25 @@ All colors MUST be HSL.
 
   #root {
     min-height: 100vh;
+  }
+
+  :where(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

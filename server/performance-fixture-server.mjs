@@ -13,9 +13,9 @@ const fixture = {
     business_name: "Fastate Performans",
     tone: "Hızlı ve güvenilir gayrimenkul danışmanlığı.",
     primary_color: "#173f32",
-    accent_color: "#d86f45",
+    accent_color: "#9a3412",
     headline: "Doğru portföyü hızlıca bulun",
-    theme_config: { template_id: "clean-modern", colors: { background: "#fbfaf7", primary: "#173f32", accent: "#d86f45", text: "#17231e" }, fonts: { heading: "Arial", body: "Arial" }, content: {}, media: {} },
+    theme_config: { template_id: "clean-modern", colors: { background: "#fbfaf7", primary: "#173f32", accent: "#9a3412", text: "#17231e" }, fonts: { heading: "Arial", body: "Arial" }, content: {}, media: {} },
   },
   listings: Array.from({ length: 8 }, (_, index) => ({
     id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
@@ -43,7 +43,15 @@ const send = (response, statusCode, type, body) => { response.writeHead(statusCo
 
 const server = createServer(async (request, response) => {
   const pathname = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`).pathname;
-  if (pathname === "/api/public-sites/performance-fixture") return send(response, 200, "application/json", JSON.stringify(fixture));
+  const publicSiteMatch = pathname.match(/^\/api\/public-sites\/(performance-fixture|a11y-(.+))$/);
+  if (publicSiteMatch) {
+    const templateId = publicSiteMatch[2] || "clean-modern";
+    return send(response, 200, "application/json", JSON.stringify({
+      ...fixture,
+      slug: publicSiteMatch[1],
+      config: { ...fixture.config, template_id: templateId, theme_config: { ...fixture.config.theme_config, template_id: templateId } },
+    }));
+  }
   try {
     const relative = pathname.startsWith("/assets/") ? normalize(pathname.slice(1)) : "index.html";
     const file = join(root, relative);

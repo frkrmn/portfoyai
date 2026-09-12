@@ -13,6 +13,12 @@ function LocalizedSite({ config, Component, listingStatus }: { config: ReturnTyp
   const { locale, messages } = useSiteLocale();
   const localizedConfig = useMemo(() => localizeSiteConfig(config, messages, locale), [config, locale, messages]);
   const closedLabel = listingStatus === "sold" ? messages.ui.sold : listingStatus === "rented" ? messages.ui.rented : "";
+  useEffect(() => {
+    document.querySelectorAll<HTMLSelectElement>(".site-fine-tune select:not([aria-label])").forEach((select) => {
+      const label = select.closest("label")?.textContent?.trim() || select.options[0]?.textContent?.trim();
+      if (label) select.setAttribute("aria-label", label);
+    });
+  }, [Component, localizedConfig]);
   return <><GoogleFontStylesheet fonts={localizedConfig.fonts} /><LeadProtection />{closedLabel ? <div data-listing-status={listingStatus} className="fixed right-5 top-5 z-[100] rounded-full bg-slate-950 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-xl">{closedLabel}</div> : null}<Component config={localizedConfig} /></>;
 }
 
