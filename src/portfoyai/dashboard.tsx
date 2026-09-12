@@ -59,6 +59,9 @@ type DashboardSite = {
   district_id?: string | null;
   neighborhood_id?: string | null;
   status: "draft" | "published";
+  draft_revision: number;
+  published_version: number;
+  published_at: string | null;
   show_closed_listings: boolean;
   show_team_section: boolean;
   team_section_label: string | null;
@@ -307,6 +310,7 @@ export function DashboardPage() {
   const [savingListing, setSavingListing] = useState(false);
   const [updatingListingStatusId, setUpdatingListingStatusId] = useState("");
   const [savingSite, setSavingSite] = useState(false);
+  const [draftSaveState, setDraftSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [translatingContent, setTranslatingContent] = useState(false);
   const [plan, setPlan] = useState<"free" | "pro">("free");
   const [openingPaywall, setOpeningPaywall] = useState(false);
@@ -576,16 +580,16 @@ export function DashboardPage() {
     }
   };
 
-  const patchSite = async (changes: Record<string, unknown>, success: string) => {
+  const patchSite = async (changes: Record<string, unknown>, success: string, notify = true) => {
     if (!session || !activeSite) return false;
     setSavingSite(true);
     try {
-      const response = await fetch(`/api/sites/${activeSite.id}`, { method: "PATCH", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify(changes) });
+      const response = await fetch(`/api/sites/${activeSite.id}`, { method: "PATCH", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ ...changes, expected_revision: activeSite.draft_revision }) });
       const payload = await readApiJson<{ error?: string; site: DashboardSite }>(response);
       if (!response.ok) throw new Error(payload.error || t("dashboard.site.saveError"));
       setSites((current) => current.map((site) => site.id === payload.site.id ? payload.site : site));
       setSiteDraft(siteDraftFrom(payload.site));
-      toast.success(success);
+      if (notify) toast.success(success);
       return true;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("dashboard.site.saveError"));
@@ -596,10 +600,32 @@ export function DashboardPage() {
   };
 
   const saveIdentity = () => siteDraft && patchSite({ business_name: siteDraft.business_name, headline: siteDraft.headline, tone: siteDraft.tone, phone: siteDraft.phone, email: siteDraft.email, address: siteDraft.address, region_focus: siteDraft.region_focus, map_url: siteDraft.map_url, country_id: siteDraft.country_id, province_id: siteDraft.province_id, district_id: siteDraft.district_id, neighborhood_id: siteDraft.neighborhood_id }, t("dashboard.site.saved"));
-  const togglePublication = () => activeSite && patchSite({ status: activeSite.status === "published" ? "draft" : "published" }, t(activeSite.status === "published" ? "dashboard.site.unpublished" : "dashboard.site.published"));
+  const togglePublication = async () => {
+    if (!session || !activeSite) return;
+    setSavingSite(true);
+    try {
+      const response = await fetch(`/api/sites/${activeSite.id}/publish`, { method: "POST", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ expected_revision: activeSite.draft_revision }) });
+      const payload = await readApiJson<{ error?: string; site?: DashboardSite }>(response);
+      if (!response.ok || !payload.site) throw new Error(payload.error || t("dashboard.site.saveError"));
+      setSites((current) => current.map((site) => site.id === payload.site!.id ? payload.site! : site));
+      toast.success(t("dashboard.site.published"));
+    } catch (error) { toast.error(error instanceof Error ? error.message : t("dashboard.site.saveError")); }
+    finally { setSavingSite(false); }
+  };
   const toggleClosedListings = () => activeSite && patchSite({ show_closed_listings: !activeSite.show_closed_listings }, t(!activeSite.show_closed_listings ? "dashboard.site.closedListingsShown" : "dashboard.site.closedListingsHidden"));
   const toggleTeamSection = () => activeSite && patchSite({ show_team_section: !activeSite.show_team_section }, t(!activeSite.show_team_section ? "dashboard.team.shown" : "dashboard.team.hidden"));
   const saveTeamLabel = () => patchSite({ team_section_label: teamLabel.trim() || null }, t("dashboard.team.labelSaved"));
+
+  useEffect(() => {
+    if (!siteDraft || !persistedSiteDraft || savingSite || JSON.stringify(siteDraft) === JSON.stringify(persistedSiteDraft)) return;
+    setDraftSaveState("saving");
+    const timer = window.setTimeout(() => {
+      void patchSite(siteDraft, "", false).then((saved) => setDraftSaveState(saved ? "saved" : "idle"));
+    }, 900);
+    return () => window.clearTimeout(timer);
+  // activeSite is the persisted baseline; patchSite is intentionally excluded to keep the debounce stable.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSite, savingSite, siteDraft]);
 
   const saveTeamMember = async () => {
     if (!session || !activeSite || !teamDraft.name.trim() || !teamDraft.role.trim()) return;
@@ -767,6 +793,7 @@ export function DashboardPage() {
 
   return <Shell businessName={activeSite?.business_name || ""} activeSection={activeTab} onSectionChange={setActiveTab} leadCount={siteLeads.length} isAdmin={isAdmin} actions={<div className="flex items-center gap-2">{activeSite ? <Button variant="outline" asChild className="rounded-full border-[#173f32]/10 bg-white"><a href={`/site/${activeSite.slug}`} target="_blank" rel="noreferrer"><Globe className="mr-2 h-4 w-4" />{t("dashboard.header.openSite")}</a></Button> : null}<Button variant="outline" size="icon" title={t("dashboard.header.refresh")} onClick={() => void loadLeads()} className="rounded-full border-[#173f32]/10 bg-white"><RefreshCw className="h-4 w-4" /></Button></div>}>
     {siteDraft ? <GoogleFontStylesheet fonts={{ heading: siteDraft.heading_font, body: siteDraft.body_font, headingWeight: siteDraft.heading_weight, headingItalic: siteDraft.heading_italic, bodyWeight: siteDraft.body_weight, bodyItalic: siteDraft.body_italic }} /> : null}
+    {activeSite ? <div role="status" aria-live="polite" className="text-right text-xs text-[#69756e]">{savingSite || draftSaveState === "saving" ? t("common.saving") : draftSaveState === "saved" ? t("dashboard.content.savedState") : null}</div> : null}
     <div className="space-y-7">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm text-[#78827c]">{activeSite ? `${activeSite.business_name} · ${t(activeSite.status === "published" ? "common.published" : "common.draft")}` : loading ? t("dashboard.header.loadingSites") : t("dashboard.header.noSite")}</div><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">{t("dashboard.header.hello")}{user?.email ? `, ${user.email.split("@")[0]}` : ""}.</h1><p className="mt-2 text-sm text-[#69756e]">{t("dashboard.header.subtitle")}</p></div>{activeSite ? <div className="flex gap-2"><Select value={activeSite.id} onValueChange={selectSite}><SelectTrigger className="w-[220px] rounded-full bg-white"><SelectValue /></SelectTrigger><SelectContent>{sites.map((site) => <SelectItem key={site.id} value={site.id}>{site.business_name}</SelectItem>)}</SelectContent></Select><Button onClick={startNewListing} className="rounded-full bg-[#d86f45] text-white"><Plus className="mr-2 h-4 w-4" />{t("dashboard.header.newListing")}</Button></div> : null}</div>
 

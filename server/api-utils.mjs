@@ -245,7 +245,8 @@ export const dashboardSite = (rawSite) => {
     primary_color: site.primary_color, accent_color: site.accent_color, headline: site.headline,
     theme_config: site.theme_config, country_id: site.country_id || null, province_id: site.province_id || null,
     district_id: site.district_id || null, neighborhood_id: site.neighborhood_id || null,
-    can_undo: Boolean(site.previous_theme_config), status: site.status,
+    can_undo: Boolean(site.previous_theme_config), status: site.status, draft_revision: Number(site.draft_revision || 1),
+    published_version: Number(site.published_version || 0), published_at: site.published_at || null,
     show_closed_listings: site.show_closed_listings === true, show_team_section: site.show_team_section === true,
     team_section_label: site.team_section_label || null, created_at: site.created_at,
   };

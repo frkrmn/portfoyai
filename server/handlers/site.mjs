@@ -17,15 +17,15 @@ const updateSite = async (request, response, siteId) => {
   // Site media follows the existing listing/team data-URL upload pattern.
   // Four 1.5 MB gallery images expand to roughly 8 MB after base64 encoding.
   const body = await readJsonBody(request, 12 * 1024 * 1024);
-  const { data: current, error: currentError } = await getSupabaseClient().from("sites").select("id, theme_config").eq("id", siteId).eq("user_id", user.id).maybeSingle();
+  const { data: current, error: currentError } = await getSupabaseClient().from("sites").select("id, theme_config, draft_revision").eq("id", siteId).eq("user_id", user.id).maybeSingle();
   if (currentError) throw new Error(`Failed to verify site ownership: ${currentError.message}`);
   if (!current) return sendJson(response, 404, { error: "Owned site not found." });
   const updates = {};
   const themePatch = {};
   if (body.language !== undefined) themePatch.language = body.language;
   if (body.status !== undefined) {
-    if (!["draft", "published"].includes(body.status)) return sendJson(response, 400, { error: "Status must be draft or published." });
-    updates.status = body.status;
+    if (body.status !== "draft") return sendJson(response, 400, { error: "Use the publish endpoint to publish." });
+    updates.status = "draft";
   }
   if (body.show_closed_listings !== undefined) {
     if (typeof body.show_closed_listings !== "boolean") return sendJson(response, 400, { error: "show_closed_listings must be boolean." });
@@ -109,10 +109,12 @@ const updateSite = async (request, response, siteId) => {
   if (body.media !== undefined) themePatch.media = body.media;
   if (Object.keys(updates).length === 0 && Object.keys(body).length === 0) return sendJson(response, 400, { error: "No site changes were supplied." });
   const { themeConfig, topLevel } = mergeThemeConfig(current.theme_config, themePatch);
-  Object.assign(updates, topLevel, { theme_config: themeConfig });
-  const { data: site, error } = await getSupabaseClient().from("sites").update(updates).eq("id", siteId).eq("user_id", user.id).select(siteSelect).maybeSingle();
+  Object.assign(updates, topLevel, { theme_config: themeConfig, draft_revision: Number(current.draft_revision || 1) + 1 });
+  let query = getSupabaseClient().from("sites").update(updates).eq("id", siteId).eq("user_id", user.id);
+  if (body.expected_revision !== undefined) query = query.eq("draft_revision", Number(body.expected_revision));
+  const { data: site, error } = await query.select(siteSelect).maybeSingle();
   if (error) throw new Error(`Failed to update site: ${error.message}`);
-  if (!site) return sendJson(response, 404, { error: "Owned site not found." });
+  if (!site) return sendJson(response, 409, { error: "Draft changed in another session.", code: "REVISION_CONFLICT" });
   await removeReplacedMedia(current.theme_config?.media, site.theme_config?.media);
   return sendJson(response, 200, { site: dashboardSite(site) });
 };

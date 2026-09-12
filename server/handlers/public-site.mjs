@@ -31,7 +31,9 @@ export async function loadPublicSite(slug, options = {}) {
   const { data: storedSite, error } = await applySiteVisibility(siteQuery, { ...options, slug }).maybeSingle();
   if (error) throw new Error(`Failed to load public site: ${error.message}`);
   if (!storedSite) return null;
-  const site = canonicalSiteProjection(storedSite);
+  const published = storedSite.published_snapshot;
+  if (!options.ownerId && !published) return null;
+  const site = canonicalSiteProjection(options.ownerId || !published ? storedSite : { ...storedSite, ...published, theme_config: published.theme_config });
   let listingsQuery = getSupabaseClient().from("listings").select(publicListingSelect).eq("site_id", site.id).in("status", ["active", "sold"]);
   if (!site.show_closed_listings) listingsQuery = listingsQuery.eq("listing_status", "active");
   if (options.listingId) listingsQuery = listingsQuery.eq("id", options.listingId);
