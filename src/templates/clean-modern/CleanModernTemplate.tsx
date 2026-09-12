@@ -14,7 +14,7 @@ import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, propertyTaxonomyLabel, 
 import { contentFields } from "../content-schema";
 import { imageSlots } from "../image-schema";
 import { SiteCredit, SiteLanguageToggle } from "../site-locale";
-import { protectedLeadPayload } from "../lead-protection-payload";
+import { useSharedLeadForm } from "../shared/ThemeCommon";
 
 export const imageSchema = imageSlots([
   { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
@@ -85,18 +85,7 @@ function SearchPanel({ config, initialType = "all" }: SiteTemplateProps & { init
 
 function LeadForm({ config, listing }: { config: TemplateConfig; listing: Listing }) {
   const c = config.content;
-  const [form, setForm] = useState({ name: "", phone: "", message: "" });
-  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setStatus("submitting");
-    try {
-      const response = await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(protectedLeadPayload(event, { site_id: config.siteId, listing_id: listing.id, name: form.name, phone: form.phone, message: form.message })) });
-      if (!response.ok) throw new Error();
-      setForm({ name: "", phone: "", message: "" });
-      setStatus("success");
-    } catch { setStatus("error"); }
-  };
+  const { form, setForm, status, submit } = useSharedLeadForm(config, listing);
   const input = "w-full border border-[var(--cm-line)] bg-[var(--cm-bg)] px-4 py-3 text-sm outline-none focus:border-[var(--cm-accent)]";
   return <form onSubmit={submit} className="space-y-3"><input className={input} placeholder={c.fullNameLabel} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /><input className={input} placeholder={c.phoneLabel} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} required /><textarea className={`${input} min-h-28 resize-none`} placeholder={c.messageLabel} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} /><button data-site-button disabled={status === "submitting"} className="flex h-12 w-full items-center justify-center gap-2 bg-[var(--cm-primary)] px-5 text-xs font-bold text-[var(--cm-on-primary)] disabled:opacity-60">{status === "submitting" ? c.formSubmitting : c.formSubmit}<ArrowRight className="h-4 w-4" /></button>{status === "success" ? <p role="status" className="text-sm text-[var(--cm-accent)]">{c.formSuccess}</p> : null}{status === "error" ? <p role="alert" className="text-sm">{c.formError}</p> : null}</form>;
 }

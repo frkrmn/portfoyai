@@ -25,7 +25,7 @@ import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect 
 import { contentFields } from "../content-schema";
 import { imageSlots } from "../image-schema";
 import { SiteLanguageToggle, useSiteLocale } from "../site-locale";
-import { protectedLeadPayload } from "../lead-protection-payload";
+import { useSharedLeadForm } from "../shared/ThemeCommon";
 
 export const imageSchema = imageSlots([
   { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
@@ -154,31 +154,15 @@ export function WarmListingCard({ config, listing }: { config: TemplateConfig; l
 
 function TourForm({ config, listing }: { config: TemplateConfig; listing?: Listing }) {
   const labels = useLabels();
-  const [form, setForm] = useState({ name: "", contact: "", message: "" });
-  const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setState("submitting");
-    const message = [listing ? `Portföy: ${listing.title}` : "", form.message].filter(Boolean).join("\n\n");
-    try {
-      const response = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(protectedLeadPayload(event, { site_id: config.siteId, name: form.name, phone: form.contact, message })),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || labels.genericError);
-      setForm({ name: "", contact: "", message: "" });
-      setState("success");
-    } catch {
-      setState("error");
-    }
-  };
+  const { form, setForm, status: state, submit } = useSharedLeadForm(config, listing, {
+    includeListingId: false,
+    message: (value) => [listing ? `Portföy: ${listing.title}` : "", value.message].filter(Boolean).join("\n\n"),
+  });
   const inputClass = "w-full border-0 border-b border-black/15 bg-transparent px-0 py-3 text-sm outline-none focus:border-[var(--we-primary)]";
   return (
     <form onSubmit={submit} className="space-y-3">
       <input className={inputClass} placeholder={labels.name} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
-      <input className={inputClass} placeholder={labels.contact} value={form.contact} onChange={(event) => setForm({ ...form, contact: event.target.value })} required />
+      <input className={inputClass} placeholder={labels.contact} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} required />
       <textarea className={`${inputClass} min-h-24 resize-none`} placeholder={labels.message} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} />
       <button data-site-button disabled={state === "submitting"} className="mt-3 flex h-14 w-full items-center justify-center gap-2 bg-[var(--we-primary)] px-5 text-xs font-semibold text-white disabled:opacity-60">{state === "submitting" ? labels.submitting : labels.submit}<ArrowRight className="h-4 w-4" /></button>
       {state === "success" ? <p role="status" className="text-sm leading-6 text-emerald-800">{labels.success}</p> : null}

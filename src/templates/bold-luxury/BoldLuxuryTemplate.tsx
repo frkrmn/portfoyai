@@ -14,7 +14,7 @@ import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect 
 import { contentFields, objectArrayField } from "../content-schema";
 import { imageSlots } from "../image-schema";
 import { SiteCredit, SiteLanguageToggle } from "../site-locale";
-import { protectedLeadPayload } from "../lead-protection-payload";
+import { useSharedLeadForm } from "../shared/ThemeCommon";
 
 export const imageSchema = imageSlots([
   { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
@@ -55,25 +55,16 @@ function LuxuryFooter({ config }: SiteTemplateProps) {
 
 function LeadForm({ config, listing, hero = false, dark = false }: { config: TemplateConfig; listing?: Listing; hero?: boolean; dark?: boolean }) {
   const c = config.content;
-  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
-  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setStatus("submitting");
-    const message = [form.email ? `${c.emailLabel}: ${form.email}` : "", listing?.title || "", form.message].filter(Boolean).join("\n\n");
-    try {
-      const response = await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(protectedLeadPayload(event, { site_id: config.siteId, name: form.name, phone: form.phone, message })) });
-      if (!response.ok) throw new Error();
-      setForm({ name: "", email: "", phone: "", message: "" });
-      setStatus("success");
-    } catch {
-      setStatus("error");
-    }
-  };
+  const [email, setEmail] = useState("");
+  const { form, setForm, status, submit } = useSharedLeadForm(config, listing, {
+    includeListingId: false,
+    message: (value) => [email ? `${c.emailLabel}: ${email}` : "", listing?.title || "", value.message].filter(Boolean).join("\n\n"),
+    onSuccess: () => setEmail(""),
+  });
   const inputClass = hero || dark
     ? "h-12 min-w-0 border-0 border-b border-[color:color-mix(in_srgb,var(--lux-text)_24%,transparent)] bg-transparent px-0 text-sm text-[var(--lux-text)] outline-none placeholder:text-[color:color-mix(in_srgb,var(--lux-text)_50%,transparent)]"
     : "h-12 w-full border-0 border-b border-[color:color-mix(in_srgb,var(--lux-ink)_22%,transparent)] bg-transparent px-0 text-sm text-[var(--lux-ink)] outline-none placeholder:text-[color:color-mix(in_srgb,var(--lux-ink)_48%,transparent)]";
-  return <form onSubmit={submit} className={hero ? "grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end" : "space-y-4"}><input className={inputClass} placeholder={c.fullNameLabel} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /><input type="email" className={inputClass} placeholder={c.emailLabel} value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required /><input className={inputClass} placeholder={c.phoneLabel} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} required />{hero ? null : <textarea className={`${inputClass} min-h-24 resize-none pt-4`} placeholder={c.messageLabel} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} />}<button data-site-button disabled={status === "submitting"} className="flex h-12 items-center justify-center gap-2 bg-[var(--lux-accent)] px-6 text-xs font-bold uppercase tracking-[0.1em] text-[var(--lux-ink)] disabled:opacity-60">{status === "submitting" ? c.formSubmitting : c.formSubmit}<ArrowRight className="h-4 w-4" /></button>{status === "success" ? <p role="status" className={`${hero ? "lg:col-span-4" : ""} text-sm text-[var(--lux-accent)]`}>{c.formSuccess}</p> : null}{status === "error" ? <p role="alert" className={`${hero ? "lg:col-span-4" : ""} text-sm`}>{c.formError}</p> : null}</form>;
+  return <form onSubmit={submit} className={hero ? "grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end" : "space-y-4"}><input className={inputClass} placeholder={c.fullNameLabel} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /><input type="email" className={inputClass} placeholder={c.emailLabel} value={email} onChange={(event) => setEmail(event.target.value)} required /><input className={inputClass} placeholder={c.phoneLabel} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} required />{hero ? null : <textarea className={`${inputClass} min-h-24 resize-none pt-4`} placeholder={c.messageLabel} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} />}<button data-site-button disabled={status === "submitting"} className="flex h-12 items-center justify-center gap-2 bg-[var(--lux-accent)] px-6 text-xs font-bold uppercase tracking-[0.1em] text-[var(--lux-ink)] disabled:opacity-60">{status === "submitting" ? c.formSubmitting : c.formSubmit}<ArrowRight className="h-4 w-4" /></button>{status === "success" ? <p role="status" className={`${hero ? "lg:col-span-4" : ""} text-sm text-[var(--lux-accent)]`}>{c.formSuccess}</p> : null}{status === "error" ? <p role="alert" className={`${hero ? "lg:col-span-4" : ""} text-sm`}>{c.formError}</p> : null}</form>;
 }
 
 function LuxuryListingCard({ config, listing }: { config: TemplateConfig; listing: Listing }) {
