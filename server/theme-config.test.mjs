@@ -1,0 +1,20 @@
+import assert from "node:assert/strict";
+import { CURRENT_THEME_SCHEMA_VERSION, migrateThemeConfig, themeConfigSchema, validateGeneratedSiteConfig, validateThemeConfig } from "./theme-config.mjs";
+import { buildThemeConfig } from "./site-persistence.mjs";
+import generationSchema from "./site-config.schema.json" with { type: "json" };
+
+const generated = { schema_version: 3, template_id: "clean-modern", business_name: "Fastate", tone: { tr: "Güvenilir", en: "Trusted" }, primary_color: "#173F32", accent_color: "#9A3412", headline: { tr: "Doğru ev", en: "The right home" }, region_focus: "İstanbul", content: {} };
+assert.equal(validateGeneratedSiteConfig(generated), generated);
+const persisted = buildThemeConfig(generated);
+assert.equal(persisted.schema_version, CURRENT_THEME_SCHEMA_VERSION);
+assert.equal(validateThemeConfig(persisted).template_id, "clean-modern");
+assert.throws(() => validateThemeConfig({ ...persisted, colors: { ...persisted.colors, primary: "red" } }), /Invalid theme_config/);
+assert.throws(() => validateThemeConfig({ ...persisted, template_id: "unknown" }), /Invalid theme_config/);
+const legacy = { template_id: "clean-modern", primary: "#173F32", accent: "#9A3412" };
+const migrated = migrateThemeConfig(legacy);
+assert.deepEqual(migrateThemeConfig(migrated), migrated, "Migration must be idempotent.");
+assert.equal(migrated.schema_version, 3);
+assert.equal(generationSchema.properties.schema_version.const, themeConfigSchema.properties.schema_version.const, "AI and persistence schemas must share the current version.");
+const invalidLand = { ...persisted, template_id: "land-plots", content: {} };
+assert.throws(() => validateThemeConfig(invalidLand), /services/);
+console.info(JSON.stringify({ version: 3, runtime_validation: true, deterministic_migration: true, idempotent_migration: true, template_specific_schema: true, ai_schema_compatible: true }, null, 2));

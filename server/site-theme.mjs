@@ -1,4 +1,5 @@
 import { hexColorPattern } from "./api-utils.mjs";
+import { CURRENT_THEME_SCHEMA_VERSION, migrateThemeConfig, validateThemeConfig } from "./theme-config.mjs";
 
 export const fineTuneEnums = {
   buttonStyle: ["solid", "outline", "pill", "sharp"],
@@ -68,7 +69,7 @@ const sanitizeMedia = (value) => {
 };
 
 export const mergeThemeConfig = (currentThemeConfig, patch) => {
-  const themeConfig = clone(currentThemeConfig);
+  const themeConfig = migrateThemeConfig(currentThemeConfig);
   themeConfig.colors ||= {};
   themeConfig.fonts ||= {};
   themeConfig.content ||= {};
@@ -185,7 +186,7 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
     appliedFields.push(...Object.keys(themeConfig.media).map((key) => `media.${key}`));
   }
 
-  themeConfig.schema_version = 3;
+  themeConfig.schema_version = CURRENT_THEME_SCHEMA_VERSION;
   for (const duplicate of ["businessName", "phone", "email", "address", "regionFocus", "mapUrl"]) delete themeConfig.content[duplicate];
-  return { themeConfig, topLevel, appliedFields };
+  return { themeConfig: validateThemeConfig(themeConfig), topLevel, appliedFields };
 };

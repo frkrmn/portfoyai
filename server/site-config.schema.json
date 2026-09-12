@@ -3,6 +3,7 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "schema_version": { "type": "integer", "const": 3 },
     "template_id": {
       "type": "string",
       "enum": ["tm_01", "tm_02", "tm_03", "tm_04", "warm-editorial", "bold-luxury", "clean-modern", "neighborhood-friendly", "investment-focused", "urgent-deals", "guided-match", "land-plots"]
@@ -123,6 +124,7 @@
     }
   },
   "required": [
+    "schema_version",
     "template_id",
     "business_name",
     "tone",

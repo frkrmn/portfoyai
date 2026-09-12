@@ -3,6 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { adminEmails } from "../admin-auth.mjs";
 import { insertGeneratedSite } from "../site-persistence.mjs";
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
+import { CURRENT_THEME_SCHEMA_VERSION, validateGeneratedSiteConfig } from "../theme-config.mjs";
 
 export const siteConfigSchema = JSON.parse(readFileSync(new URL("../site-config.schema.json", import.meta.url), "utf8"));
 export const siteConfigModel = "gemini-3.5-flash-lite";
@@ -10,6 +11,7 @@ export const siteConfigSystemPrompt = [
   "You are the brand design engine for Fastate AI, a premium Turkish real-estate website builder.",
   "Convert the user's description into one confident website identity.",
   "Return only the JSON object required by the supplied schema.",
+  `Set schema_version to exactly ${CURRENT_THEME_SCHEMA_VERSION}.`,
   "Do not return layout_fine_tune during initial generation. That optional object is reserved exclusively for later authenticated refinement requests, so every template must initially keep its established visual defaults.",
   "For every localized text object, return both tr and en in this same single response. Turkish must be polished and English must be a natural market-appropriate adaptation, never a literal word-for-word translation.",
   "The Turkish and English headlines must each be no longer than 12 words.",
@@ -100,7 +102,7 @@ export default async function handler(request, response) {
       config: { systemInstruction: siteConfigSystemPrompt, responseMimeType: "application/json", responseSchema: siteConfigSchema },
     });
     if (!result.text) throw new Error("Gemini returned an empty response.");
-    const config = ensureLandPlotsContent(JSON.parse(result.text));
+    const config = validateGeneratedSiteConfig(ensureLandPlotsContent(JSON.parse(result.text)));
     const model = result.modelVersion || siteConfigModel;
     console.info(`[generate-theme] Gemini structured response received in ${Date.now() - startedAt}ms; model=${model}`);
     let site;

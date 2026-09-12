@@ -1,3 +1,5 @@
+import { CURRENT_THEME_SCHEMA_VERSION, validateThemeConfig } from "./theme-config.mjs";
+
 export const slugifyBusinessName = (businessName) => {
   const transliterated = businessName
     .replace(/[Çç]/g, "c")
@@ -19,7 +21,8 @@ export const slugifyBusinessName = (businessName) => {
 
 const localizedTr = (value) => typeof value === "string" ? value : value?.tr || "";
 
-export const buildThemeConfig = (config) => {
+export const buildThemeConfig = (input) => {
+  const config = { schema_version: CURRENT_THEME_SCHEMA_VERSION, ...input };
   const isBoldLuxury = config.template_id === "bold-luxury";
   const isCleanModern = config.template_id === "clean-modern";
   const isNeighborhoodFriendly = config.template_id === "neighborhood-friendly";
@@ -27,8 +30,8 @@ export const buildThemeConfig = (config) => {
   const isUrgentDeals = config.template_id === "urgent-deals";
   const isGuidedMatch = config.template_id === "guided-match";
   const isLandPlots = config.template_id === "land-plots";
-  return {
-    schema_version: 3,
+  return validateThemeConfig({
+    schema_version: CURRENT_THEME_SCHEMA_VERSION,
     template_id: config.template_id,
     colors: {
       background: isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals || isLandPlots ? "#FFFFFF" : isNeighborhoodFriendly || isGuidedMatch ? "#FFF8F1" : "#F1EADF",
@@ -70,7 +73,7 @@ export const buildThemeConfig = (config) => {
       show_testimonial: isBoldLuxury || isCleanModern,
     },
     ...(config.layout_fine_tune ? { layout_fine_tune: config.layout_fine_tune } : {}),
-  };
+  });
 };
 
 const defaultDistricts = ["Kadıköy", "Beşiktaş", "Ataşehir", "Şişli", "Üsküdar", "Bakırköy"];
