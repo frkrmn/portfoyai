@@ -27,6 +27,8 @@ import { templateContentFallbacks, type TemplateFamily } from "@/templates/types
 import { ContentEditor, type ContentRecord } from "./content-editor";
 import { ImageEditor, type SiteMedia } from "./image-editor";
 import { uploadImage } from "@/lib/media-storage";
+import { ListingManagementRow, OverviewMetric as Metric } from "./dashboard/sections";
+import { dashboardSections } from "./dashboard/index";
 
 type DashboardTab = "overview" | "site" | "content" | "images" | "listings" | "leads";
 
@@ -268,23 +270,6 @@ const siteDraftFrom = (site: DashboardSite): SiteDraft => ({
 });
 
 const themeFields = ["primary_color", "accent_color", "heading_font", "body_font", "heading_weight", "heading_italic", "body_weight", "body_italic", "buttonColorSource", "buttonColorCustom"] as const;
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return <Card className="rounded-[1.5rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardContent className="p-5"><div className="text-xs text-[#7a857e]">{label}</div><div className="mt-2 text-2xl font-semibold">{value}</div></CardContent></Card>;
-}
-
-function ListingManagementRow({ listing, selected, updating, onSelect, onToggle }: { listing: Listing; selected: boolean; updating: boolean; onSelect: () => void; onToggle: () => void }) {
-  const { t } = useTranslation();
-  const isClosed = listing.listing_status !== "active";
-  const statusLabel = listing.listing_status === "sold" ? t("dashboard.listings.sold") : listing.listing_status === "rented" ? t("dashboard.listings.rented") : t("dashboard.listings.available");
-  return <div className={cn("grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border p-3", selected ? "border-[#173f32] bg-[#edf1eb]" : "bg-white")}>
-    <button type="button" onClick={onSelect} className="grid min-w-0 grid-cols-[72px_1fr] items-center gap-4 text-left">
-      <img src={getListingImage(listing)} alt="" className={cn("h-16 w-[72px] rounded-xl object-cover", isClosed && "grayscale opacity-70")} />
-      <div className="min-w-0"><div className="truncate font-semibold">{listing.title}</div><div className="mt-1 text-xs text-[#7a857e]">{formatListingLocation(listing)} · {listing.room_count} · {listing.m2} m²</div><div className="mt-2 text-sm font-semibold">{formatListingPrice(listing)}</div></div>
-    </button>
-    <div className="flex flex-col items-end gap-2"><div className="flex flex-wrap justify-end gap-1.5"><Badge>{t(listing.listing_type === "sale" ? "common.sale" : "common.rent")}</Badge><Badge variant={isClosed ? "secondary" : "outline"}>{statusLabel}</Badge></div><Button type="button" size="sm" variant={isClosed ? "outline" : "secondary"} disabled={updating} onClick={onToggle}>{t(isClosed ? "dashboard.listings.markAvailable" : listing.listing_type === "sale" ? "dashboard.listings.markSold" : "dashboard.listings.markRented")}</Button></div>
-  </div>;
-}
 
 export function DashboardPage() {
   const { t, i18n } = useTranslation();
@@ -798,7 +783,7 @@ export function DashboardPage() {
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm text-[#78827c]">{activeSite ? `${activeSite.business_name} · ${t(activeSite.status === "published" ? "common.published" : "common.draft")}` : loading ? t("dashboard.header.loadingSites") : t("dashboard.header.noSite")}</div><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">{t("dashboard.header.hello")}{user?.email ? `, ${user.email.split("@")[0]}` : ""}.</h1><p className="mt-2 text-sm text-[#69756e]">{t("dashboard.header.subtitle")}</p></div>{activeSite ? <div className="flex gap-2"><Select value={activeSite.id} onValueChange={selectSite}><SelectTrigger className="w-[220px] rounded-full bg-white"><SelectValue /></SelectTrigger><SelectContent>{sites.map((site) => <SelectItem key={site.id} value={site.id}>{site.business_name}</SelectItem>)}</SelectContent></Select><Button onClick={startNewListing} className="rounded-full bg-[#d86f45] text-white"><Plus className="mr-2 h-4 w-4" />{t("dashboard.header.newListing")}</Button></div> : null}</div>
 
 
-      <div className="flex gap-2 overflow-x-auto">{(["overview", "listings", "content", "images", "leads", "site"] as const).map((tab) => <Button key={tab} variant="ghost" onClick={() => setActiveTab(tab)} className={cn("rounded-full px-5", activeTab === tab ? "bg-[#173f32] text-white hover:bg-[#173f32] hover:text-white" : "bg-white/60")}>{t(`dashboard.tabs.${tab === "site" ? "settings" : tab}`)}</Button>)}{isAdmin ? <Button asChild variant="ghost" className="whitespace-nowrap rounded-full bg-white/60 px-5"><Link to="/admin/landing-content">Platform Landing CMS</Link></Button> : null}</div>
+      <div className="flex gap-2 overflow-x-auto">{dashboardSections.map(({ id, translationKey }) => <Button key={id} variant="ghost" onClick={() => setActiveTab(id)} className={cn("rounded-full px-5", activeTab === id ? "bg-[#173f32] text-white hover:bg-[#173f32] hover:text-white" : "bg-white/60")}>{t(`dashboard.tabs.${translationKey}`)}</Button>)}{isAdmin ? <Button asChild variant="ghost" className="whitespace-nowrap rounded-full bg-white/60 px-5"><Link to="/admin/landing-content">Platform Landing CMS</Link></Button> : null}</div>
 
       {!activeSite && !loading ? <Card><CardContent className="p-8 text-center text-sm text-[#69756e]">{t("dashboard.empty.body")}</CardContent></Card> : null}
 

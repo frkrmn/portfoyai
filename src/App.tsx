@@ -10,10 +10,10 @@ import { useAuth } from "./portfoyai/auth";
 import { useTranslation } from "react-i18next";
 
 const queryClient = new QueryClient();
-const LandingPage = lazy(() => import("./portfoyai/views").then((module) => ({ default: module.LandingPage })));
-const AuthPage = lazy(() => import("./portfoyai/views").then((module) => ({ default: module.AuthPage })));
-const GeneratedSitePreviewPage = lazy(() => import("./portfoyai/views").then((module) => ({ default: module.GeneratedSitePreviewPage })));
-const NotFoundPage = lazy(() => import("./portfoyai/views").then((module) => ({ default: module.NotFoundPage })));
+const LandingPage = lazy(() => import("./portfoyai/views/landing").then((module) => ({ default: module.LandingPage })));
+const AuthPage = lazy(() => import("./portfoyai/views/auth").then((module) => ({ default: module.AuthPage })));
+const GeneratedSitePreviewPage = lazy(() => import("./portfoyai/views/generation").then((module) => ({ default: module.GeneratedSitePreviewPage })));
+const NotFoundPage = lazy(() => import("./portfoyai/views/not-found").then((module) => ({ default: module.NotFoundPage })));
 const LoginPage = lazy(() => import("./portfoyai/auth-pages").then((module) => ({ default: module.LoginPage })));
 const SignupPage = lazy(() => import("./portfoyai/auth-pages").then((module) => ({ default: module.SignupPage })));
 const DashboardPage = lazy(() => import("./portfoyai/dashboard").then((module) => ({ default: module.DashboardPage })));
