@@ -1,0 +1,18 @@
+{
+  "api": {
+    "maxResponseBytes": 150000,
+    "maxP95TtfbMs": 500
+  },
+  "bundle": {
+    "maxInitialJsBytes": 700000,
+    "maxLargestChunkBytes": 700000,
+    "maxTotalJsBytes": 1300000
+  },
+  "lighthouse": {
+    "minPerformanceScore": 0.8,
+    "maxFirstContentfulPaintMs": 2500,
+    "maxLargestContentfulPaintMs": 4000,
+    "maxInteractiveMs": 5000,
+    "maxTotalByteWeightBytes": 1500000
+  }
+}

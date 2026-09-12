@@ -18,8 +18,8 @@
     "test:dynamic-site-i18n": "node server/dynamic-site-i18n.e2e.mjs",
     "test:dynamic-site-generation": "node server/dynamic-site-generation.e2e.mjs",
     "test:content-schema": "node server/content-schema-audit.mjs",
-    "test:content-visual": "node server/content-visual-editor.browser.e2e.mjs"
-    ,"test:image-editor": "node server/image-editor.browser.e2e.mjs",
+    "test:content-visual": "node server/content-visual-editor.browser.e2e.mjs",
+    "test:image-editor": "node server/image-editor.browser.e2e.mjs",
     "test:image-schema": "node server/image-schema-audit.mjs",
     "migrate:media": "node server/migrate-base64-media.mjs",
     "test:media-storage": "node server/media-storage.test.mjs",
@@ -27,6 +27,7 @@
     "test:public-access": "node server/public-site-access.test.mjs",
     "test:lead-protection": "node server/lead-protection.test.mjs",
     "test:bundle-splitting": "npm run build && node server/bundle-splitting-audit.mjs",
+    "test:production-performance": "node server/production-performance-audit.mjs",
     "test:platform-content": "node server/platform-content.browser.e2e.mjs"
   },
   "dependencies": {
@@ -55,6 +56,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@lhci/cli": "^0.15.1",
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",

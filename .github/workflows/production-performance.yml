@@ -1,0 +1,48 @@
+name: Production performance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  performance-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Start production fixture
+        run: |
+          node server/performance-fixture-server.mjs > /tmp/performance-fixture.log 2>&1 &
+          echo $! > /tmp/performance-fixture.pid
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:4178/api/public-sites/performance-fixture >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/performance-fixture.log
+          exit 1
+      - name: Enforce API and bundle budgets
+        run: npm run test:production-performance
+      - name: Enforce browser loading budgets
+        run: npx lhci autorun
+      - name: Upload performance reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-performance-reports
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Stop production fixture
+        if: always()
+        run: kill "$(cat /tmp/performance-fixture.pid)" 2>/dev/null || true
