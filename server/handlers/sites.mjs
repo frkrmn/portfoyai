@@ -1,4 +1,5 @@
-import { getAuthenticatedUser, getSupabaseClient, getUserPlan, handleKnownError, methodNotAllowed, sendJson } from "../api-utils.mjs";
+import { dashboardSite, getAuthenticatedUser, getSupabaseClient, getUserPlan, handleKnownError, methodNotAllowed, sendJson } from "../api-utils.mjs";
+import { siteSelect } from "../site-source-of-truth.mjs";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") return methodNotAllowed(response, ["GET"]);
@@ -6,12 +7,12 @@ export default async function handler(request, response) {
     const user = await getAuthenticatedUser(request);
     const { data, error } = await getSupabaseClient()
       .from("sites")
-      .select("id, slug, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, show_closed_listings, show_team_section, team_section_label, country_id, province_id, district_id, neighborhood_id, created_at")
+      .select(siteSelect)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) throw new Error(`Failed to load owned sites: ${error.message}`);
     const plan = await getUserPlan(user.id);
-    return sendJson(response, 200, { sites: (data || []).map((site) => ({ ...site, can_undo: Boolean(site.previous_theme_config), previous_theme_config: undefined })), plan });
+    return sendJson(response, 200, { sites: (data || []).map(dashboardSite), plan });
   } catch (error) {
     return handleKnownError(response, error, "[sites] Owned site fetch failed");
   }

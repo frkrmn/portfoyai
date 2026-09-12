@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { randomInt } from "node:crypto";
+import { canonicalSiteProjection, siteSelect } from "./site-source-of-truth.mjs";
 
 export const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export const hexColorPattern = /^#[0-9a-f]{6}$/i;
@@ -229,34 +230,26 @@ export const serializeListing = (listing) => {
 export const getOwnedSite = async (userId, siteId) => {
   const { data, error } = await getSupabaseClient()
     .from("sites")
-    .select("id, slug, user_id, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, show_closed_listings, show_team_section, team_section_label, country_id, province_id, district_id, neighborhood_id, created_at")
+    .select(siteSelect)
     .eq("id", siteId)
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error(`Failed to verify site ownership: ${error.message}`);
-  return data;
+  return data ? canonicalSiteProjection(data) : null;
 };
 
-export const dashboardSite = (site) => ({
-  id: site.id,
-  slug: site.slug,
-  business_name: site.business_name,
-  tone: site.tone,
-  primary_color: site.primary_color,
-  accent_color: site.accent_color,
-  headline: site.headline,
-  theme_config: site.theme_config || {},
-  country_id: site.country_id || null,
-  province_id: site.province_id || null,
-  district_id: site.district_id || null,
-  neighborhood_id: site.neighborhood_id || null,
-  can_undo: Boolean(site.previous_theme_config),
-  status: site.status,
-  show_closed_listings: site.show_closed_listings === true,
-  show_team_section: site.show_team_section === true,
-  team_section_label: site.team_section_label || null,
-  created_at: site.created_at,
-});
+export const dashboardSite = (rawSite) => {
+  const site = canonicalSiteProjection(rawSite);
+  return {
+    id: site.id, slug: site.slug, business_name: site.business_name, tone: site.tone,
+    primary_color: site.primary_color, accent_color: site.accent_color, headline: site.headline,
+    theme_config: site.theme_config, country_id: site.country_id || null, province_id: site.province_id || null,
+    district_id: site.district_id || null, neighborhood_id: site.neighborhood_id || null,
+    can_undo: Boolean(site.previous_theme_config), status: site.status,
+    show_closed_listings: site.show_closed_listings === true, show_team_section: site.show_team_section === true,
+    team_section_label: site.team_section_label || null, created_at: site.created_at,
+  };
+};
 
 export const listingPayload = (body, siteId) => {
   const title = typeof body.title === "string" ? body.title.trim() : "";

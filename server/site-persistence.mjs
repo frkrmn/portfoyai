@@ -28,6 +28,7 @@ export const buildThemeConfig = (config) => {
   const isGuidedMatch = config.template_id === "guided-match";
   const isLandPlots = config.template_id === "land-plots";
   return {
+    schema_version: 3,
     template_id: config.template_id,
     colors: {
       background: isBoldLuxury ? "#0A0A09" : isCleanModern || isInvestmentFocused || isUrgentDeals || isLandPlots ? "#FFFFFF" : isNeighborhoodFriendly || isGuidedMatch ? "#FFF8F1" : "#F1EADF",
@@ -41,10 +42,8 @@ export const buildThemeConfig = (config) => {
       body: "Inter, Arial, sans-serif",
     },
     content: {
-      businessName: config.business_name,
       headline: config.headline,
       bio: config.tone,
-      regionFocus: config.region_focus,
       neighborhoods: config.content?.neighborhoods,
       feelings: config.content?.feelings,
       timings: config.content?.timings,
@@ -158,10 +157,11 @@ export const insertGeneratedSite = async (supabase, config, userId, { siteLimitE
         ...(siteLimitExempt ? { owner_limit_exempt: true } : {}),
         slug,
         business_name: config.business_name,
-        tone: localizedTr(config.tone),
-        primary_color: config.primary_color,
-        accent_color: config.accent_color,
-        headline: localizedTr(config.headline),
+        phone: config.phone || null,
+        email: config.email || null,
+        address: config.address || null,
+        region_focus: config.region_focus || null,
+        map_url: config.map_url || null,
         theme_config: buildThemeConfig(config),
         show_team_section: config.template_id === "land-plots",
         status: "draft",

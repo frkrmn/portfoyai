@@ -84,12 +84,10 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
   if (patch.business_name !== undefined) {
     const value = textValue(patch.business_name, "Business name", 160);
     topLevel.business_name = value;
-    themeConfig.content.businessName = value;
     appliedFields.push("business_name");
   }
   if (patch.headline !== undefined) {
     const value = textValue(patch.headline, "Headline", 240);
-    topLevel.headline = value;
     themeConfig.content.headline = themeConfig.content.headline && typeof themeConfig.content.headline === "object"
       ? { ...themeConfig.content.headline, tr: value }
       : value;
@@ -98,7 +96,6 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
   if (patch.tone !== undefined) {
     const value = String(patch.tone).trim();
     if (value.length > 500) throw new Error("VALIDATION:Description must be at most 500 characters.");
-    topLevel.tone = value;
     themeConfig.content.bio = themeConfig.content.bio && typeof themeConfig.content.bio === "object"
       ? { ...themeConfig.content.bio, tr: value }
       : value;
@@ -108,13 +105,13 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
     if (patch[key] === undefined) continue;
     const value = String(patch[key]).trim();
     if (value.length > 240) throw new Error(`VALIDATION:${key} must be at most 240 characters.`);
-    themeConfig.content[key] = value;
+    topLevel[key] = value || null;
     appliedFields.push(key);
   }
   if (patch.region_focus !== undefined) {
     const value = String(patch.region_focus).trim();
     if (value.length > 300) throw new Error("VALIDATION:Region focus must be at most 300 characters.");
-    themeConfig.content.regionFocus = value;
+    topLevel.region_focus = value || null;
     appliedFields.push("region_focus");
   }
   if (patch.map_url !== undefined) {
@@ -128,13 +125,12 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
         throw new Error("VALIDATION:Map URL must be a valid http or https URL.");
       }
     }
-    themeConfig.content.mapUrl = value;
+    topLevel.map_url = value || null;
     appliedFields.push("map_url");
   }
   for (const [field, colorKey] of [["primary_color", "primary"], ["accent_color", "accent"]]) {
     if (patch[field] === undefined) continue;
     if (!hexColorPattern.test(patch[field])) throw new Error(`VALIDATION:${field === "primary_color" ? "Primary" : "Accent"} color must be a six-digit hex color.`);
-    topLevel[field] = patch[field];
     themeConfig.colors[colorKey] = patch[field];
     appliedFields.push(field);
   }
@@ -189,5 +185,7 @@ export const mergeThemeConfig = (currentThemeConfig, patch) => {
     appliedFields.push(...Object.keys(themeConfig.media).map((key) => `media.${key}`));
   }
 
+  themeConfig.schema_version = 3;
+  for (const duplicate of ["businessName", "phone", "email", "address", "regionFocus", "mapUrl"]) delete themeConfig.content[duplicate];
   return { themeConfig, topLevel, appliedFields };
 };

@@ -1,4 +1,5 @@
 import { getSupabaseClient, methodNotAllowed, routeParam, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
+import { canonicalSiteProjection, siteSelect } from "../site-source-of-truth.mjs";
 
 export const publicListingSelect = "id,title,description,price,currency,m2,room_count,listing_type,district,lat,lng,media,status,listing_status,property_category,property_subtype,created_at,features,country:countries(name),province:provinces(name),structured_district:districts(name),neighborhood:neighborhoods(name)";
 const publicThemeKeys = ["template_id", "language", "colors", "fonts", "content", "media", "layout", "layout_fine_tune"];
@@ -26,10 +27,11 @@ export const applySiteVisibility = (query, options = {}) => options.ownerId
 
 export async function loadPublicSite(slug, options = {}) {
   if (!options.siteId && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error("VALIDATION:A valid slug is required.");
-  const siteQuery = getSupabaseClient().from("sites").select("id, slug, theme_config, business_name, tone, primary_color, accent_color, headline, show_closed_listings, show_team_section, team_section_label");
-  const { data: site, error } = await applySiteVisibility(siteQuery, { ...options, slug }).maybeSingle();
+  const siteQuery = getSupabaseClient().from("sites").select(siteSelect);
+  const { data: storedSite, error } = await applySiteVisibility(siteQuery, { ...options, slug }).maybeSingle();
   if (error) throw new Error(`Failed to load public site: ${error.message}`);
-  if (!site) return null;
+  if (!storedSite) return null;
+  const site = canonicalSiteProjection(storedSite);
   let listingsQuery = getSupabaseClient().from("listings").select(publicListingSelect).eq("site_id", site.id).in("status", ["active", "sold"]);
   if (!site.show_closed_listings) listingsQuery = listingsQuery.eq("listing_status", "active");
   if (options.listingId) listingsQuery = listingsQuery.eq("id", options.listingId);
