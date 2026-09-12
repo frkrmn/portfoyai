@@ -33,7 +33,11 @@
     "test:bundle-splitting": "npm run build && node server/bundle-splitting-audit.mjs",
     "test:production-performance": "node server/production-performance-audit.mjs",
     "test:a11y-responsive": "node server/responsive-accessibility.e2e.mjs",
-    "test:platform-content": "node server/platform-content.browser.e2e.mjs"
+    "test:platform-content": "node server/platform-content.browser.e2e.mjs",
+    "test:schema-audits": "npm run test:content-schema && npm run test:image-schema && npm run test:theme-config && npm run test:site-source-of-truth && npm run test:public-payload && npm run test:frontend-boundaries",
+    "test:i18n-audits": "npm run test:i18n-audit && npm run test:site-i18n-audit && npm run test:dynamic-site-i18n",
+    "test:ci-contract": "node server/ci-quality-gate.test.mjs",
+    "test:quality-gate": "npm run lint && npm run build && npm run test:schema-audits && npm run test:i18n-audits && npm run test:ci-contract"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

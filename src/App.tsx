@@ -20,7 +20,10 @@ const DashboardPage = lazy(() => import("./portfoyai/dashboard").then((module) =
 const PricingPage = lazy(() => import("./portfoyai/pricing").then((module) => ({ default: module.PricingPage })));
 const PlatformContentAdminPage = lazy(() => import("./portfoyai/platform-content-admin").then((module) => ({ default: module.PlatformContentAdminPage })));
 const SiteRenderer = lazy(() => import("./templates/SiteRenderer").then((module) => ({ default: module.SiteRenderer })));
-const RouteLoading = () => <div className="grid min-h-screen place-items-center bg-[#f4f1ea] text-sm text-slate-600">Yükleniyor...</div>;
+const RouteLoading = () => {
+  const { t } = useTranslation();
+  return <div className="grid min-h-screen place-items-center bg-[#f4f1ea] text-sm text-slate-600">{t("common.loading")}</div>;
+};
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { t } = useTranslation();

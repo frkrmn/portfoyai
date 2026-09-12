@@ -1,0 +1,147 @@
+name: Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: quality-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 24
+
+jobs:
+  build:
+    name: Build and lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Lint source
+        run: npm run lint
+      - name: Build production bundle
+        run: npm run build
+      - name: Upload production bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-bundle
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  schema:
+    name: Schema and architecture audits
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Validate persisted schemas and boundaries
+        run: npm run test:schema-audits
+      - name: Validate CI contract
+        run: npm run test:ci-contract
+
+  i18n:
+    name: Internationalization audits
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Find untranslated and invalid localized content
+        run: npm run test:i18n-audits
+
+  browser:
+    name: Browser regression (${{ matrix.suite }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [performance, accessibility]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: production-bundle
+          path: dist/
+      - name: Start deterministic production fixture
+        run: |
+          node server/performance-fixture-server.mjs > /tmp/quality-gate-fixture.log 2>&1 &
+          echo $! > /tmp/quality-gate-fixture.pid
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:4178/api/public-sites/performance-fixture >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/quality-gate-fixture.log
+          exit 1
+      - name: Enforce API, bundle and loading budgets
+        if: matrix.suite == 'performance'
+        run: |
+          npm run test:production-performance
+          npx lhci autorun
+      - name: Enforce WCAG, keyboard and viewport regressions
+        if: matrix.suite == 'accessibility'
+        run: npm run test:a11y-responsive
+      - name: Upload actionable reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-gate-${{ matrix.suite }}-reports
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Print fixture log on failure
+        if: failure()
+        run: cat /tmp/quality-gate-fixture.log
+      - name: Stop production fixture
+        if: always()
+        run: kill "$(cat /tmp/quality-gate-fixture.pid)" 2>/dev/null || true
+
+  required:
+    name: required
+    if: always()
+    needs: [build, schema, i18n, browser]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summarize quality gate
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node - <<'NODE'
+          const results = JSON.parse(process.env.RESULTS);
+          const failed = Object.entries(results).filter(([, job]) => job.result !== "success");
+          const rows = Object.entries(results).map(([name, job]) => `| ${name} | ${job.result} |`).join("\n");
+          require("node:fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Quality gate\n\n| Check | Result |\n| --- | --- |\n${rows}\n`);
+          if (failed.length) {
+            const message = failed.map(([name, job]) => `${name}: ${job.result}`).join(", ");
+            console.error(`::error title=Quality gate failed::${message}. Open the failed job and its report artifact for details.`);
+            process.exit(1);
+          }
+          console.log("All required quality checks passed.");
+          NODE

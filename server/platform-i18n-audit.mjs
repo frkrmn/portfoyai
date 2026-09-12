@@ -12,6 +12,7 @@ const fullFileTargets = [
 ];
 const selectedViews = new Set(["Shell", "ListingForm", "LandingPage", "AuthPage"]);
 const visibleAttributes = new Set(["placeholder", "title", "aria-label", "alt"]);
+const technicalLiterals = new Set(["Enter", "image/jpeg,image/png,image/webp"]);
 const findings = [];
 
 const hasWords = (value) => /[A-Za-zÇĞİÖŞÜçğıöşü]{2,}/.test(value);
@@ -31,7 +32,7 @@ function functionName(node) {
 
 function report(source, file, node, raw) {
   const value = raw.replace(/\s+/g, " ").trim();
-  if (!value || !hasWords(value) || looksTechnical(value)) return;
+  if (!value || technicalLiterals.has(value) || !hasWords(value) || looksTechnical(value)) return;
   const { line } = source.getLineAndCharacterOfPosition(node.getStart(source));
   findings.push({ file, line: line + 1, value });
 }
