@@ -1,5 +1,5 @@
 import { dashboardSite, getAuthenticatedUser, getSupabaseClient, handleKnownError, hexColorPattern, methodNotAllowed, readJsonBody, routeParam, sanitizeSeo, sendJson, uuidPattern } from "../api-utils.mjs";
-import { mergeThemeConfig } from "../site-theme.mjs";
+import { mergeThemeConfig, switchTemplateConfig } from "../site-theme.mjs";
 import { removeReplacedMedia } from "../media-storage.mjs";
 import { siteSelect } from "../site-source-of-truth.mjs";
 
@@ -17,7 +17,7 @@ const updateSite = async (request, response, siteId) => {
   // Site media follows the existing listing/team data-URL upload pattern.
   // Four 1.5 MB gallery images expand to roughly 8 MB after base64 encoding.
   const body = await readJsonBody(request, 12 * 1024 * 1024);
-  const { data: current, error: currentError } = await getSupabaseClient().from("sites").select("id, theme_config, draft_revision").eq("id", siteId).eq("user_id", user.id).maybeSingle();
+  const { data: current, error: currentError } = await getSupabaseClient().from("sites").select("id, theme_config, previous_theme_config, draft_revision").eq("id", siteId).eq("user_id", user.id).maybeSingle();
   if (currentError) throw new Error(`Failed to verify site ownership: ${currentError.message}`);
   if (!current) return sendJson(response, 404, { error: "Owned site not found." });
   const updates = {};
@@ -109,7 +109,12 @@ const updateSite = async (request, response, siteId) => {
   if (body.media !== undefined) themePatch.media = body.media;
   if (body.seo !== undefined) themePatch.seo = sanitizeSeo(body.seo);
   if (Object.keys(updates).length === 0 && Object.keys(body).length === 0) return sendJson(response, 400, { error: "No site changes were supplied." });
-  const { themeConfig, topLevel } = mergeThemeConfig(current.theme_config, themePatch);
+  if (body.restore_previous_template === true && !current.previous_theme_config) return sendJson(response, 409, { error: "No previous design is available." });
+  const baseThemeConfig = body.restore_previous_template === true ? current.previous_theme_config : current.theme_config;
+  const { themeConfig: mergedThemeConfig, topLevel } = mergeThemeConfig(baseThemeConfig, themePatch);
+  const themeConfig = body.template_id !== undefined ? switchTemplateConfig(mergedThemeConfig, String(body.template_id)) : mergedThemeConfig;
+  if (body.template_id !== undefined && body.template_id !== current.theme_config?.template_id) updates.previous_theme_config = current.theme_config;
+  if (body.restore_previous_template === true) updates.previous_theme_config = null;
   Object.assign(updates, topLevel, { theme_config: themeConfig, draft_revision: Number(current.draft_revision || 1) + 1 });
   let query = getSupabaseClient().from("sites").update(updates).eq("id", siteId).eq("user_id", user.id);
   if (body.expected_revision !== undefined) query = query.eq("draft_revision", Number(body.expected_revision));

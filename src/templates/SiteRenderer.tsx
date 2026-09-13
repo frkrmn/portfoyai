@@ -31,6 +31,7 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
   const { slug = "", listingId } = useParams();
   const [searchParams] = useSearchParams();
   const previewSiteId = searchParams.get("previewSiteId");
+  const previewTemplateId = searchParams.get("templateId");
   const [payload, setPayload] = useState<PublicSitePayload | null>(null);
   const [family, setFamily] = useState<TemplateFamily | null>(null);
   const [error, setError] = useState("");
@@ -40,10 +41,13 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
     setPayload(null);
     setError("");
     const load = async () => {
-      const params = view === "detail" && listingId ? `?listingId=${encodeURIComponent(listingId)}` : "";
-      if (!previewSiteId) return fetch(`/api/public-sites/${encodeURIComponent(slug)}${params}`, { signal: controller.signal });
+      const params = new URLSearchParams();
+      if (view === "detail" && listingId) params.set("listingId", listingId);
+      if (previewSiteId && previewTemplateId) params.set("templateId", previewTemplateId);
+      const suffix = params.size ? `?${params}` : "";
+      if (!previewSiteId) return fetch(`/api/public-sites/${encodeURIComponent(slug)}${suffix}`, { signal: controller.signal });
       const { data: { session } } = await supabase.auth.getSession();
-      return fetch(`/api/sites/${encodeURIComponent(previewSiteId)}/preview${params}`, { signal: controller.signal, headers: session ? { Authorization: `Bearer ${session.access_token}` } : {} });
+      return fetch(`/api/sites/${encodeURIComponent(previewSiteId)}/preview${suffix}`, { signal: controller.signal, headers: session ? { Authorization: `Bearer ${session.access_token}` } : {} });
     };
     load()
       .then(async (response) => {
@@ -61,7 +65,7 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
         setError(reason instanceof Error ? reason.message : "Site yüklenemedi.");
       });
     return () => controller.abort();
-  }, [listingId, previewSiteId, slug, view]);
+  }, [listingId, previewSiteId, previewTemplateId, slug, view]);
 
   const listing = useMemo(
     () => payload?.listings?.find((item) => item.id === listingId),

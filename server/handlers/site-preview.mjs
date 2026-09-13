@@ -1,5 +1,6 @@
 import { getAuthenticatedUser, handleKnownError, methodNotAllowed, routeParam, sendJson, uuidPattern } from "../api-utils.mjs";
 import { loadPublicSite } from "./public-site.mjs";
+import { switchTemplateConfig } from "../site-theme.mjs";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") return methodNotAllowed(response, ["GET"]);
@@ -9,8 +10,10 @@ export default async function handler(request, response) {
     if (!uuidPattern.test(siteId)) return sendJson(response, 400, { error: "A valid site id is required." });
     const payload = await loadPublicSite("", { siteId, ownerId: user.id });
     if (!payload) return sendJson(response, 404, { error: "Owned site not found." });
+    const templateId = new URL(request.url || "/", "http://localhost").searchParams.get("templateId");
+    const preview = templateId ? { ...payload, config: { ...payload.config, template_id: templateId, theme_config: switchTemplateConfig(payload.config.theme_config, templateId) } } : payload;
     response.setHeader("Cache-Control", "private, no-store");
-    return sendJson(response, 200, payload);
+    return sendJson(response, 200, preview);
   } catch (error) {
     return handleKnownError(response, error, "[site-preview] Preview failed");
   }

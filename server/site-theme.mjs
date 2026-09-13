@@ -1,5 +1,5 @@
 import { hexColorPattern } from "./api-utils.mjs";
-import { CURRENT_THEME_SCHEMA_VERSION, migrateThemeConfig, validateThemeConfig } from "./theme-config.mjs";
+import { CURRENT_THEME_SCHEMA_VERSION, TEMPLATE_IDS, migrateThemeConfig, validateThemeConfig } from "./theme-config.mjs";
 
 export const fineTuneEnums = {
   buttonStyle: ["solid", "outline", "pill", "sharp"],
@@ -13,6 +13,33 @@ export const buttonColorSources = ["accent", "primary", "custom"];
 export const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900];
 
 const clone = (value) => structuredClone(value && typeof value === "object" ? value : {});
+const switchDefaults = {
+  "neighborhood-friendly": { neighborhoods: [] },
+  "guided-match": { feelings: [], timings: [] },
+  "land-plots": {
+    services: [
+      { title: { tr: "Alım-Satım Danışmanlığı", en: "Sales Advisory" }, description: { tr: "Arazi işlemlerini güvenle yönetin.", en: "Navigate land transactions with confidence." } },
+      { title: { tr: "İmar İncelemesi", en: "Zoning Review" }, description: { tr: "İmar durumunu birlikte değerlendirin.", en: "Review zoning details together." } },
+      { title: { tr: "Tapu Takibi", en: "Title Deed Support" }, description: { tr: "Tapu sürecini şeffaf biçimde izleyin.", en: "Track title deed steps transparently." } },
+      { title: { tr: "Yatırım Analizi", en: "Investment Analysis" }, description: { tr: "Potansiyeli verilerle değerlendirin.", en: "Assess potential with data." } },
+    ],
+    processSteps: [
+      { title: { tr: "Dinliyoruz", en: "Discover" }, description: { tr: "Hedefinizi netleştiriyoruz.", en: "We clarify your goals." } },
+      { title: { tr: "İnceliyoruz", en: "Review" }, description: { tr: "Teknik verileri inceliyoruz.", en: "We review the technical details." } },
+      { title: { tr: "Sonuçlandırıyoruz", en: "Deliver" }, description: { tr: "Süreci güvenle tamamlıyoruz.", en: "We complete the process with confidence." } },
+    ],
+  },
+};
+
+export const switchTemplateConfig = (currentThemeConfig, templateId) => {
+  if (!TEMPLATE_IDS.includes(templateId) || templateId.startsWith("tm_")) throw new Error("VALIDATION:Unsupported template id.");
+  const current = migrateThemeConfig(currentThemeConfig);
+  const content = { ...(current.content || {}) };
+  for (const [key, fallback] of Object.entries(switchDefaults[templateId] || {})) {
+    if (!Array.isArray(content[key]) || content[key].length < fallback.length) content[key] = fallback;
+  }
+  return validateThemeConfig({ ...current, template_id: templateId, content });
+};
 const textValue = (value, field, max) => {
   const text = String(value).trim();
   if (!text || text.length > max) throw new Error(`VALIDATION:${field} is invalid.`);

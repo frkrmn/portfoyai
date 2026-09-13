@@ -33,6 +33,7 @@ import { supabase } from "@/lib/supabase";
 import { LeadNotificationSettings } from "./dashboard/LeadNotificationSettings";
 import { AnalyticsPanel } from "./dashboard/AnalyticsPanel";
 import { OverviewChecklist } from "./dashboard/OverviewChecklist";
+import { TemplateSwitcher, type SwitchableTemplateId } from "./dashboard/TemplateSwitcher";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashboardQueryKeys, dashboardRequest } from "@/lib/dashboard-query";
 
@@ -699,6 +700,16 @@ export function DashboardPage() {
     if (saved) setPreviewVersion((value) => value + 1);
   };
 
+  const switchTemplate = async (templateId: SwitchableTemplateId) => {
+    const saved = await patchSite({ template_id: templateId }, t("dashboard.templateSwitch.saved"));
+    if (saved) setPreviewVersion((value) => value + 1);
+    return saved;
+  };
+  const undoTemplateSwitch = async () => {
+    const saved = await patchSite({ restore_previous_template: true }, t("dashboard.templateSwitch.saved"));
+    if (saved) setPreviewVersion((value) => value + 1);
+  };
+
   const saveContent = async () => {
     const saved = await patchSite({ content: contentDraft }, t("dashboard.content.saved"));
     if (saved) {
@@ -815,6 +826,7 @@ export function DashboardPage() {
 
       {activeSite && activeTab === "site" && siteDraft ? (
         <div className="grid gap-6 xl:grid-cols-2">
+          <TemplateSwitcher siteId={activeSite.id} slug={activeSite.slug} currentTemplateId={activeTemplateId} canUndo={activeSite.can_undo} saving={savingSite || refining} onApply={switchTemplate} onUndo={undoTemplateSwitch} />
           <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
             <CardHeader><CardTitle>{t("dashboard.site.title")}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
