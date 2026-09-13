@@ -8,8 +8,9 @@ import { PortfoyAIProvider } from "./portfoyai/store";
 import { AuthProvider } from "./portfoyai/auth";
 import { useAuth } from "./portfoyai/auth";
 import { useTranslation } from "react-i18next";
+import { dashboardQueryClientConfig } from "@/lib/dashboard-query";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient(dashboardQueryClientConfig);
 const LandingPage = lazy(() => import("./portfoyai/views/landing").then((module) => ({ default: module.LandingPage })));
 const AuthPage = lazy(() => import("./portfoyai/views/auth").then((module) => ({ default: module.AuthPage })));
 const GeneratedSitePreviewPage = lazy(() => import("./portfoyai/views/generation").then((module) => ({ default: module.GeneratedSitePreviewPage })));

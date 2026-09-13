@@ -33,10 +33,12 @@ import { applyLeadRealtimeChange, LEAD_FALLBACK_INTERVAL_MS, type DashboardLead 
 import { supabase } from "@/lib/supabase";
 import { LeadNotificationSettings } from "./dashboard/LeadNotificationSettings";
 import { AnalyticsPanel } from "./dashboard/AnalyticsPanel";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { dashboardQueryKeys, dashboardRequest } from "@/lib/dashboard-query";
 
 type DashboardTab = "overview" | "analytics" | "site" | "content" | "images" | "listings" | "leads";
 
-type DashboardSite = {
+export type DashboardSite = {
   id: string;
   slug: string;
   business_name: string;
@@ -101,7 +103,7 @@ type SiteDraft = {
   seo: SeoConfig;
 };
 
-type GoogleFont = { family: string; variants: string[] };
+export type GoogleFont = { family: string; variants: string[] };
 type TeamDraft = { id?: string; name: string; role: string; bio: string; photo_url: string };
 const blankTeamMember = (): TeamDraft => ({ name: "", role: "", bio: "", photo_url: "" });
 
@@ -275,10 +277,6 @@ export function DashboardPage() {
   const { session, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedSiteId = searchParams.get("site") || "";
-  const [sites, setSites] = useState<DashboardSite[]>([]);
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [leads, setLeads] = useState<DashboardLead[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teamDraft, setTeamDraft] = useState<TeamDraft>(blankTeamMember);
   const [teamLabel, setTeamLabel] = useState("");
   const [savingTeam, setSavingTeam] = useState(false);
@@ -290,30 +288,77 @@ export function DashboardPage() {
   const [persistedContent, setPersistedContent] = useState<ContentRecord>({});
   const [mediaDraft, setMediaDraft] = useState<SiteMedia>({});
   const [persistedMedia, setPersistedMedia] = useState<SiteMedia>({});
-  const [loading, setLoading] = useState(true);
   const [savingListing, setSavingListing] = useState(false);
   const [updatingListingStatusId, setUpdatingListingStatusId] = useState("");
   const [savingSite, setSavingSite] = useState(false);
   const [draftSaveState, setDraftSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [translatingContent, setTranslatingContent] = useState(false);
-  const [plan, setPlan] = useState<"free" | "pro">("free");
   const [openingPaywall, setOpeningPaywall] = useState(false);
   const [refineRequest, setRefineRequest] = useState("");
   const [refining, setRefining] = useState(false);
   const [refineNote, setRefineNote] = useState<string | null>(null);
   const [refineFields, setRefineFields] = useState<string[]>([]);
   const [previewVersion, setPreviewVersion] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [fonts, setFonts] = useState<GoogleFont[]>([]);
-  const [fontsLoading, setFontsLoading] = useState(false);
-  const [fontsError, setFontsError] = useState("");
   const [templateFamily, setTemplateFamily] = useState<TemplateFamily | null>(null);
   const siteDraftSiteId = useRef("");
   const contentDraftSiteId = useRef("");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const authHeaders = useMemo(() => session ? { Authorization: `Bearer ${session.access_token}` } : {}, [session]);
+  const userId = user?.id || "";
+  const sitesQuery = useQuery({
+    queryKey: dashboardQueryKeys.sites(userId), enabled: Boolean(session && userId),
+    queryFn: ({ signal }) => dashboardRequest<{ sites?: DashboardSite[]; plan?: "free" | "pro" }>("/api/sites", authHeaders, signal),
+  });
+  const sites = useMemo(() => sitesQuery.data?.sites || [], [sitesQuery.data?.sites]);
+  const plan = sitesQuery.data?.plan === "pro" ? "pro" : "free";
+  const loading = sitesQuery.isLoading;
   const activeSite = sites.find((site) => site.id === selectedSiteId) || sites[0] || null;
+  const leadsQuery = useQuery({
+    queryKey: dashboardQueryKeys.leads(userId), enabled: Boolean(session && userId),
+    queryFn: ({ signal }) => dashboardRequest<{ leads?: DashboardLead[] }>("/api/leads", authHeaders, signal),
+  });
+  const leads = useMemo(() => leadsQuery.data?.leads || [], [leadsQuery.data?.leads]);
+  const listingsQuery = useQuery({
+    queryKey: dashboardQueryKeys.listings(activeSite?.id || ""), enabled: Boolean(session && activeSite),
+    queryFn: ({ signal }) => dashboardRequest<{ listings?: Listing[] }>(`/api/sites/${activeSite!.id}/listings`, authHeaders, signal),
+  });
+  const listings = useMemo(() => listingsQuery.data?.listings || [], [listingsQuery.data?.listings]);
+  const teamQuery = useQuery({
+    queryKey: dashboardQueryKeys.team(activeSite?.id || ""), enabled: Boolean(session && activeSite),
+    queryFn: ({ signal }) => dashboardRequest<{ team_members?: TeamMember[] }>(`/api/sites/${activeSite!.id}/team-members`, authHeaders, signal),
+  });
+  const teamMembers = useMemo(() => teamQuery.data?.team_members || [], [teamQuery.data?.team_members]);
+  const fontsQuery = useQuery({
+    queryKey: dashboardQueryKeys.fonts, enabled: Boolean(session),
+    queryFn: ({ signal }) => dashboardRequest<{ fonts?: GoogleFont[] }>("/api/fonts", authHeaders, signal), staleTime: 60 * 60_000,
+  });
+  const fonts = useMemo(() => fontsQuery.data?.fonts || [], [fontsQuery.data?.fonts]);
+  const fontsLoading = fontsQuery.isLoading;
+  const fontsError = fontsQuery.error instanceof Error ? fontsQuery.error.message : "";
+  const adminQuery = useQuery({
+    queryKey: dashboardQueryKeys.adminAccess(userId), enabled: Boolean(session && userId), retry: false,
+    queryFn: async ({ signal }) => { const response = await fetch("/api/admin/platform-content?locale=tr", { headers: authHeaders, signal }); return response.ok; },
+  });
+  const isAdmin = adminQuery.data === true;
+  const setSites = useCallback((update: (current: DashboardSite[]) => DashboardSite[]) => {
+    queryClient.setQueryData<{ sites?: DashboardSite[]; plan?: "free" | "pro" }>(dashboardQueryKeys.sites(userId), (current) => ({ ...current, sites: update(current?.sites || []) }));
+  }, [queryClient, userId]);
+  const setListings = useCallback((update: (current: Listing[]) => Listing[]) => {
+    if (!activeSite) return;
+    queryClient.setQueryData<{ listings?: Listing[] }>(dashboardQueryKeys.listings(activeSite.id), (current) => ({ ...current, listings: update(current?.listings || []) }));
+  }, [activeSite, queryClient]);
+  const setTeamMembers = useCallback((update: (current: TeamMember[]) => TeamMember[]) => {
+    if (!activeSite) return;
+    queryClient.setQueryData<{ team_members?: TeamMember[] }>(dashboardQueryKeys.team(activeSite.id), (current) => ({ ...current, team_members: update(current?.team_members || []) }));
+  }, [activeSite, queryClient]);
+  const setLeads = useCallback((update: (current: DashboardLead[]) => DashboardLead[]) => {
+    queryClient.setQueryData<{ leads?: DashboardLead[] }>(dashboardQueryKeys.leads(userId), (current) => ({ ...current, leads: update(current?.leads || []) }));
+  }, [queryClient, userId]);
+  const loadLeads = useCallback(async () => {
+    await queryClient.refetchQueries({ queryKey: dashboardQueryKeys.leads(userId), exact: true });
+  }, [queryClient, userId]);
   const activeTemplateId = activeSite?.theme_config?.template_id;
   const siteLeads = leads.filter((lead) => lead.site_id === activeSite?.id);
   const persistedSiteDraft = activeSite ? siteDraftFrom(activeSite) : null;
@@ -331,69 +376,18 @@ export function DashboardPage() {
   }, [activeSite, activeTemplateId]);
 
   useEffect(() => {
-    if (!session) return;
-    const controller = new AbortController();
-    fetch("/api/admin/platform-content?locale=tr", { headers: authHeaders, signal: controller.signal })
-      .then((response) => setIsAdmin(response.ok))
-      .catch(() => setIsAdmin(false));
-    return () => controller.abort();
-  }, [authHeaders, session]);
-
-  const loadLeads = useCallback(async (signal?: AbortSignal) => {
-    if (!session) return;
-    const response = await fetch("/api/leads", { headers: authHeaders, signal });
-    const payload = await readApiJson<{ error?: string; leads?: DashboardLead[] }>(response);
-    if (!response.ok) throw new Error(payload.error || t("dashboard.leads.loadError"));
-    setLeads(payload.leads || []);
-  }, [authHeaders, session, t]);
+    if (sitesQuery.error) toast.error(sitesQuery.error instanceof Error ? sitesQuery.error.message : t("dashboard.errors.load"));
+  }, [sitesQuery.error, t]);
 
   useEffect(() => {
-    if (!session) return;
-    const controller = new AbortController();
-    const load = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch("/api/sites", { headers: authHeaders, signal: controller.signal });
-        const payload = await readApiJson<{ error?: string; sites?: DashboardSite[]; plan?: "free" | "pro" }>(response);
-        if (!response.ok) throw new Error(payload.error || t("dashboard.errors.sitesLoad"));
-        const nextSites: DashboardSite[] = payload.sites || [];
-        setPlan(payload.plan === "pro" ? "pro" : "free");
-        setSites(nextSites);
-        const nextId = nextSites.some((site) => site.id === requestedSiteId) ? requestedSiteId : nextSites[0]?.id || "";
-        setSelectedSiteId(nextId);
-        await loadLeads(controller.signal);
-      } catch (error) {
-        if (!(error instanceof DOMException && error.name === "AbortError")) toast.error(error instanceof Error ? error.message : t("dashboard.errors.load"));
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    };
-    void load();
-    return () => controller.abort();
-  }, [authHeaders, loadLeads, requestedSiteId, session, t]);
-
-  useEffect(() => {
-    if (!session) return;
-    const controller = new AbortController();
-    setFontsLoading(true);
-    setFontsError("");
-    fetch("/api/fonts", { headers: authHeaders, signal: controller.signal })
-      .then(async (response) => {
-        const payload = await readApiJson<{ error?: string; fonts?: GoogleFont[] }>(response);
-        if (!response.ok) throw new Error(payload.error || t("dashboard.theme.fontsError"));
-        setFonts(payload.fonts || []);
-      })
-      .catch((error) => {
-        if (!(error instanceof DOMException && error.name === "AbortError")) setFontsError(error instanceof Error ? error.message : t("dashboard.theme.fontsError"));
-      })
-      .finally(() => { if (!controller.signal.aborted) setFontsLoading(false); });
-    return () => controller.abort();
-  }, [authHeaders, session, t]);
+    if (!sites.length) return;
+    setSelectedSiteId((current) => sites.some((site) => site.id === requestedSiteId)
+      ? requestedSiteId
+      : sites.some((site) => site.id === current) ? current : sites[0].id);
+  }, [requestedSiteId, sites]);
 
   useEffect(() => {
     if (!activeSite || !session) {
-      setListings([]);
-      setTeamMembers([]);
       setSiteDraft(null);
       setContentDraft({});
       setPersistedContent({});
@@ -401,43 +395,22 @@ export function DashboardPage() {
       contentDraftSiteId.current = "";
       return;
     }
-    const controller = new AbortController();
-    const loadListings = async () => {
-      try {
-        const [response, teamResponse] = await Promise.all([
-          fetch(`/api/sites/${activeSite.id}/listings`, { headers: authHeaders, signal: controller.signal }),
-          fetch(`/api/sites/${activeSite.id}/team-members`, { headers: authHeaders, signal: controller.signal }),
-        ]);
-        const payload = await readApiJson<{ error?: string; listings?: Listing[] }>(response);
-        const teamPayload = await readApiJson<{ error?: string; team_members?: TeamMember[] }>(teamResponse);
-        if (!response.ok) throw new Error(payload.error || t("dashboard.listings.loadError"));
-        if (!teamResponse.ok) throw new Error(teamPayload.error || t("dashboard.team.loadError"));
-        setListings(payload.listings || []);
-        setTeamMembers(teamPayload.team_members || []);
-        setTeamDraft(blankTeamMember());
-        setTeamLabel(activeSite.team_section_label || "");
-        setDraft(blankListing(activeSite.id));
-        if (siteDraftSiteId.current !== activeSite.id) {
-          siteDraftSiteId.current = activeSite.id;
-          setSiteDraft(siteDraftFrom(activeSite));
-        }
-        if (contentDraftSiteId.current !== activeSite.id) {
-          contentDraftSiteId.current = activeSite.id;
-          const stored = structuredClone(activeSite.theme_config?.content || {}) as ContentRecord;
-          const content = materializeTranslatableContent(templateContentFallbacks(activeSite.theme_config?.template_id) as unknown as Record<string, unknown>, stored) as ContentRecord;
-          setContentDraft(content);
-          setPersistedContent(content);
-          const media = structuredClone(activeSite.theme_config?.media || {}) as SiteMedia;
-          setMediaDraft(media);
-          setPersistedMedia(media);
-        }
-      } catch (error) {
-        if (!(error instanceof DOMException && error.name === "AbortError")) toast.error(error instanceof Error ? error.message : t("dashboard.listings.loadError"));
-      }
-    };
-    void loadListings();
-    return () => controller.abort();
-  }, [activeSite, authHeaders, session, t]);
+    setTeamDraft(blankTeamMember());
+    setTeamLabel(activeSite.team_section_label || "");
+    setDraft(blankListing(activeSite.id));
+    if (siteDraftSiteId.current !== activeSite.id) {
+      siteDraftSiteId.current = activeSite.id;
+      setSiteDraft(siteDraftFrom(activeSite));
+    }
+    if (contentDraftSiteId.current !== activeSite.id) {
+      contentDraftSiteId.current = activeSite.id;
+      const stored = structuredClone(activeSite.theme_config?.content || {}) as ContentRecord;
+      const content = materializeTranslatableContent(templateContentFallbacks(activeSite.theme_config?.template_id) as unknown as Record<string, unknown>, stored) as ContentRecord;
+      setContentDraft(content); setPersistedContent(content);
+      const media = structuredClone(activeSite.theme_config?.media || {}) as SiteMedia;
+      setMediaDraft(media); setPersistedMedia(media);
+    }
+  }, [activeSite, session]);
 
   useEffect(() => {
     if (!session) return;
@@ -482,7 +455,7 @@ export function DashboardPage() {
       window.removeEventListener("online", refresh);
       void supabase.removeChannel(channel);
     };
-  }, [loadLeads, session]);
+  }, [loadLeads, session, setLeads]);
 
   const selectSite = (siteId: string) => {
     siteDraftSiteId.current = "";
@@ -828,7 +801,7 @@ export function DashboardPage() {
 
       {activeSite && activeTab === "listings" ? <div className="grid gap-6 xl:grid-cols-[1fr_.9fr]"><Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between"><div><CardTitle>{t("dashboard.listings.title")}</CardTitle><CardDescription>{t("dashboard.listings.description", { count: listings.length })}</CardDescription></div><Button onClick={startNewListing} disabled={openingPaywall} className="rounded-full"><Plus className="mr-2 h-4 w-4" />{t("dashboard.listings.new")}</Button></CardHeader><CardContent className="space-y-3">{listings.map((listing) => <ListingManagementRow key={listing.id} listing={listing} selected={draft.id === listing.id} updating={updatingListingStatusId === listing.id} onSelect={() => setDraft({ ...listing })} onToggle={() => void toggleListingAvailability(listing)} />)}</CardContent></Card><ListingForm siteId={activeSite.id} draft={draft} onDraftChange={(patch) => setDraft((current) => ({ ...current, ...patch }))} onSave={() => void saveListing()} isSaving={savingListing} onGenerate={generateListingCopy} onLoadSocialKit={loadSocialKit} onReset={() => setDraft(blankListing(activeSite.id))} onDelete={() => void removeListing()} /></div> : null}
 
-      {activeSite && activeTab === "leads" ? <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between gap-4"><div><CardTitle>{t("dashboard.leads.title")}</CardTitle><CardDescription>{t("dashboard.leads.description")}</CardDescription></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void loadLeads()}><RefreshCw className="mr-2 h-4 w-4" />{t("common.refresh")}</Button><Button variant="outline" disabled={openingPaywall} onClick={() => plan === "free" ? void openPaywall("lead_export") : toast.info(t("dashboard.leads.exporting"))}><Download className="mr-2 h-4 w-4" />{t("dashboard.leads.export")}{plan === "free" ? <Lock className="ml-2 h-3.5 w-3.5" /> : null}</Button></div></CardHeader><CardContent><LeadNotificationSettings authHeaders={authHeaders} leads={siteLeads} />{siteLeads.length ? <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left"><thead className="border-y text-xs text-[#7a857e]"><tr><th className="py-4">{t("dashboard.leads.name")}</th><th>{t("dashboard.leads.phone")}</th><th>{t("dashboard.leads.message")}</th><th>{t("dashboard.leads.date")}</th></tr></thead><tbody>{siteLeads.map((lead) => <tr key={lead.id} className="border-b"><td className="py-5 font-semibold">{lead.name}</td><td><a href={`tel:${lead.phone}`}>{lead.phone}</a></td><td className="max-w-sm text-sm">{lead.message || "—"}</td><td className="text-xs text-[#7a857e]">{new Intl.DateTimeFormat(i18n.resolvedLanguage === "en" ? "en-US" : "tr-TR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(lead.created_at))}</td></tr>)}</tbody></table></div> : <p className="p-5 text-sm text-[#69756e]">{t("dashboard.leads.empty")}</p>}</CardContent></Card> : null}
+      {activeSite && activeTab === "leads" ? <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between gap-4"><div><CardTitle>{t("dashboard.leads.title")}</CardTitle><CardDescription>{t("dashboard.leads.description")}</CardDescription></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void loadLeads()}><RefreshCw className="mr-2 h-4 w-4" />{t("common.refresh")}</Button><Button variant="outline" disabled={openingPaywall} onClick={() => plan === "free" ? void openPaywall("lead_export") : toast.info(t("dashboard.leads.exporting"))}><Download className="mr-2 h-4 w-4" />{t("dashboard.leads.export")}{plan === "free" ? <Lock className="ml-2 h-3.5 w-3.5" /> : null}</Button></div></CardHeader><CardContent><LeadNotificationSettings userId={userId} authHeaders={authHeaders} leads={siteLeads} />{siteLeads.length ? <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left"><thead className="border-y text-xs text-[#7a857e]"><tr><th className="py-4">{t("dashboard.leads.name")}</th><th>{t("dashboard.leads.phone")}</th><th>{t("dashboard.leads.message")}</th><th>{t("dashboard.leads.date")}</th></tr></thead><tbody>{siteLeads.map((lead) => <tr key={lead.id} className="border-b"><td className="py-5 font-semibold">{lead.name}</td><td><a href={`tel:${lead.phone}`}>{lead.phone}</a></td><td className="max-w-sm text-sm">{lead.message || "—"}</td><td className="text-xs text-[#7a857e]">{new Intl.DateTimeFormat(i18n.resolvedLanguage === "en" ? "en-US" : "tr-TR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(lead.created_at))}</td></tr>)}</tbody></table></div> : <p className="p-5 text-sm text-[#69756e]">{t("dashboard.leads.empty")}</p>}</CardContent></Card> : null}
 
       {activeSite && activeTab === "content" ? <ContentEditor schema={contentSchema} content={contentDraft} previewUrl={`/site/${activeSite.slug}?previewSiteId=${activeSite.id}`} previewVersion={previewVersion} onChange={setContentDraft} onSave={() => void saveContent()} onTranslateMissing={() => void translateMissingContent()} saving={savingSite} translating={translatingContent} dirty={contentDirty} /> : null}
 

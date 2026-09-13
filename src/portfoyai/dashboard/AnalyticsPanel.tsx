@@ -1,17 +1,20 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { BarChart3, Eye, MousePointerClick, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { readApiJson } from "@/lib/api";
+import { dashboardQueryKeys, dashboardRequest } from "@/lib/dashboard-query";
 
 type Report = { period_days: number; totals: { views: number; listing_views: number; conversions: number; conversion_rate: number }; by_listing: Array<{ listing_id: string; views: number; conversions: number }>; sources: Array<{ source: string; views: number }> };
 
 export function AnalyticsPanel({ siteId, authHeaders, listings }: { siteId: string; authHeaders: Record<string, string>; listings: Array<{ id: string; title: string }> }) {
   const { t } = useTranslation();
-  const [report, setReport] = useState<Report | null>(null);
-  const [error, setError] = useState("");
-  useEffect(() => { const controller = new AbortController(); fetch(`/api/analytics?site_id=${encodeURIComponent(siteId)}`, { headers: authHeaders, signal: controller.signal }).then(async (response) => { const payload = await readApiJson<Report & { error?: string }>(response); if (!response.ok) throw new Error(payload.error || t("dashboard.analytics.loadError")); setReport(payload); }).catch((reason) => { if (!(reason instanceof DOMException && reason.name === "AbortError")) setError(reason instanceof Error ? reason.message : t("dashboard.analytics.loadError")); }); return () => controller.abort(); }, [authHeaders, siteId, t]);
-  if (error) return <Card><CardContent className="p-7 text-red-700">{error}</CardContent></Card>;
+  const reportQuery = useQuery({
+    queryKey: dashboardQueryKeys.analytics(siteId),
+    queryFn: ({ signal }) => dashboardRequest<Report>(`/api/analytics?site_id=${encodeURIComponent(siteId)}`, authHeaders, signal),
+    enabled: Boolean(siteId),
+  });
+  const report = reportQuery.data;
+  if (reportQuery.error) return <Card><CardContent className="p-7 text-red-700">{reportQuery.error instanceof Error ? reportQuery.error.message : t("dashboard.analytics.loadError")}</CardContent></Card>;
   if (!report) return <Card><CardContent className="p-7 text-sm text-[#69756e]">{t("common.loading")}</CardContent></Card>;
   const metrics = [[t("dashboard.analytics.views"), report.totals.views, Eye], [t("dashboard.analytics.listingViews"), report.totals.listing_views, BarChart3], [t("dashboard.analytics.conversions"), report.totals.conversions, MousePointerClick], [t("dashboard.analytics.conversionRate"), `%${report.totals.conversion_rate}`, TrendingUp]] as const;
   return <div className="space-y-6"><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{metrics.map(([label, value, Icon]) => <Card key={label} className="rounded-2xl shadow-none"><CardContent className="p-6"><Icon className="h-5 w-5 text-[#d86f45]" /><div className="mt-5 text-3xl font-semibold">{value}</div><div className="mt-1 text-sm text-[#69756e]">{label}</div></CardContent></Card>)}</div><div className="grid gap-6 lg:grid-cols-2"><Card className="rounded-2xl shadow-none"><CardHeader><CardTitle>{t("dashboard.analytics.listings")}</CardTitle><CardDescription>{t("dashboard.analytics.last30Days")}</CardDescription></CardHeader><CardContent className="space-y-3">{report.by_listing.length ? report.by_listing.map((item) => <div key={item.listing_id} className="flex justify-between gap-4 border-b pb-3 text-sm"><span>{listings.find((listing) => listing.id === item.listing_id)?.title || item.listing_id}</span><span className="shrink-0">{item.views} / {item.conversions}</span></div>) : <p className="text-sm text-[#69756e]">{t("dashboard.analytics.empty")}</p>}</CardContent></Card><Card className="rounded-2xl shadow-none"><CardHeader><CardTitle>{t("dashboard.analytics.sources")}</CardTitle><CardDescription>{t("dashboard.analytics.utmReferrer")}</CardDescription></CardHeader><CardContent className="space-y-3">{report.sources.length ? report.sources.map((item) => <div key={item.source} className="flex justify-between border-b pb-3 text-sm"><span>{item.source}</span><strong>{item.views}</strong></div>) : <p className="text-sm text-[#69756e]">{t("dashboard.analytics.empty")}</p>}</CardContent></Card></div></div>;
