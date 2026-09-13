@@ -8,6 +8,7 @@ import { loadTemplateFamily } from "./registry";
 import { GoogleFontStylesheet } from "./GoogleFontStylesheet";
 import { LeadProtection } from "./LeadProtection";
 import { localizeSiteConfig, SiteLocaleProvider, useSiteLocale } from "./site-locale";
+import { trackPublicAnalytics } from "@/lib/public-analytics";
 
 function LocalizedSite({ config, Component, listingStatus }: { config: ReturnType<typeof createTemplateConfig>; Component: TemplateFamily["Home"]; listingStatus?: string }) {
   const { locale, messages } = useSiteLocale();
@@ -77,6 +78,11 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
     ? publicSitePageMetadata({ payload, view, listing, locale: payload.language === "en" ? "en" : "tr" })
     : { title: "", description: "" }, [listing, payload, view]);
   usePageMeta(metadata.title, metadata.description);
+
+  useEffect(() => {
+    if (!payload || previewSiteId || view === "team") return;
+    trackPublicAnalytics({ siteId: payload.id, eventType: view === "detail" ? "listing_view" : "site_view", listingId: view === "detail" ? listing?.id : undefined });
+  }, [listing?.id, payload, previewSiteId, view]);
 
   useEffect(() => {
     if (view !== "home" || window.location.hash !== "#ekibimiz" || !payload) return;

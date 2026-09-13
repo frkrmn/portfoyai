@@ -32,8 +32,9 @@ import { dashboardSections } from "./dashboard/index";
 import { applyLeadRealtimeChange, LEAD_FALLBACK_INTERVAL_MS, type DashboardLead } from "@/lib/lead-realtime";
 import { supabase } from "@/lib/supabase";
 import { LeadNotificationSettings } from "./dashboard/LeadNotificationSettings";
+import { AnalyticsPanel } from "./dashboard/AnalyticsPanel";
 
-type DashboardTab = "overview" | "site" | "content" | "images" | "listings" | "leads";
+type DashboardTab = "overview" | "analytics" | "site" | "content" | "images" | "listings" | "leads";
 
 type DashboardSite = {
   id: string;
@@ -815,6 +816,7 @@ export function DashboardPage() {
     {siteDraft ? <GoogleFontStylesheet fonts={{ heading: siteDraft.heading_font, body: siteDraft.body_font, headingWeight: siteDraft.heading_weight, headingItalic: siteDraft.heading_italic, bodyWeight: siteDraft.body_weight, bodyItalic: siteDraft.body_italic }} /> : null}
     {activeSite ? <div role="status" aria-live="polite" className="text-right text-xs text-[#69756e]">{savingSite || draftSaveState === "saving" ? t("common.saving") : draftSaveState === "saved" ? t("dashboard.content.savedState") : null}</div> : null}
     <div className="space-y-7">
+      {activeSite && activeTab === "analytics" ? <AnalyticsPanel siteId={activeSite.id} authHeaders={authHeaders} listings={listings} /> : null}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm text-[#78827c]">{activeSite ? `${activeSite.business_name} · ${t(activeSite.status === "published" ? "common.published" : "common.draft")}` : loading ? t("dashboard.header.loadingSites") : t("dashboard.header.noSite")}</div><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">{t("dashboard.header.hello")}{user?.email ? `, ${user.email.split("@")[0]}` : ""}.</h1><p className="mt-2 text-sm text-[#69756e]">{t("dashboard.header.subtitle")}</p></div>{activeSite ? <div className="flex gap-2"><Select value={activeSite.id} onValueChange={selectSite}><SelectTrigger className="w-[220px] rounded-full bg-white"><SelectValue /></SelectTrigger><SelectContent>{sites.map((site) => <SelectItem key={site.id} value={site.id}>{site.business_name}</SelectItem>)}</SelectContent></Select><Button onClick={startNewListing} className="rounded-full bg-[#d86f45] text-white"><Plus className="mr-2 h-4 w-4" />{t("dashboard.header.newListing")}</Button></div> : null}</div>
 
 

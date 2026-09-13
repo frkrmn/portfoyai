@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import {
   ArrowLeft,
   ArrowRight,
+  BarChart3,
   CalendarDays,
   Check,
   Download,
@@ -40,6 +41,7 @@ import { formatListingPrice, LISTING_CURRENCIES } from "@/lib/listing-price";
 import { clearPendingPrompt, getPendingPrompt, savePendingPrompt } from "@/lib/pending-prompt";
 import { readApiJson } from "@/lib/api";
 import { usePageMeta } from "@/lib/page-meta";
+import { trackPublicAnalytics } from "@/lib/public-analytics";
 import { toast } from "sonner";
 import { formatDateTR, generateThemeFromPrompt } from "./mock";
 import { usePortfoyAI } from "./store";
@@ -61,12 +63,13 @@ const getThemeStyles = (theme: Pick<ThemeConfig, "primary" | "accent" | "fontPai
     fontFamily: theme.fontPairing.body,
   }) as CSSProperties;
 
-export function Shell({ children, actions, businessName, activeSection, onSectionChange, leadCount, isAdmin = false }: { children: ReactNode; actions?: ReactNode; businessName: string; activeSection: "overview" | "site" | "content" | "images" | "listings" | "leads"; onSectionChange: (section: "overview" | "site" | "content" | "images" | "listings" | "leads") => void; leadCount: number; isAdmin?: boolean }) {
+export function Shell({ children, actions, businessName, activeSection, onSectionChange, leadCount, isAdmin = false }: { children: ReactNode; actions?: ReactNode; businessName: string; activeSection: "overview" | "analytics" | "site" | "content" | "images" | "listings" | "leads"; onSectionChange: (section: "overview" | "analytics" | "site" | "content" | "images" | "listings" | "leads") => void; leadCount: number; isAdmin?: boolean }) {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const identity = businessName || user?.email || t("common.brand");
   const navigation = [
     { id: "overview" as const, icon: LayoutDashboard, label: t("dashboard.shell.overview") },
+    { id: "analytics" as const, icon: BarChart3, label: t("dashboard.shell.analytics") },
     { id: "listings" as const, icon: Home, label: t("dashboard.shell.listings") },
     { id: "content" as const, icon: FileText, label: t("dashboard.shell.content") },
     { id: "images" as const, icon: Images, label: t("dashboard.shell.images") },
@@ -177,6 +180,7 @@ function PublicContactForm({ siteId }: { siteId: string }) {
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || "Talebiniz gönderilemedi.");
+        trackPublicAnalytics({ siteId, eventType: "lead_conversion", leadId: payload.id });
         setForm({ name: "", phone: "", message: "" });
         setIsSubmitted(true);
       } catch (error) {

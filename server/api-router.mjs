@@ -1,4 +1,5 @@
 import experiment from "./handlers/experiment.mjs";
+import analytics from "./handlers/analytics.mjs";
 import fonts from "./handlers/fonts.mjs";
 import generateTheme from "./handlers/generate-theme.mjs";
 import leads from "./handlers/leads.mjs";
@@ -28,6 +29,7 @@ export const apiRouteInventory = [
   { pattern: /^\/api\/(sitemap\.xml|robots\.txt)$/, methods: ["GET", "HEAD"], handler: seoFiles },
   { pattern: /^\/api\/render-page$/, methods: ["GET", "HEAD"], handler: renderPage },
   { pattern: /^\/api\/experiment$/, methods: ["POST"], handler: experiment },
+  { pattern: /^\/api\/analytics$/, methods: ["GET", "POST"], handler: analytics },
   { pattern: /^\/api\/fonts$/, methods: ["GET"], handler: fonts },
   { pattern: /^\/api\/generate-theme$/, methods: ["POST"], handler: generateTheme },
   { pattern: /^\/api\/platform-content$/, methods: ["GET"], handler: publicPlatformContent },
