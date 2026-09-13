@@ -28,7 +28,6 @@ import { ContentEditor, type ContentRecord } from "./content-editor";
 import { ImageEditor, type SiteMedia } from "./image-editor";
 import { uploadImage } from "@/lib/media-storage";
 import { ListingManagementRow, OverviewMetric as Metric } from "./dashboard/sections";
-import { dashboardSections } from "./dashboard/index";
 import { applyLeadRealtimeChange, LEAD_FALLBACK_INTERVAL_MS, type DashboardLead } from "@/lib/lead-realtime";
 import { supabase } from "@/lib/supabase";
 import { LeadNotificationSettings } from "./dashboard/LeadNotificationSettings";
@@ -801,8 +800,6 @@ export function DashboardPage() {
       {activeSite && activeTab === "analytics" ? <AnalyticsPanel siteId={activeSite.id} authHeaders={authHeaders} listings={listings} /> : null}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm text-[#78827c]">{activeSite ? `${activeSite.business_name} · ${t(activeSite.status === "published" ? "common.published" : "common.draft")}` : loading ? t("dashboard.header.loadingSites") : t("dashboard.header.noSite")}</div><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">{t("dashboard.header.hello")}{user?.email ? `, ${user.email.split("@")[0]}` : ""}.</h1><p className="mt-2 text-sm text-[#69756e]">{t("dashboard.header.subtitle")}</p></div>{activeSite ? <div className="flex gap-2"><Select value={activeSite.id} onValueChange={selectSite}><SelectTrigger className="w-[220px] rounded-full bg-white"><SelectValue /></SelectTrigger><SelectContent>{sites.map((site) => <SelectItem key={site.id} value={site.id}>{site.business_name}</SelectItem>)}</SelectContent></Select><Button onClick={startNewListing} className="rounded-full bg-[#d86f45] text-white"><Plus className="mr-2 h-4 w-4" />{t("dashboard.header.newListing")}</Button></div> : null}</div>
 
-
-      <div className="flex gap-2 overflow-x-auto">{dashboardSections.map(({ id, translationKey }) => <Button key={id} variant="ghost" onClick={() => setActiveTab(id)} className={cn("rounded-full px-5", activeTab === id ? "bg-[#173f32] text-white hover:bg-[#173f32] hover:text-white" : "bg-white/60")}>{t(`dashboard.tabs.${translationKey}`)}</Button>)}{isAdmin ? <Button asChild variant="ghost" className="whitespace-nowrap rounded-full bg-white/60 px-5"><Link to="/admin/landing-content">Platform Landing CMS</Link></Button> : null}</div>
 
       {!activeSite && !loading ? <Card><CardContent className="p-8 text-center text-sm text-[#69756e]">{t("dashboard.empty.body")}</CardContent></Card> : null}
 

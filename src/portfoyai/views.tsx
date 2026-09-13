@@ -13,6 +13,7 @@ import {
   Images,
   LayoutDashboard,
   LogOut,
+  Menu,
   MapPin,
   Palette,
   Phone,
@@ -67,6 +68,9 @@ export function Shell({ children, actions, businessName, activeSection, onSectio
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const identity = businessName || user?.email || t("common.brand");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const firstMobileItem = useRef<HTMLButtonElement>(null);
+  const mobileMenuButton = useRef<HTMLButtonElement>(null);
   const navigation = [
     { id: "overview" as const, icon: LayoutDashboard, label: t("dashboard.shell.overview") },
     { id: "analytics" as const, icon: BarChart3, label: t("dashboard.shell.analytics") },
@@ -76,6 +80,15 @@ export function Shell({ children, actions, businessName, activeSection, onSectio
     { id: "leads" as const, icon: Users, label: t("dashboard.shell.leads") },
     { id: "site" as const, icon: Palette, label: t("dashboard.shell.siteSettings") },
   ];
+  const closeMobileMenu = useCallback(() => { setMobileMenuOpen(false); window.requestAnimationFrame(() => mobileMenuButton.current?.focus()); }, []);
+  const selectSection = (id: typeof activeSection) => { onSectionChange(id); setMobileMenuOpen(false); };
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    firstMobileItem.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") closeMobileMenu(); };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [closeMobileMenu, mobileMenuOpen]);
   return (
     <div className="min-h-screen bg-[#f2efe8] text-[#17231e]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col bg-[#173f32] px-5 py-6 text-white lg:flex">
@@ -86,7 +99,7 @@ export function Shell({ children, actions, businessName, activeSection, onSectio
         <div className="mt-10 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/35">{t("dashboard.shell.workspace")}</div>
         <nav className="mt-3 space-y-1.5">
           {navigation.map(({ id, icon: Icon, label }) => (
-            <button type="button" key={label} onClick={() => onSectionChange(id)} className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm", activeSection === id ? "bg-white text-[#173f32] shadow-sm" : "text-white/65 hover:bg-white/8 hover:text-white")}>
+            <button type="button" key={label} aria-current={activeSection === id ? "page" : undefined} onClick={() => selectSection(id)} className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white", activeSection === id ? "bg-white text-[#173f32] shadow-sm" : "text-white/65 hover:bg-white/8 hover:text-white")}>
               <Icon className="h-[18px] w-[18px]" /><span>{label}</span>{id === "leads" && leadCount > 0 ? <span className="ml-auto rounded-full bg-[#d86f45] px-2 py-0.5 text-[10px] text-white">{leadCount}</span> : null}
             </button>
           ))}
@@ -99,11 +112,12 @@ export function Shell({ children, actions, businessName, activeSection, onSectio
       <div className="lg:pl-[260px]">
         <header className="sticky top-0 z-20 border-b border-[#173f32]/10 bg-[#f2efe8]/90 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
           <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
-            <Link to="/" className="flex items-center gap-3 lg:hidden"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#173f32] text-white"><Home className="h-4 w-4" /></div><span className="font-bold">{t("common.brand")}</span></Link>
+            <div className="flex items-center gap-2 lg:hidden"><Button ref={mobileMenuButton} variant="outline" size="icon" aria-label={t("dashboard.shell.openMenu")} aria-expanded={mobileMenuOpen} aria-controls="dashboard-mobile-navigation" onClick={() => setMobileMenuOpen(true)} className="rounded-full bg-white"><Menu className="h-5 w-5" /></Button><Link to="/" className="font-bold">{t("common.brand")}</Link></div>
             <div className="hidden lg:block"><div className="text-xs text-[#78827c]">{businessName || t("dashboard.shell.noSite")}</div><div className="mt-0.5 text-sm font-semibold">{t("dashboard.shell.adminPanel")}</div></div>
             <div className="flex items-center gap-2">{actions}<LanguageToggle />{user ? <Button variant="outline" size="icon" title={t("dashboard.shell.logout")} onClick={() => void signOut().catch((error) => toast.error(error.message))} className="rounded-full border-[#173f32]/10 bg-white text-[#173f32]"><LogOut className="h-4 w-4" /></Button> : null}</div>
           </div>
         </header>
+        {mobileMenuOpen ? <div className="fixed inset-0 z-40 lg:hidden"><button type="button" aria-label={t("dashboard.shell.closeMenu")} onClick={() => setMobileMenuOpen(false)} className="absolute inset-0 bg-black/45" /><aside id="dashboard-mobile-navigation" role="dialog" aria-modal="true" aria-label={t("dashboard.shell.mobileNavigation")} className="absolute inset-y-0 left-0 flex w-[min(86vw,340px)] flex-col bg-[#173f32] p-5 text-white shadow-2xl"><div className="flex items-center justify-between"><span className="font-bold">{t("common.brand")}</span><Button variant="ghost" size="icon" aria-label={t("dashboard.shell.closeMenu")} onClick={() => setMobileMenuOpen(false)} className="text-white hover:bg-white/10 hover:text-white"><X className="h-5 w-5" /></Button></div><nav className="mt-8 space-y-1.5">{navigation.map(({ id, icon: Icon, label }, index) => <button ref={index === 0 ? firstMobileItem : undefined} type="button" key={id} aria-current={activeSection === id ? "page" : undefined} onClick={() => selectSection(id)} className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white", activeSection === id ? "bg-white text-[#173f32]" : "text-white/70 hover:bg-white/10 hover:text-white")}><Icon className="h-[18px] w-[18px]" /><span>{label}</span>{id === "leads" && leadCount > 0 ? <span className="ml-auto rounded-full bg-[#d86f45] px-2 py-0.5 text-[10px] text-white">{leadCount}</span> : null}</button>)}{isAdmin ? <Link to="/admin/landing-content" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-white/70"><FileText className="h-[18px] w-[18px]" />Platform Landing CMS</Link> : null}</nav><div className="mt-auto text-sm text-white/60">{identity}</div></aside></div> : null}
         <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
       </div>
     </div>
