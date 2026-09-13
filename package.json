@@ -31,6 +31,7 @@
     "test:observability": "node server/observability.test.mjs",
     "test:analytics": "node server/analytics.test.mjs",
     "test:dashboard-query": "node server/dashboard-react-query.test.mjs",
+    "test:overview-checklist": "node server/overview-checklist.test.mjs",
     "test:seo-management": "node server/seo-management.test.mjs",
     "test:theme-common": "node server/theme-common-components.test.mjs",
     "test:site-source-of-truth": "node server/site-source-of-truth.test.mjs",
@@ -42,7 +43,7 @@
     "test:a11y-responsive": "node server/responsive-accessibility.e2e.mjs",
     "test:long-english": "node server/long-english-content.e2e.mjs",
     "test:platform-content": "node server/platform-content.browser.e2e.mjs",
-    "test:schema-audits": "npm run test:content-schema && npm run test:image-schema && npm run test:theme-config && npm run test:theme-common && npm run test:site-source-of-truth && npm run test:public-payload && npm run test:lead-realtime && npm run test:lead-notifications && npm run test:analytics && npm run test:dashboard-query && npm run test:observability && npm run test:seo-management && npm run test:frontend-boundaries",
+    "test:schema-audits": "npm run test:content-schema && npm run test:image-schema && npm run test:theme-config && npm run test:theme-common && npm run test:site-source-of-truth && npm run test:public-payload && npm run test:lead-realtime && npm run test:lead-notifications && npm run test:analytics && npm run test:dashboard-query && npm run test:overview-checklist && npm run test:observability && npm run test:seo-management && npm run test:frontend-boundaries",
     "test:i18n-audits": "npm run test:i18n-audit && npm run test:site-i18n-audit && npm run test:dynamic-site-i18n",
     "test:ci-contract": "node server/ci-quality-gate.test.mjs",
     "test:quality-gate": "npm run lint && npm run build && npm run test:schema-audits && npm run test:i18n-audits && npm run test:ci-contract"

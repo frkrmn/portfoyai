@@ -8,6 +8,7 @@ export type DashboardLead = {
   phone: string;
   message: string | null;
   created_at: string;
+  contacted_at: string | null;
 };
 
 type LeadRealtimePayload = {
@@ -23,7 +24,8 @@ function isLead(value: Record<string, unknown>): value is DashboardLead {
     && typeof value.name === "string"
     && typeof value.phone === "string"
     && (typeof value.message === "string" || value.message === null)
-    && typeof value.created_at === "string";
+    && typeof value.created_at === "string"
+    && (typeof value.contacted_at === "string" || value.contacted_at === null || value.contacted_at === undefined);
 }
 
 export function applyLeadRealtimeChange(current: DashboardLead[], payload: LeadRealtimePayload): DashboardLead[] {

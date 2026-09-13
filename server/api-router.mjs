@@ -34,7 +34,7 @@ export const apiRouteInventory = [
   { pattern: /^\/api\/generate-theme$/, methods: ["POST"], handler: generateTheme },
   { pattern: /^\/api\/platform-content$/, methods: ["GET"], handler: publicPlatformContent },
   { pattern: /^\/api\/admin\/platform-content$/, methods: ["GET", "PATCH"], handler: adminPlatformContent },
-  { pattern: /^\/api\/leads$/, methods: ["GET", "POST"], handler: leads },
+  { pattern: /^\/api\/leads$/, methods: ["GET", "POST", "PATCH"], handler: leads },
   { pattern: /^\/api\/lead-notifications$/, methods: ["GET", "PATCH", "POST"], handler: leadNotifications },
   { pattern: /^\/api\/locations\/(provinces|districts|neighborhoods)$/, methods: ["GET"], params: ["locationResource"], handler: locations },
   { pattern: new RegExp(`^/api/listings/${uuidSource}/social-kit$`, "i"), methods: ["GET"], params: ["id"], handler: socialKit },
