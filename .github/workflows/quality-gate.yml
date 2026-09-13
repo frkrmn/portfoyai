@@ -105,6 +105,18 @@ jobs:
         run: |
           npm run test:production-performance
           npx lhci autorun
+      - name: Validate responsive, accessible and long English content
+        if: matrix.suite == 'accessibility'
+        run: |
+          npm run test:a11y-responsive
+          npm run test:long-english
+      - name: Upload browser regression reports
+        if: always() && matrix.suite == 'accessibility'
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-regression-reports
+          path: reports/
+          if-no-files-found: warn
       - name: Enforce WCAG, keyboard and viewport regressions
         if: matrix.suite == 'accessibility'
         run: npm run test:a11y-responsive

@@ -245,6 +245,12 @@ All colors MUST be HSL.
   .site-fine-tune :is(.opacity-45, .opacity-50, .opacity-55, .opacity-60, .opacity-62, .opacity-65, .opacity-68) {
     opacity: 0.75;
   }
+
+  /* Localized copy may contain substantially longer words and labels. */
+  .site-fine-tune :is(h1, h2, h3, h4, p, a, button, label) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
 }
 
 @layer base {
