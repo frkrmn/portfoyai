@@ -3,6 +3,7 @@ export const LEAD_FALLBACK_INTERVAL_MS = 60_000;
 export type DashboardLead = {
   id: string;
   site_id: string;
+  listing_id: string | null;
   name: string;
   phone: string;
   message: string | null;
@@ -18,6 +19,7 @@ type LeadRealtimePayload = {
 function isLead(value: Record<string, unknown>): value is DashboardLead {
   return typeof value.id === "string"
     && typeof value.site_id === "string"
+    && (typeof value.listing_id === "string" || value.listing_id === null)
     && typeof value.name === "string"
     && typeof value.phone === "string"
     && (typeof value.message === "string" || value.message === null)

@@ -2,6 +2,7 @@ import experiment from "./handlers/experiment.mjs";
 import fonts from "./handlers/fonts.mjs";
 import generateTheme from "./handlers/generate-theme.mjs";
 import leads from "./handlers/leads.mjs";
+import leadNotifications from "./handlers/lead-notifications.mjs";
 import locations from "./handlers/locations.mjs";
 import listing from "./handlers/listing.mjs";
 import generateListingCopy from "./handlers/listing-copy.mjs";
@@ -32,6 +33,7 @@ export const apiRouteInventory = [
   { pattern: /^\/api\/platform-content$/, methods: ["GET"], handler: publicPlatformContent },
   { pattern: /^\/api\/admin\/platform-content$/, methods: ["GET", "PATCH"], handler: adminPlatformContent },
   { pattern: /^\/api\/leads$/, methods: ["GET", "POST"], handler: leads },
+  { pattern: /^\/api\/lead-notifications$/, methods: ["GET", "PATCH", "POST"], handler: leadNotifications },
   { pattern: /^\/api\/locations\/(provinces|districts|neighborhoods)$/, methods: ["GET"], params: ["locationResource"], handler: locations },
   { pattern: new RegExp(`^/api/listings/${uuidSource}/social-kit$`, "i"), methods: ["GET"], params: ["id"], handler: socialKit },
   { pattern: /^\/api\/listings\/generate-copy$/, methods: ["POST"], handler: generateListingCopy },

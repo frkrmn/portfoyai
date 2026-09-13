@@ -5,8 +5,8 @@ import { createServer } from "vite";
 const vite = await createServer({ server: { middlewareMode: true }, appType: "custom", logLevel: "silent" });
 try {
   const { applyLeadRealtimeChange, LEAD_FALLBACK_INTERVAL_MS } = await vite.ssrLoadModule("/src/lib/lead-realtime.ts");
-  const first = { id: "lead-1", site_id: "site-1", name: "İlk", phone: "1", message: null, created_at: "2026-09-12T08:00:00.000Z" };
-  const second = { id: "lead-2", site_id: "site-1", name: "Yeni", phone: "2", message: "Merhaba", created_at: "2026-09-12T09:00:00.000Z" };
+  const first = { id: "lead-1", site_id: "site-1", listing_id: null, name: "İlk", phone: "1", message: null, created_at: "2026-09-12T08:00:00.000Z" };
+  const second = { id: "lead-2", site_id: "site-1", listing_id: "listing-1", name: "Yeni", phone: "2", message: "Merhaba", created_at: "2026-09-12T09:00:00.000Z" };
   assert.deepEqual(applyLeadRealtimeChange([first], { eventType: "INSERT", new: second, old: {} }), [second, first]);
   const updated = { ...first, name: "Güncellendi" };
   assert.deepEqual(applyLeadRealtimeChange([second, first], { eventType: "UPDATE", new: updated, old: first }), [second, updated]);

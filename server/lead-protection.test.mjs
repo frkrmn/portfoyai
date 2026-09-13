@@ -24,7 +24,7 @@ const supabase = (published = true) => ({
     };
   },
 });
-const defaults = { verifyCaptcha: async () => ({ success: true, errors: [] }), claimRate: async () => true, duplicateCheck: async () => false, hashIp: () => "hash" };
+const defaults = { verifyCaptcha: async () => ({ success: true, errors: [] }), claimRate: async () => true, duplicateCheck: async () => false, hashIp: () => "hash", dispatchNotifications: async () => [] };
 const validBody = { site_id: siteId, name: "Ada Lovelace", phone: "+90 555 111 22 33", message: "Bilgi rica ederim", website: "", turnstile_token: "valid-token" };
 
 let res = response();

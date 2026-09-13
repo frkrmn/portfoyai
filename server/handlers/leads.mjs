@@ -1,13 +1,15 @@
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../api-utils.mjs";
 import { claimLeadRateLimit, hashLeadIp, isDuplicateLead, requestIp, verifyTurnstile } from "../lead-protection.mjs";
+import { dispatchLeadNotifications } from "../lead-notifications.mjs";
 
-export const createLead = async (request, response, { supabase = getSupabaseClient(), verifyCaptcha = verifyTurnstile, claimRate = claimLeadRateLimit, duplicateCheck = isDuplicateLead, hashIp = hashLeadIp } = {}) => {
+export const createLead = async (request, response, { supabase = getSupabaseClient(), verifyCaptcha = verifyTurnstile, claimRate = claimLeadRateLimit, duplicateCheck = isDuplicateLead, hashIp = hashLeadIp, dispatchNotifications = dispatchLeadNotifications } = {}) => {
   const body = await readJsonBody(request);
   const siteId = typeof body.site_id === "string" ? body.site_id.trim() : "";
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const phone = typeof body.phone === "string" ? body.phone.trim() : "";
   const message = typeof body.message === "string" ? body.message.trim() : "";
   const captchaToken = typeof body.turnstile_token === "string" ? body.turnstile_token : "";
+  const listingId = typeof body.listing_id === "string" && uuidPattern.test(body.listing_id) ? body.listing_id : null;
   if (typeof body.website === "string" && body.website.trim()) return sendJson(response, 400, { error: "Spam submission rejected." });
   if (!uuidPattern.test(siteId)) return sendJson(response, 400, { error: "A valid site_id is required." });
   if (!name) return sendJson(response, 400, { error: "Name is required." });
@@ -15,7 +17,7 @@ export const createLead = async (request, response, { supabase = getSupabaseClie
   if (name.length > 120) return sendJson(response, 400, { error: "Name must be 120 characters or fewer." });
   if (phone.length < 5 || phone.length > 40) return sendJson(response, 400, { error: "Phone must be between 5 and 40 characters." });
   if (message.length > 2000) return sendJson(response, 400, { error: "Message must be 2000 characters or fewer." });
-  const { data: site, error: siteError } = await supabase.from("sites").select("id").eq("id", siteId).eq("status", "published").maybeSingle();
+  const { data: site, error: siteError } = await supabase.from("sites").select("id, user_id, business_name").eq("id", siteId).eq("status", "published").maybeSingle();
   if (siteError) throw new Error(`Failed to validate lead site: ${siteError.message}`);
   if (!site) return sendJson(response, 404, { error: "Published site not found." });
   const ip = requestIp(request);
@@ -30,13 +32,21 @@ export const createLead = async (request, response, { supabase = getSupabaseClie
     return sendJson(response, 400, { error: "CAPTCHA verification failed. Please try again." });
   }
   if (await duplicateCheck(supabase, site.id, phone)) return sendJson(response, 409, { error: "This request was already received recently." });
-  let { data: lead, error } = await supabase.from("leads").insert({ site_id: site.id, name, phone, message: message || null }).select("id, created_at").single();
+  let { data: lead, error } = await supabase.from("leads").insert({ site_id: site.id, listing_id: listingId, name, phone, message: message || null }).select("id, site_id, listing_id, name, phone, message, created_at").single();
   if (error?.code === "23502" && error.message.includes("source")) {
-    const retry = await supabase.from("leads").insert({ site_id: site.id, name, phone, message: message || null, source: "public-site" }).select("id, created_at").single();
+    const retry = await supabase.from("leads").insert({ site_id: site.id, listing_id: listingId, name, phone, message: message || null, source: "public-site" }).select("id, site_id, listing_id, name, phone, message, created_at").single();
     lead = retry.data;
     error = retry.error;
   }
   if (error) throw new Error(`Failed to save lead: ${error.message}`);
+  let listing = null;
+  if (listingId) {
+    const result = await supabase.from("listings").select("id, title").eq("id", listingId).eq("site_id", site.id).maybeSingle();
+    listing = result.data || null;
+  }
+  await dispatchNotifications(supabase, { lead, site, listing }).catch((notificationError) => {
+    console.error("[leads] Notification dispatch failed", notificationError);
+  });
   return sendJson(response, 201, { id: lead.id, created_at: lead.created_at });
 };
 
@@ -46,7 +56,7 @@ const getOwnedLeads = async (request, response) => {
   if (sitesError) throw new Error(`Failed to load lead sites: ${sitesError.message}`);
   const siteIds = (sites || []).map((site) => site.id);
   if (siteIds.length === 0) return sendJson(response, 200, { leads: [] });
-  const { data: leads, error } = await getSupabaseClient().from("leads").select("id, site_id, name, phone, message, created_at").in("site_id", siteIds).order("created_at", { ascending: false });
+  const { data: leads, error } = await getSupabaseClient().from("leads").select("id, site_id, listing_id, name, phone, message, created_at").in("site_id", siteIds).order("created_at", { ascending: false });
   if (error) throw new Error(`Failed to load owned leads: ${error.message}`);
   return sendJson(response, 200, { leads: leads || [] });
 };
