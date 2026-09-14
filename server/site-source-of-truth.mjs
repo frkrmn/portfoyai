@@ -1,6 +1,6 @@
 const localizedTr = (value) => typeof value === "string" ? value : value?.tr || "";
 
-export const siteSelect = "id, slug, user_id, business_name, phone, email, address, region_focus, map_url, theme_config, previous_theme_config, published_snapshot, draft_revision, published_version, published_at, status, show_closed_listings, show_team_section, team_section_label, country_id, province_id, district_id, neighborhood_id, created_at";
+export const siteSelect = "id, slug, user_id, workspace_id, business_name, phone, email, address, region_focus, map_url, theme_config, previous_theme_config, published_snapshot, draft_revision, published_version, published_at, status, show_closed_listings, show_team_section, team_section_label, country_id, province_id, district_id, neighborhood_id, created_at";
 
 export const canonicalSiteProjection = (site) => {
   const storedTheme = site.theme_config || {};

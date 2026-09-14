@@ -151,6 +151,8 @@ export const buildStarterListings = (config, siteId) => {
 
 export const insertGeneratedSite = async (supabase, config, userId, { siteLimitExempt = false } = {}) => {
   const baseSlug = slugifyBusinessName(config.business_name);
+  const { ensurePersonalWorkspace, workspaceFeatureEnabled } = await import("./workspace-permissions.mjs");
+  const workspaceId = workspaceFeatureEnabled() ? await ensurePersonalWorkspace(userId, supabase) : null;
 
   for (let attempt = 0; attempt < 25; attempt += 1) {
     const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
@@ -158,6 +160,7 @@ export const insertGeneratedSite = async (supabase, config, userId, { siteLimitE
       .from("sites")
       .insert({
         user_id: userId,
+        ...(workspaceId ? { workspace_id: workspaceId } : {}),
         ...(siteLimitExempt ? { owner_limit_exempt: true } : {}),
         slug,
         business_name: config.business_name,

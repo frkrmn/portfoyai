@@ -39,6 +39,7 @@ import { LeadMiniCrm } from "./dashboard/LeadMiniCrm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashboardQueryKeys, dashboardRequest } from "@/lib/dashboard-query";
 import { HelpCenter } from "./dashboard/HelpCenter";
+import { WorkspaceMembers } from "./dashboard/WorkspaceMembers";
 
 type DashboardTab = "overview" | "analytics" | "site" | "content" | "images" | "listings" | "leads";
 type SettingsSection = "general" | "contact" | "design" | "team" | "publishing" | "language-seo" | "advanced";
@@ -51,6 +52,7 @@ const settingsSectionLabels = {
 
 export type DashboardSite = {
   id: string;
+  workspace_id?: string | null;
   slug: string;
   business_name: string;
   tone: string;
@@ -1686,6 +1688,7 @@ export function DashboardPage() {
                 </div>
               </CardContent>
             </Card>
+            {import.meta.env.VITE_WORKSPACE_COLLABORATION_ENABLED === "true" && activeSite.workspace_id ? <WorkspaceMembers workspaceId={activeSite.workspace_id} authHeaders={authHeaders} /> : null}
             <Card id="settings-design" tabIndex={-1} className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#173f32]">
               <CardHeader>
                 <CardTitle>{t("dashboard.theme.title")}</CardTitle>

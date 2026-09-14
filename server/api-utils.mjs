@@ -230,12 +230,9 @@ export const serializeListing = (listing) => {
 };
 
 export const getOwnedSite = async (userId, siteId) => {
-  const { data, error } = await getSupabaseClient()
-    .from("sites")
-    .select(siteSelect)
-    .eq("id", siteId)
-    .eq("user_id", userId)
-    .maybeSingle();
+  const { requireSitePermission } = await import("./workspace-permissions.mjs");
+  try { await requireSitePermission(userId, siteId, "site.read"); } catch (error) { if (error?.message === "NOT_FOUND" || error?.message === "FORBIDDEN") return null; throw error; }
+  const { data, error } = await getSupabaseClient().from("sites").select(siteSelect).eq("id", siteId).maybeSingle();
   if (error) throw new Error(`Failed to verify site ownership: ${error.message}`);
   return data ? canonicalSiteProjection(data) : null;
 };
@@ -243,7 +240,7 @@ export const getOwnedSite = async (userId, siteId) => {
 export const dashboardSite = (rawSite) => {
   const site = canonicalSiteProjection(rawSite);
   return {
-    id: site.id, slug: site.slug, business_name: site.business_name, tone: site.tone,
+    id: site.id, slug: site.slug, workspace_id: site.workspace_id || null, business_name: site.business_name, tone: site.tone,
     primary_color: site.primary_color, accent_color: site.accent_color, headline: site.headline,
     theme_config: site.theme_config, country_id: site.country_id || null, province_id: site.province_id || null,
     district_id: site.district_id || null, neighborhood_id: site.neighborhood_id || null,
@@ -340,6 +337,8 @@ export const sanitizeSeo = (value) => {
 export const handleKnownError = (response, error, scope) => {
   const requestId = requestContext().requestId;
   if (error instanceof Error && error.message === "AUTH_REQUIRED") return sendJson(response, 401, { error: "Authentication required.", code: "AUTH_REQUIRED", request_id: requestId });
+  if (error instanceof Error && error.message === "FORBIDDEN") return sendJson(response, 403, { error: "You do not have permission to perform this action.", code: "FORBIDDEN", request_id: requestId });
+  if (error instanceof Error && error.message === "NOT_FOUND") return sendJson(response, 404, { error: "Resource not found.", code: "NOT_FOUND", request_id: requestId });
   if (error instanceof Error && error.message.startsWith("VALIDATION:")) return sendJson(response, 400, { error: error.message.slice(11), code: "VALIDATION_ERROR", request_id: requestId });
   if (error instanceof Error && error.message.includes("FREE_LISTING_LIMIT")) return sendJson(response, 402, { error: "Ücretsiz planda en fazla 5 aktif ilan yayınlayabilirsiniz.", code: "FREE_LISTING_LIMIT", context: "listing_limit", limit: 5, plan: "free" });
   structuredLog("error", "api.error", { scope, error, error_code: "INTERNAL_ERROR" });

@@ -1,6 +1,7 @@
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../api-utils.mjs";
 import { claimLeadRateLimit, hashLeadIp, isDuplicateLead, requestIp, verifyTurnstile } from "../lead-protection.mjs";
 import { dispatchLeadNotifications } from "../lead-notifications.mjs";
+import { accessibleSiteIds } from "../workspace-permissions.mjs";
 
 export const createLead = async (request, response, { supabase = getSupabaseClient(), verifyCaptcha = verifyTurnstile, claimRate = claimLeadRateLimit, duplicateCheck = isDuplicateLead, hashIp = hashLeadIp, dispatchNotifications = dispatchLeadNotifications } = {}) => {
   const body = await readJsonBody(request);
@@ -55,9 +56,7 @@ const leadFields = "id, site_id, listing_id, name, phone, email, message, source
 
 const getOwnedLeads = async (request, response) => {
   const user = await getAuthenticatedUser(request);
-  const { data: sites, error: sitesError } = await getSupabaseClient().from("sites").select("id").eq("user_id", user.id);
-  if (sitesError) throw new Error(`Failed to load lead sites: ${sitesError.message}`);
-  const siteIds = (sites || []).map((site) => site.id);
+  const siteIds = await accessibleSiteIds(user.id, "lead.read");
   if (siteIds.length === 0) return sendJson(response, 200, { leads: [] });
   const supabase = getSupabaseClient();
   const { data: leads, error } = await supabase.from("leads").select(leadFields).in("site_id", siteIds).order("created_at", { ascending: false });
@@ -73,8 +72,7 @@ const updateOwnedLead = async (request, response) => {
   const body = await readJsonBody(request);
   if (!uuidPattern.test(String(body.id || ""))) return sendJson(response, 400, { error: "A valid lead id is required." });
   const statuses = ["new", "contacted", "appointment", "won", "lost"];
-  const { data: sites, error: sitesError } = await getSupabaseClient().from("sites").select("id").eq("user_id", user.id);
-  if (sitesError) throw new Error(`Failed to verify lead ownership: ${sitesError.message}`);
+  const siteIds = await accessibleSiteIds(user.id, body.action === "merge" ? "lead.merge" : "lead.write");
   const supabase = getSupabaseClient();
   if (body.action === "merge") {
     if (!uuidPattern.test(String(body.duplicate_id || ""))) return sendJson(response, 400, { error: "A valid duplicate id is required." });
@@ -88,7 +86,7 @@ const updateOwnedLead = async (request, response) => {
   for (const key of ["assignee", "note"]) if (body[key] === null || typeof body[key] === "string") updates[key] = body[key]?.trim() || null;
   if (body.reminder_at === null || (typeof body.reminder_at === "string" && Number.isFinite(Date.parse(body.reminder_at)))) updates.reminder_at = body.reminder_at;
   if (!Object.keys(updates).length) return sendJson(response, 400, { error: "No valid CRM changes supplied." });
-  const { data: lead, error } = await supabase.from("leads").update(updates).eq("id", body.id).in("site_id", (sites || []).map((site) => site.id)).select(leadFields).maybeSingle();
+  const { data: lead, error } = await supabase.from("leads").update(updates).eq("id", body.id).in("site_id", siteIds).select(leadFields).maybeSingle();
   if (error) throw new Error(`Failed to update lead: ${error.message}`);
   if (!lead) return sendJson(response, 404, { error: "Lead not found." });
   const detail = Object.entries(updates).map(([key, value]) => `${key}: ${value ?? "—"}`).join(", ");

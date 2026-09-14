@@ -1,5 +1,6 @@
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, routeParam, sendJson, uuidPattern, dashboardSite } from "../api-utils.mjs";
 import { auditPublishQuality } from "../../src/lib/publish-quality.mjs";
+import { requireSitePermission } from "../workspace-permissions.mjs";
 
 export default async function handler(request, response) {
   if (!["GET", "POST"].includes(request.method || "")) return methodNotAllowed(response, ["GET", "POST"]);
@@ -8,7 +9,8 @@ export default async function handler(request, response) {
     const siteId = routeParam(request, "id");
     if (!uuidPattern.test(siteId)) return sendJson(response, 400, { error: "A valid site id is required." });
     const supabase = getSupabaseClient();
-    const { data: owned, error: ownershipError } = await supabase.from("sites").select("*").eq("id", siteId).eq("user_id", user.id).maybeSingle();
+    await requireSitePermission(user.id, siteId, request.method === "GET" ? "site.read" : "site.publish", supabase);
+    const { data: owned, error: ownershipError } = await supabase.from("sites").select("*").eq("id", siteId).maybeSingle();
     if (ownershipError) throw ownershipError;
     if (!owned) return sendJson(response, 404, { error: "Owned site not found." });
     if (request.method === "GET") {

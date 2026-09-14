@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../api-utils.mjs";
+import { requireSitePermission } from "../workspace-permissions.mjs";
 
 const eventTypes = new Set(["site_view", "listing_view", "lead_conversion"]);
 const botPattern = /bot|crawler|spider|slurp|headless|lighthouse|preview|vercel-screenshot/i;
@@ -30,10 +31,9 @@ export async function reportAnalytics(request, response, supabase = getSupabaseC
   const requestUrl = new URL(request.url || "/api/analytics", `http://${request.headers?.host || "localhost"}`);
   const siteId = clean(request.query?.site_id || requestUrl.searchParams.get("site_id"));
   if (!siteId || !uuidPattern.test(siteId)) return sendJson(response, 400, { error: "Valid site_id required." });
-  const { data: site } = await supabase.from("sites").select("id").eq("id", siteId).eq("user_id", user.id).maybeSingle();
-  if (!site) return sendJson(response, 404, { error: "Site not found." });
+  await requireSitePermission(user.id, siteId, "site.read", supabase);
   const since = new Date(Date.now() - 30 * 86400000).toISOString();
-  const { data, error } = await supabase.from("analytics_events").select("event_type, listing_id, source, utm_source, utm_medium, utm_campaign, occurred_at").eq("site_id", site.id).gte("occurred_at", since).order("occurred_at", { ascending: false }).limit(10000);
+  const { data, error } = await supabase.from("analytics_events").select("event_type, listing_id, source, utm_source, utm_medium, utm_campaign, occurred_at").eq("site_id", siteId).gte("occurred_at", since).order("occurred_at", { ascending: false }).limit(10000);
   if (error) throw new Error(`Analytics report could not be loaded: ${error.message}`);
   const events = data || [];
   const count = (type) => events.filter((event) => event.event_type === type).length;

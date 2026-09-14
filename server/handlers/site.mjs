@@ -3,22 +3,25 @@ import { mergeThemeConfig, switchTemplateConfig } from "../site-theme.mjs";
 import { buildThemeSelectionContext } from "../../src/lib/theme-selection.mjs";
 import { removeReplacedMedia } from "../media-storage.mjs";
 import { siteSelect } from "../site-source-of-truth.mjs";
+import { requireSitePermission } from "../workspace-permissions.mjs";
 
 const getSite = async (request, response, siteId) => {
   const user = await getAuthenticatedUser(request);
-  const { data: site, error } = await getSupabaseClient().from("sites").select(siteSelect).eq("id", siteId).eq("user_id", user.id).maybeSingle();
+  const access = await requireSitePermission(user.id, siteId, "site.read");
+  const { data: site, error } = await getSupabaseClient().from("sites").select(siteSelect).eq("id", siteId).maybeSingle();
   if (error) throw new Error(`Failed to load site: ${error.message}`);
   if (!site) return sendJson(response, 404, { error: "Site not found." });
   const projected = dashboardSite(site);
-  return sendJson(response, 200, { ...projected, config: { template_id: projected.theme_config?.template_id, business_name: projected.business_name, tone: projected.tone, primary_color: projected.primary_color, accent_color: projected.accent_color, headline: projected.headline }, is_owner: true });
+  return sendJson(response, 200, { ...projected, config: { template_id: projected.theme_config?.template_id, business_name: projected.business_name, tone: projected.tone, primary_color: projected.primary_color, accent_color: projected.accent_color, headline: projected.headline }, is_owner: access.role === "owner", workspace_role: access.role });
 };
 
 const updateSite = async (request, response, siteId) => {
   const user = await getAuthenticatedUser(request);
+  await requireSitePermission(user.id, siteId, "site.write");
   // Site media follows the existing listing/team data-URL upload pattern.
   // Four 1.5 MB gallery images expand to roughly 8 MB after base64 encoding.
   const body = await readJsonBody(request, 12 * 1024 * 1024);
-  const { data: current, error: currentError } = await getSupabaseClient().from("sites").select("id, theme_config, previous_theme_config, draft_revision").eq("id", siteId).eq("user_id", user.id).maybeSingle();
+  const { data: current, error: currentError } = await getSupabaseClient().from("sites").select("id, theme_config, previous_theme_config, draft_revision").eq("id", siteId).maybeSingle();
   if (currentError) throw new Error(`Failed to verify site ownership: ${currentError.message}`);
   if (!current) return sendJson(response, 404, { error: "Owned site not found." });
   const updates = {};
@@ -118,7 +121,7 @@ const updateSite = async (request, response, siteId) => {
   if (body.template_id !== undefined && body.template_id !== current.theme_config?.template_id) updates.previous_theme_config = current.theme_config;
   if (body.restore_previous_template === true) updates.previous_theme_config = null;
   Object.assign(updates, topLevel, { theme_config: themeConfig, draft_revision: Number(current.draft_revision || 1) + 1 });
-  let query = getSupabaseClient().from("sites").update(updates).eq("id", siteId).eq("user_id", user.id);
+  let query = getSupabaseClient().from("sites").update(updates).eq("id", siteId);
   if (body.expected_revision !== undefined) query = query.eq("draft_revision", Number(body.expected_revision));
   const { data: site, error } = await query.select(siteSelect).maybeSingle();
   if (error) throw new Error(`Failed to update site: ${error.message}`);

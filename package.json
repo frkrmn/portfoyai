@@ -54,6 +54,7 @@
     "test:workspace-plan": "node server/workspace-roles-plan.test.mjs",
     "test:help-support": "node server/help-support.test.mjs",
     "test:settings-ia": "node server/settings-information-architecture.test.mjs",
+    "test:workspace-collaboration": "node server/workspace-collaboration.test.mjs",
     "test:quality-gate": "npm run lint && npm run build && npm run test:schema-audits && npm run test:i18n-audits && npm run test:ci-contract"
   },
   "dependencies": {

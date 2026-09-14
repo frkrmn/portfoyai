@@ -20,6 +20,7 @@ const SignupPage = lazy(() => import("./portfoyai/auth-pages").then((module) => 
 const DashboardPage = lazy(() => import("./portfoyai/dashboard").then((module) => ({ default: module.DashboardPage })));
 const PricingPage = lazy(() => import("./portfoyai/pricing").then((module) => ({ default: module.PricingPage })));
 const PlatformContentAdminPage = lazy(() => import("./portfoyai/platform-content-admin").then((module) => ({ default: module.PlatformContentAdminPage })));
+const WorkspaceInvitationPage = lazy(() => import("./portfoyai/invite").then((module) => ({ default: module.WorkspaceInvitationPage })));
 const SiteRenderer = lazy(() => import("./templates/SiteRenderer").then((module) => ({ default: module.SiteRenderer })));
 const RouteLoading = () => {
   const { t } = useTranslation();
@@ -52,6 +53,7 @@ export default function App() {
               <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
               <Route path="/admin/landing-content" element={<RequireAuth><PlatformContentAdminPage /></RequireAuth>} />
               <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/invite/:token" element={<WorkspaceInvitationPage />} />
               <Route path="/preview/:siteId" element={<RequireAuth><GeneratedSitePreviewPage /></RequireAuth>} />
               <Route path="/site/:slug" element={<SiteRenderer view="home" />} />
               <Route path="/site/:slug/listings" element={<SiteRenderer view="listings" />} />
