@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Bath, BedDouble, Clock3, MapPin, Maximize2, Sear
 import type { Listing } from "@/portfoyai/types";
 import { formatListingLocation } from "@/portfoyai/listing-location";
 import { formatListingPrice } from "@/lib/listing-price";
+import { isVerifiedDeal, verifiedReduction, verifiedUrgency } from "@/lib/deal-verification.mjs";
 import { getListingImage } from "../mediaFallbacks";
 import { fineTuneAttributes, themeStyleVariables, type SiteTemplateProps, type TemplateConfig } from "../types";
 import { SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
@@ -24,9 +25,10 @@ const normalize = (value: string) => value.toLocaleLowerCase("tr-TR");
 const daysOnline = (createdAt: string) => Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000));
 const bedrooms = (listing: Listing) => listing.bedroom_count ?? (Number.parseInt(listing.room_count, 10) || 1);
 const bathrooms = (listing: Listing) => listing.bathroom_count ?? (bedrooms(listing) >= 4 ? 2 : 1);
-const hasReduction = (listing: Listing) => Number(listing.price_reduced_from) > Number(listing.price);
-const isDeal = (listing: Listing) => listing.urgent_sale === true || hasReduction(listing);
-const discountPercent = (listing: Listing) => hasReduction(listing) ? Math.round((1 - Number(listing.price) / Number(listing.price_reduced_from)) * 100) : 0;
+const hasReduction = (listing: Listing) => verifiedReduction(listing) != null;
+const isDeal = (listing: Listing) => isVerifiedDeal(listing);
+const discountPercent = (listing: Listing) => verifiedReduction(listing)?.discount_percent ?? 0;
+const originalPrice = (listing: Listing) => verifiedReduction(listing)?.old_price;
 
 const dealStyle = (config: TemplateConfig) => ({
   ...themeStyleVariables(config),
@@ -57,7 +59,7 @@ function Footer({ config }: SiteTemplateProps) {
 
 function UrgencyBadges({ config, listing, large = false }: { config: TemplateConfig; listing: Listing; large?: boolean }) {
   const c = config.content;
-  return <div className="flex flex-wrap gap-2">{listing.urgent_sale ? <span className={`inline-flex items-center gap-1.5 rounded-full bg-[var(--ud-accent)] font-black text-[var(--ud-on-primary)] ${large ? "px-4 py-2 text-xs" : "px-3 py-1.5 text-[10px]"}`}><Zap className="h-3.5 w-3.5" />{c.urgentSaleLabel}</span> : null}{hasReduction(listing) ? <span className={`inline-flex items-center gap-1.5 rounded-full bg-[var(--ud-primary)] font-black text-[var(--ud-on-primary)] ${large ? "px-4 py-2 text-xs" : "px-3 py-1.5 text-[10px]"}`}><Tag className="h-3.5 w-3.5" />{c.priceDroppedLabel} · %{discountPercent(listing)}</span> : null}</div>;
+  return <div className="flex flex-wrap gap-2">{verifiedUrgency(listing) ? <span className={`inline-flex items-center gap-1.5 rounded-full bg-[var(--ud-accent)] font-black text-[var(--ud-on-primary)] ${large ? "px-4 py-2 text-xs" : "px-3 py-1.5 text-[10px]"}`}><Zap className="h-3.5 w-3.5" />{c.urgentSaleLabel}</span> : null}{hasReduction(listing) ? <span className={`inline-flex items-center gap-1.5 rounded-full bg-[var(--ud-primary)] font-black text-[var(--ud-on-primary)] ${large ? "px-4 py-2 text-xs" : "px-3 py-1.5 text-[10px]"}`}><Tag className="h-3.5 w-3.5" />{c.priceDroppedLabel} · %{discountPercent(listing)}</span> : null}</div>;
 }
 
 function Specs({ config, listing }: { config: TemplateConfig; listing: Listing }) {

@@ -1,4 +1,5 @@
 import { auditInvestmentMetrics } from "./investment-metrics.mjs";
+import { auditDealClaims } from "./deal-verification.mjs";
 
 const text = (value) => typeof value === "string" && Boolean(value.trim());
 
@@ -75,6 +76,11 @@ export function auditPublishQuality({
     ).length;
     if (missing) add("warning", "investmentMetricSource", "listings", missing);
     if (stale) add("warning", "investmentMetricStale", "listings", stale);
+  }
+  if (site?.theme_config?.template_id === "urgent-deals") {
+    const dealIssues = listings.flatMap((listing) => auditDealClaims(listing));
+    if (dealIssues.length)
+      add("warning", "dealClaimVerification", "listings", dealIssues.length);
   }
 
   return { critical, warnings, canPublish: critical.length === 0 };

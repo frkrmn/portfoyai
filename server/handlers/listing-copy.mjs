@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { formatListingPrice, normalizeListingCurrency } from "../../src/lib/listing-price.js";
 import { getAuthenticatedUser, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
 import { trackAiCall } from "../observability.mjs";
+import { verifiedReduction, verifiedUrgency } from "../../src/lib/deal-verification.mjs";
 
 export const listingCopyModel = "gemini-3.5-flash-lite";
 
@@ -34,6 +35,7 @@ export const listingFactsFromBody = (body) => {
   if (!Number.isFinite(price) || price <= 0) throw new Error("VALIDATION:Geçerli bir fiyat gereklidir.");
   if (!['sale', 'rent'].includes(listingType)) throw new Error("VALIDATION:İlan türü satılık veya kiralık olmalıdır.");
   const currency = normalizeListingCurrency(body.currency);
+  const reduction = verifiedReduction({ ...body, price, currency });
 
   return {
     title: cleanText(body.title, 200) || null,
@@ -53,8 +55,9 @@ export const listingFactsFromBody = (body) => {
     bathroom_count: optionalNumber(body.bathroom_count),
     rental_yield_percent: optionalNumber(body.rental_yield_percent),
     roi_notes: cleanText(body.roi_notes, 300) || null,
-    urgent_sale: body.urgent_sale === true,
-    price_reduced_from: optionalNumber(body.price_reduced_from),
+    urgent_sale: verifiedUrgency(body),
+    price_reduced_from: reduction?.old_price ?? null,
+    discount_percent: reduction?.discount_percent ?? null,
   };
 };
 

@@ -573,6 +573,12 @@
       "download": "Download",
       "previewAlt": "{{format}} social media preview",
       "socialError": "Could not load the social media kit.",
+      "dealVerification": "Verified deal information",
+      "dealVerificationHelp": "Price reductions are calculated from recorded price changes. Urgent-sale verification records the user and time and remains valid for 30 days.",
+      "urgentClaim": "I verify this listing as an urgent sale",
+      "urgentExpiresAt": "Verification expires on {{date}}.",
+      "priceHistoryRecorded": "{{count}} verified price change recorded.",
+      "priceHistoryHelp": "Changing the price automatically records the old and new price in the audit trail.",
       "investmentMetrics": "Investment metrics",
       "investmentMetricsHelp": "Provide the source, date and status for every metric shown on the public site.",
       "rentalYield": "Rental yield (%)",
@@ -777,7 +783,8 @@
         "seo": "The Turkish SEO title or description is missing.",
         "map": "The Google Maps link is missing.",
         "investmentMetricSource": "{{count}} investment metric is missing its source, date or status.",
-        "investmentMetricStale": "{{count}} investment metric is older than 180 days; update or hide it."
+        "investmentMetricStale": "{{count}} investment metric is older than 180 days; update or hide it.",
+        "dealClaimVerification": "{{count}} deal claim is unverified, expired, or inconsistent with the price history."
       }
     },
     "errors": {

@@ -1033,6 +1033,48 @@ export function ListingForm({
           </div>
           <section
             className="space-y-4 rounded-2xl border bg-white p-4 md:col-span-2"
+            data-deal-verification
+          >
+            <div>
+              <div className="font-semibold">
+                {t("dashboard.listingForm.dealVerification")}
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                {t("dashboard.listingForm.dealVerificationHelp")}
+              </p>
+            </div>
+            <label className="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-[#173f32]"
+                checked={draft.urgent_sale === true}
+                onChange={(event) =>
+                  onDraftChange({ urgent_sale: event.target.checked })
+                }
+              />
+              <span>
+                <span className="block font-medium">
+                  {t("dashboard.listingForm.urgentClaim")}
+                </span>
+                {draft.urgent_sale && draft.urgent_expires_at ? (
+                  <span className="mt-1 block text-xs text-slate-500">
+                    {t("dashboard.listingForm.urgentExpiresAt", {
+                      date: new Date(draft.urgent_expires_at).toLocaleDateString(),
+                    })}
+                  </span>
+                ) : null}
+              </span>
+            </label>
+            <p className="text-xs text-slate-500">
+              {draft.price_history?.length
+                ? t("dashboard.listingForm.priceHistoryRecorded", {
+                    count: draft.price_history.length,
+                  })
+                : t("dashboard.listingForm.priceHistoryHelp")}
+            </p>
+          </section>
+          <section
+            className="space-y-4 rounded-2xl border bg-white p-4 md:col-span-2"
             data-investment-metrics
           >
             <div>

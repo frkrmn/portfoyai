@@ -146,8 +146,9 @@ export const buildStarterListings = (config, siteId) => {
         },
       } : {}),
       ...(urgentDeals ? {
-        urgent_sale: index === 0 || index === 2,
-        price_reduced_from: index === 1 || index === 2 ? Math.round(item.price * (index === 2 ? 1.14 : 1.1)) : null,
+        urgent_sale: false,
+        price_reduced_from: null,
+        price_history: [],
       } : {}),
     };
   });

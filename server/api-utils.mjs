@@ -6,6 +6,7 @@ import {
 } from "./site-source-of-truth.mjs";
 import { requestContext, structuredLog } from "./observability.mjs";
 import { sanitizeInvestmentMetrics } from "../src/lib/investment-metrics.mjs";
+import { sanitizePriceHistory, verifiedReduction } from "../src/lib/deal-verification.mjs";
 
 export const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -422,11 +423,11 @@ export const serializeListing = (listing) => {
       roiFeature?.replace("Yatırım görünümü: ", "") ||
       null,
     investment_metrics: sanitizeInvestmentMetrics(listing.investment_metrics),
-    price_reduced_from:
-      listing.price_reduced_from == null
-        ? null
-        : Number(listing.price_reduced_from),
+    price_reduced_from: verifiedReduction(listing)?.old_price ?? (listing.price_reduced_from == null ? null : Number(listing.price_reduced_from)),
     urgent_sale: listing.urgent_sale === true,
+    urgent_verified_at: listing.urgent_verified_at || null,
+    urgent_expires_at: listing.urgent_expires_at || null,
+    price_history: sanitizePriceHistory(listing.price_history),
   };
 };
 

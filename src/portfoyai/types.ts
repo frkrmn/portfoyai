@@ -200,6 +200,9 @@ export type Listing = {
   >;
   price_reduced_from?: number | null;
   urgent_sale?: boolean | null;
+  urgent_verified_at?: string | null;
+  urgent_expires_at?: string | null;
+  price_history?: Array<{ old_price: number; new_price: number; currency: "TRY" | "USD" | "GBP" | "EUR"; changed_at: string }>;
 };
 
 export type Lead = {

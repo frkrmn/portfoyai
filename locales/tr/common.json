@@ -573,6 +573,12 @@
       "download": "İndir",
       "previewAlt": "{{format}} sosyal medya önizlemesi",
       "socialError": "Sosyal medya kiti yüklenemedi.",
+      "dealVerification": "Doğrulanmış fırsat bilgileri",
+      "dealVerificationHelp": "Fiyat indirimi kayıtlı fiyat değişiminden otomatik hesaplanır. Acil satış doğrulaması kaydeden kullanıcı ve zamanla birlikte 30 gün geçerlidir.",
+      "urgentClaim": "Bu ilanı acil satış olarak doğruluyorum",
+      "urgentExpiresAt": "Doğrulama {{date}} tarihinde sona erer.",
+      "priceHistoryRecorded": "{{count}} doğrulanmış fiyat değişikliği kayıtlı.",
+      "priceHistoryHelp": "Fiyatı değiştirdiğinizde eski ve yeni fiyat denetim kaydına otomatik eklenir.",
       "investmentMetrics": "Yatırım metrikleri",
       "investmentMetricsHelp": "Public sitede gösterilen her metriğin kaynağını, tarihini ve niteliğini belirtin.",
       "rentalYield": "Kira getirisi (%)",
@@ -777,7 +783,8 @@
         "seo": "Türkçe SEO başlığı veya açıklaması eksik.",
         "map": "Google Maps bağlantısı eksik.",
         "investmentMetricSource": "{{count}} yatırım metriğinin kaynağı, tarihi veya niteliği eksik.",
-        "investmentMetricStale": "{{count}} yatırım metriğinin verisi 180 günden eski; güncelleyin veya gizleyin."
+        "investmentMetricStale": "{{count}} yatırım metriğinin verisi 180 günden eski; güncelleyin veya gizleyin.",
+        "dealClaimVerification": "{{count}} fırsat iddiası doğrulanmamış, süresi dolmuş veya fiyat geçmişiyle uyuşmuyor."
       }
     },
     "errors": {

@@ -19,6 +19,7 @@ export default async function handler(request, response) {
     }
     const body = await readJsonBody(request, 8 * 1024 * 1024);
     const payload = listingPayload(body, siteId);
+    if (payload.urgent_sale) { const now = new Date(); payload.urgent_verified_by = user.id; payload.urgent_verified_at = now.toISOString(); payload.urgent_expires_at = new Date(now.getTime() + 30 * 86_400_000).toISOString(); }
     const plan = await getUserPlan(user.id, site.workspace_id);
     if (plan === "free" && payload.status === "active" && await countActiveListingsForUser(user.id) >= 5) {
       return sendJson(response, 402, {

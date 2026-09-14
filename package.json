@@ -48,7 +48,7 @@
     "test:a11y-responsive": "node server/responsive-accessibility.e2e.mjs",
     "test:long-english": "node server/long-english-content.e2e.mjs",
     "test:platform-content": "node server/platform-content.browser.e2e.mjs",
-    "test:schema-audits": "npm run test:content-schema && npm run test:image-schema && npm run test:theme-config && npm run test:theme-common && npm run test:theme-switch && npm run test:theme-selection-reason && npm run test:site-source-of-truth && npm run test:public-payload && npm run test:lead-realtime && npm run test:lead-mini-crm && npm run test:lead-notifications && npm run test:analytics && npm run test:dashboard-query && npm run test:overview-checklist && npm run test:publish-quality && npm run test:dashboard-navigation && npm run test:observability && npm run test:seo-management && npm run test:frontend-boundaries && npm run test:investment-metrics && npm run test:guided-match-flow && npm run test:neighborhood-life",
+    "test:schema-audits": "npm run test:content-schema && npm run test:image-schema && npm run test:theme-config && npm run test:theme-common && npm run test:theme-switch && npm run test:theme-selection-reason && npm run test:site-source-of-truth && npm run test:public-payload && npm run test:lead-realtime && npm run test:lead-mini-crm && npm run test:lead-notifications && npm run test:analytics && npm run test:dashboard-query && npm run test:overview-checklist && npm run test:publish-quality && npm run test:dashboard-navigation && npm run test:observability && npm run test:seo-management && npm run test:frontend-boundaries && npm run test:investment-metrics && npm run test:guided-match-flow && npm run test:neighborhood-life && npm run test:deal-verification",
     "test:i18n-audits": "npm run test:i18n-audit && npm run test:site-i18n-audit && npm run test:dynamic-site-i18n",
     "test:ci-contract": "node server/ci-quality-gate.test.mjs",
     "test:workspace-plan": "node server/workspace-roles-plan.test.mjs",
@@ -60,6 +60,7 @@
     "test:investment-metrics": "node server/investment-metrics.test.mjs",
     "test:guided-match-flow": "node server/guided-match-flow.test.mjs",
     "test:neighborhood-life": "node server/neighborhood-life.test.mjs",
+    "test:deal-verification": "node server/deal-verification.test.mjs",
     "test:quality-gate": "npm run lint && npm run build && npm run test:schema-audits && npm run test:i18n-audits && npm run test:ci-contract"
   },
   "dependencies": {
