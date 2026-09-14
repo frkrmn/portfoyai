@@ -1318,7 +1318,7 @@ export function DashboardPage() {
 
         {activeSite && activeTab === "site" && siteDraft ? (
           <div className="grid gap-6 xl:grid-cols-2">
-            <nav aria-label={settingsLocale === "tr" ? "Ayar bölümleri" : "Settings sections"} className="sticky top-2 z-20 -mx-1 flex gap-2 overflow-x-auto rounded-2xl border bg-white/95 p-2 shadow-sm backdrop-blur xl:col-span-2">
+            <nav aria-label={t("dashboard.settings.sectionsLabel")} className="sticky top-2 z-20 -mx-1 flex gap-2 overflow-x-auto rounded-2xl border bg-white/95 p-2 shadow-sm backdrop-blur xl:col-span-2">
               {settingsSections.map((section) => <Button key={section} type="button" size="sm" variant={activeSettingsSection === section ? "default" : "ghost"} className="shrink-0 rounded-full" aria-current={activeSettingsSection === section ? "page" : undefined} onClick={() => selectSettingsSection(section)}>{settingsSectionLabels[settingsLocale][section]}</Button>)}
             </nav>
             <TemplateSwitcher siteId={activeSite.id} slug={activeSite.slug} currentTemplateId={activeTemplateId} selectionContext={activeSite.theme_config.selection_context} canUndo={activeSite.can_undo} saving={savingSite || refining} onApply={switchTemplate} onUndo={undoTemplateSwitch} />

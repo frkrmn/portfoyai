@@ -9,7 +9,7 @@ for (const section of sections) {
 }
 assert.match(dashboard, /searchParams\.get\("settings"\)/);
 assert.match(dashboard, /next\.set\("settings", section\)/);
-assert.match(dashboard, /aria-label=.*Ayar bölümleri/);
+assert.match(dashboard, /aria-label=\{t\("dashboard\.settings\.sectionsLabel"\)\}/);
 assert.match(dashboard, /aria-current=/);
 assert.match(dashboard, /tabIndex=\{-1\}/);
 assert.match(dashboard, /overflow-x-auto/, "section navigation must remain usable on mobile");

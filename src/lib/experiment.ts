@@ -2,7 +2,7 @@ import { readApiJson } from "./api";
 import { getSiteSessionId } from "./site-session";
 
 export type PricingVariant = "A" | "B";
-export type ExperimentEventType = "pricing_view" | "upgrade_click" | "paywall_view";
+export type ExperimentEventType = "pricing_view" | "upgrade_click" | "paywall_view" | "prompt_suggestion_click" | "prompt_quality_ready" | "onboarding_generation_start";
 
 export type ExperimentResult = {
   variant: PricingVariant;
@@ -29,4 +29,3 @@ export async function trackExperimentEvent(
   if (!response.ok) throw new Error(payload.error || "Deney olayı kaydedilemedi.");
   return payload;
 }
-

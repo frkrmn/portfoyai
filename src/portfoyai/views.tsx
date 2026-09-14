@@ -57,6 +57,8 @@ import { useTranslation } from "react-i18next";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { uploadImage } from "@/lib/media-storage";
 import { selectableTemplateIds, understandThemePrompt } from "@/lib/theme-selection.mjs";
+import { enrichPrompt, evaluatePrompt, promptSuggestions, type PromptDimension } from "@/lib/prompt-guidance";
+import { trackExperimentEvent } from "@/lib/experiment";
 
 const getThemeStyles = (theme: Pick<ThemeConfig, "primary" | "accent" | "fontPairing">) =>
   ({
@@ -446,6 +448,8 @@ export function LandingPage() {
   const [, setPlatformContentVersion] = useState(0);
   usePageMeta(t("landing.meta.title"), t("landing.meta.description"));
   const prompt = state.onboardingPrompt;
+  const promptLocale = i18n.resolvedLanguage === "en" ? "en" : "tr";
+  const promptQuality = useMemo(() => evaluatePrompt(prompt), [prompt]);
   const { theme } = useMemo(() => generateThemeFromPrompt(prompt), [prompt]);
   const englishLanding = i18n.resolvedLanguage === "en";
   const londonPreviewPrices = [1_850_000, 1_275_000, 2_100_000];
@@ -495,12 +499,18 @@ export function LandingPage() {
       return;
     }
     savePendingPrompt(normalizedPrompt);
+    void trackExperimentEvent(undefined, "prompt_quality_ready", `score_${promptQuality.score}`).catch(() => undefined);
     if (user) {
       navigate("/auth");
       return;
     }
     toast.info(t("landing.hero.authNotice"));
     navigate("/signup", { state: { from: "/auth" } });
+  };
+
+  const applyPromptSuggestion = (dimension: PromptDimension) => {
+    setPrompt(enrichPrompt(prompt, promptSuggestions[promptLocale][dimension]));
+    void trackExperimentEvent(undefined, "prompt_suggestion_click", dimension).catch(() => undefined);
   };
 
   return (
@@ -556,6 +566,11 @@ export function LandingPage() {
                     className="min-h-[108px] resize-none border-0 bg-transparent px-4 py-3 text-base leading-7 text-[#1d2f27] shadow-none placeholder:text-[#849087] focus-visible:ring-0"
                     placeholder={t("landing.hero.examplePrompt")}
                   />
+                  <div className="px-3 pb-3" aria-labelledby="prompt-guidance-title">
+                    <div id="prompt-guidance-title" className="text-xs font-semibold text-[#354b41]">{t("landing.hero.guidance.title")}</div>
+                    <div className="mt-2 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap">{(["region", "audience", "expertise", "visual"] as PromptDimension[]).map((dimension) => <button key={dimension} type="button" onClick={() => applyPromptSuggestion(dimension)} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#173f32]", promptQuality.present[dimension] ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-[#173f32]/15 bg-white text-[#42564d] hover:bg-[#edf1eb]")} aria-pressed={promptQuality.present[dimension]}>{promptQuality.present[dimension] ? "✓ " : "+ "}{t(`landing.hero.guidance.${dimension}`)}</button>)}</div>
+                    <p role="status" className="mt-2 text-xs text-[#66756d]">{promptQuality.score === 4 ? t("landing.hero.guidance.complete") : t("landing.hero.guidance.missing", { items: promptQuality.missing.map((item) => t(`landing.hero.guidance.${item}`)).join(", ") })}</p>
+                  </div>
                   <div className="flex flex-col gap-3 border-t border-[#173f32]/10 px-1 pt-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="px-3 text-xs leading-5 text-[#758078]">{t("landing.hero.promptHelp")}</div>
                     <Button onClick={continueWithDesign} className="h-12 rounded-full bg-[#d86f45] px-5 text-white shadow-[0_10px_24px_rgba(216,111,69,0.24)] hover:bg-[#c55f38]">
@@ -565,6 +580,8 @@ export function LandingPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <div className="mt-4 grid max-w-xl gap-2 rounded-2xl border border-[#173f32]/10 bg-white/60 p-4 text-xs leading-5 text-[#596860] sm:grid-cols-3" aria-label={t("landing.hero.expectations.title")}><div><strong className="block text-[#173f32]">1. {t("landing.hero.expectations.accountTitle")}</strong>{t("landing.hero.expectations.accountBody")}</div><div><strong className="block text-[#173f32]">2. {t("landing.hero.expectations.timeTitle")}</strong>{t("landing.hero.expectations.timeBody")}</div><div><strong className="block text-[#173f32]">3. {t("landing.hero.expectations.draftTitle")}</strong>{t("landing.hero.expectations.draftBody")}</div></div>
 
               <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#647069]">
                 {[t("landing.hero.benefits.custom"), t("landing.hero.benefits.ready"), t("landing.hero.benefits.editable")].map((item) => (
@@ -738,6 +755,7 @@ export function AuthPage() {
     generationStarted.current = true;
     setIsGenerating(true);
     setGenerationError("");
+    void trackExperimentEvent(session.access_token, "onboarding_generation_start", `quality_${evaluatePrompt(prompt).score}`).catch(() => undefined);
     try {
       const response = await fetch("/api/generate-theme", {
         method: "POST",

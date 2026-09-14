@@ -47,6 +47,24 @@
       "promptLabel": "Emlak işinizi nasıl anlatırsınız?",
       "examplePrompt": "Kadıköy ve Moda'da çalışan, samimi, mahalleyi iyi tanıyan ve müşterilerini doğru evle eşleştiren bir emlak danışmanıyım.",
       "promptHelp": "Tarzınızı, bölgenizi ve müşteri kitlenizi yazmanız yeterli.",
+      "guidance": {
+        "title": "Tanımınızı güçlendirin",
+        "region": "Bölge",
+        "audience": "Hedef kitle",
+        "expertise": "Uzmanlık",
+        "visual": "Görsel yön",
+        "missing": "Daha iyi bir sonuç için ekleyin: {{items}}.",
+        "complete": "Harika — dört temel bilgi de tanımınızda var."
+      },
+      "expectations": {
+        "title": "Site oluşturma süreci",
+        "accountTitle": "Hesap oluşturun",
+        "accountBody": "Üretim başlamadan önce ücretsiz üyelik gerekir.",
+        "timeTitle": "Yaklaşık 1–2 dakika",
+        "timeBody": "Tasarım ve başlangıç içerikleri bu sırada hazırlanır.",
+        "draftTitle": "Önce taslak",
+        "draftBody": "Site otomatik yayınlanmaz; kontrol edip siz yayınlarsınız."
+      },
       "promptTooShort": "Lütfen işinizi en az 10 karakterle anlatın.",
       "create": "Sitemi oluştur",
       "creating": "Hazırlanıyor...",
@@ -280,6 +298,7 @@
     }
   },
   "dashboard": {
+    "settings": { "sectionsLabel": "Ayar bölümleri" },
     "templateSwitch": {
       "title": "Tasarımı değiştir",
       "description": "İçeriklerinizi koruyarak başka bir görünümü mevcut tasarımla karşılaştırın.",

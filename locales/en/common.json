@@ -47,6 +47,24 @@
       "promptLabel": "How would you describe your real estate business?",
       "examplePrompt": "I am a friendly local estate agent specializing in Notting Hill and Kensington, helping clients find a London home that truly fits their lifestyle.",
       "promptHelp": "Just tell us about your style, market, and ideal clients.",
+      "guidance": {
+        "title": "Strengthen your description",
+        "region": "Region",
+        "audience": "Target audience",
+        "expertise": "Expertise",
+        "visual": "Visual direction",
+        "missing": "For a better result, add: {{items}}.",
+        "complete": "Great — your description includes all four essentials."
+      },
+      "expectations": {
+        "title": "Site creation process",
+        "accountTitle": "Create an account",
+        "accountBody": "A free account is required before generation begins.",
+        "timeTitle": "About 1–2 minutes",
+        "timeBody": "Your design and starter content are prepared during this time.",
+        "draftTitle": "Draft first",
+        "draftBody": "Your site is not published automatically; you review and publish it."
+      },
       "promptTooShort": "Please describe your business using at least 10 characters.",
       "create": "Create my site",
       "creating": "Creating...",
@@ -280,6 +298,7 @@
     }
   },
   "dashboard": {
+    "settings": { "sectionsLabel": "Settings sections" },
     "templateSwitch": {
       "title": "Change design",
       "description": "Compare another look with your current design while keeping your content.",

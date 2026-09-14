@@ -1,6 +1,6 @@
 import { getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, resolveSubscription, sendJson } from "../api-utils.mjs";
 
-const eventTypes = new Set(["pricing_view", "upgrade_click", "paywall_view"]);
+const eventTypes = new Set(["pricing_view", "upgrade_click", "paywall_view", "prompt_suggestion_click", "prompt_quality_ready", "onboarding_generation_start"]);
 
 export default async function handler(request, response) {
   if (request.method !== "POST") return methodNotAllowed(response, ["POST"]);
