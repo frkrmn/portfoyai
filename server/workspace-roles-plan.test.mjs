@@ -1,0 +1,13 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+const plan = await readFile(new URL("../docs/workspace-roles-and-invitations.md", import.meta.url), "utf8");
+for (const role of ["owner", "editor", "agent", "viewer"]) assert.match(plan, new RegExp(`\\b${role}\\b`, "i"));
+for (const flow of ["Davet", "Kabul", "İptal", "üyelikten çıkarma"]) assert.match(plan, new RegExp(flow, "i"));
+for (const resource of ["Site", "Lead", "billing", "Domain"]) assert.match(plan, new RegExp(resource, "i"));
+for (const table of ["workspaces", "workspace_memberships", "workspace_invitations", "workspace_audit_logs"]) assert.match(plan, new RegExp(table));
+assert.match(plan, /RLS tasarımı/);
+assert.match(plan, /requireWorkspacePermission/);
+assert.match(plan, /sites\.user_id/);
+assert.match(plan, /Geçiş planı/);
+assert.match(plan, /token replay/);
+console.log("Workspace role and invitation plan contract passed.");
