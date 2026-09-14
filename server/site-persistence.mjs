@@ -140,6 +140,10 @@ export const buildStarterListings = (config, siteId) => {
       ...(investmentFocused ? {
         rental_yield_percent: rentalYieldPercent,
         roi_notes: `%${rentalYieldPercent} tahmini yıllık brüt kira getirisi potansiyeli.`,
+        investment_metrics: {
+          rental_yield: { source: "İlan girdilerinden oluşturulan başlangıç tahmini", as_of: new Date().toISOString().slice(0, 10), status: "estimate", hidden: false },
+          price_per_m2: { source: "Danışman tarafından girilen ilan fiyatı ve brüt alan", as_of: new Date().toISOString().slice(0, 10), status: "actual", hidden: false },
+        },
       } : {}),
       ...(urgentDeals ? {
         urgent_sale: index === 0 || index === 2,
@@ -184,8 +188,8 @@ export const insertGeneratedSite = async (supabase, config, userId, { siteLimitE
       // Keep generation operational against projects where the optional metrics
       // migration has not reached PostgREST yet. The follow-up migration below
       // backfills these normal feature values into the real nullable columns.
-      if (listingsError && config.template_id === "investment-focused" && /rental_yield_percent|roi_notes/.test(listingsError.message)) {
-        const compatibleListings = starterListings.map(({ rental_yield_percent, roi_notes, ...listing }) => ({
+      if (listingsError && config.template_id === "investment-focused" && /rental_yield_percent|roi_notes|investment_metrics/.test(listingsError.message)) {
+        const compatibleListings = starterListings.map(({ rental_yield_percent, roi_notes, investment_metrics: _investmentMetrics, ...listing }) => ({
           ...listing,
           features: [
             ...listing.features,

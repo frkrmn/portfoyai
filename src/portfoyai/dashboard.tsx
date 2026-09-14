@@ -366,6 +366,9 @@ const blankListing = (siteId: string, district = ""): ListingDraft & { id?: stri
   listing_status: "active",
   features: [],
   seo: { title: {}, description: {}, robots_index: true },
+  rental_yield_percent: null,
+  roi_notes: null,
+  investment_metrics: {},
 });
 
 const siteDraftFrom = (site: DashboardSite): SiteDraft => ({

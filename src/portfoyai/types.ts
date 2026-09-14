@@ -1,4 +1,8 @@
-export type ThemeVariant = "Modern Minimal" | "Warm Classic" | "Bold Luxury" | "Clean Corporate";
+export type ThemeVariant =
+  | "Modern Minimal"
+  | "Warm Classic"
+  | "Bold Luxury"
+  | "Clean Corporate";
 
 export type FontPairing = {
   heading: string;
@@ -42,12 +46,29 @@ export type ThemeConfig = {
 
 export type GeneratedSiteConfig = {
   /** Opaque internal choice returned by generation; never render this in product UI. */
-  template_id?: "tm_01" | "tm_02" | "tm_03" | "tm_04" | "warm-editorial" | "bold-luxury" | "clean-modern" | "neighborhood-friendly" | "investment-focused" | "urgent-deals" | "guided-match" | "land-plots";
+  template_id?:
+    | "tm_01"
+    | "tm_02"
+    | "tm_03"
+    | "tm_04"
+    | "warm-editorial"
+    | "bold-luxury"
+    | "clean-modern"
+    | "neighborhood-friendly"
+    | "investment-focused"
+    | "urgent-deals"
+    | "guided-match"
+    | "land-plots";
   content?: {
     neighborhoods?: Array<{ name: string; description: LocalizedText }>;
     feelings?: LocalizedText[];
     timings?: LocalizedText[];
-    teamMembers?: Array<{ name: string; role: LocalizedText; bio: LocalizedText; photo_url: string }>;
+    teamMembers?: Array<{
+      name: string;
+      role: LocalizedText;
+      bio: LocalizedText;
+      photo_url: string;
+    }>;
     processSteps?: Array<{ title: LocalizedText; description: LocalizedText }>;
     services?: Array<{ title: LocalizedText; description: LocalizedText }>;
   };
@@ -58,7 +79,12 @@ export type GeneratedSiteConfig = {
   headline: LocalizedText;
   region_focus?: string;
   layout_fine_tune?: LayoutFineTune;
-  selection_context?: { template_id: string; audience: string; region: string; reason: LocalizedText };
+  selection_context?: {
+    template_id: string;
+    audience: string;
+    region: string;
+    reason: LocalizedText;
+  };
 };
 
 export type Agent = {
@@ -127,7 +153,17 @@ export type Listing = {
   room_count: string;
   listing_type: "sale" | "rent";
   property_category: "konut" | "arsa" | "isyeri";
-  property_subtype: "daire" | "mustakil_ev" | "villa" | "rezidans" | "konut_imarli" | "ticari_imarli" | "tarla_tarimsal" | "villa_imarli" | "kentsel_donusum" | null;
+  property_subtype:
+    | "daire"
+    | "mustakil_ev"
+    | "villa"
+    | "rezidans"
+    | "konut_imarli"
+    | "ticari_imarli"
+    | "tarla_tarimsal"
+    | "villa_imarli"
+    | "kentsel_donusum"
+    | null;
   district: string;
   country_id?: string | null;
   province_id?: string | null;
@@ -151,6 +187,17 @@ export type Listing = {
   bathroom_count?: number | null;
   rental_yield_percent?: number | null;
   roi_notes?: string | null;
+  investment_metrics?: Partial<
+    Record<
+      "rental_yield" | "price_per_m2",
+      {
+        source: string;
+        as_of: string;
+        status: "actual" | "estimate";
+        hidden: boolean;
+      }
+    >
+  >;
   price_reduced_from?: number | null;
   urgent_sale?: boolean | null;
 };

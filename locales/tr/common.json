@@ -570,7 +570,18 @@
       "story": "Hikâye",
       "download": "İndir",
       "previewAlt": "{{format}} sosyal medya önizlemesi",
-      "socialError": "Sosyal medya kiti yüklenemedi."
+      "socialError": "Sosyal medya kiti yüklenemedi.",
+      "investmentMetrics": "Yatırım metrikleri",
+      "investmentMetricsHelp": "Public sitede gösterilen her metriğin kaynağını, tarihini ve niteliğini belirtin.",
+      "rentalYield": "Kira getirisi (%)",
+      "pricePerM2": "m² fiyatı",
+      "metricSource": "Kaynak",
+      "metricAsOf": "Veri tarihi",
+      "metricStatus": "Veri niteliği",
+      "metricActual": "Gerçekleşen",
+      "metricEstimate": "Tahmin",
+      "metricHidden": "Bu metriği public sitede gizle",
+      "roiNotes": "ROI / yatırım notları"
     },
     "leads": {
       "title": "Gelen Talepler",
@@ -598,7 +609,13 @@
       "call": "Ara",
       "emailAction": "E-posta",
       "merged": "Duplicate lead kayıtları birleştirildi.",
-      "status": { "new": "Yeni", "contacted": "İletişime geçildi", "appointment": "Randevu", "won": "Kazanıldı", "lost": "Kaybedildi" },
+      "status": {
+        "new": "Yeni",
+        "contacted": "İletişime geçildi",
+        "appointment": "Randevu",
+        "won": "Kazanıldı",
+        "lost": "Kaybedildi"
+      },
       "notifications": {
         "title": "Yeni lead bildirimleri",
         "email": "E-posta",
@@ -752,7 +769,9 @@
         "imageAlt": "{{count}} ilan görselinde alternatif metin eksik.",
         "english": "Bazı Türkçe içeriklerin İngilizce karşılığı eksik.",
         "seo": "Türkçe SEO başlığı veya açıklaması eksik.",
-        "map": "Google Maps bağlantısı eksik."
+        "map": "Google Maps bağlantısı eksik.",
+        "investmentMetricSource": "{{count}} yatırım metriğinin kaynağı, tarihi veya niteliği eksik.",
+        "investmentMetricStale": "{{count}} yatırım metriğinin verisi 180 günden eski; güncelleyin veya gizleyin."
       }
     },
     "errors": {

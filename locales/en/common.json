@@ -570,7 +570,18 @@
       "story": "Story",
       "download": "Download",
       "previewAlt": "{{format}} social media preview",
-      "socialError": "Could not load the social media kit."
+      "socialError": "Could not load the social media kit.",
+      "investmentMetrics": "Investment metrics",
+      "investmentMetricsHelp": "Provide the source, date and status for every metric shown on the public site.",
+      "rentalYield": "Rental yield (%)",
+      "pricePerM2": "Price per m²",
+      "metricSource": "Source",
+      "metricAsOf": "As-of date",
+      "metricStatus": "Data status",
+      "metricActual": "Actual",
+      "metricEstimate": "Estimate",
+      "metricHidden": "Hide this metric on the public site",
+      "roiNotes": "ROI / investment notes"
     },
     "leads": {
       "title": "Incoming Inquiries",
@@ -598,7 +609,13 @@
       "call": "Call",
       "emailAction": "Email",
       "merged": "Duplicate leads were merged.",
-      "status": { "new": "New", "contacted": "Contacted", "appointment": "Appointment", "won": "Won", "lost": "Lost" },
+      "status": {
+        "new": "New",
+        "contacted": "Contacted",
+        "appointment": "Appointment",
+        "won": "Won",
+        "lost": "Lost"
+      },
       "notifications": {
         "title": "New lead notifications",
         "email": "Email",
@@ -752,7 +769,9 @@
         "imageAlt": "{{count}} listing image is missing alternative text.",
         "english": "Some Turkish content is missing its English version.",
         "seo": "The Turkish SEO title or description is missing.",
-        "map": "The Google Maps link is missing."
+        "map": "The Google Maps link is missing.",
+        "investmentMetricSource": "{{count}} investment metric is missing its source, date or status.",
+        "investmentMetricStale": "{{count}} investment metric is older than 180 days; update or hide it."
       }
     },
     "errors": {

@@ -18,6 +18,9 @@ assert.ok(incomplete.warnings.some((item) => item.id === "seo"));
 const changed = auditPublishQuality({ site: completeSite, listings: completeListings, imageKeys: ["media.hero"], unsaved: true });
 assert.equal(changed.canPublish, false, "unsaved draft changes must update and block the result");
 
+const investment = auditPublishQuality({ site: { ...completeSite, theme_config: { ...completeSite.theme_config, template_id: "investment-focused" } }, listings: [{ ...completeListings[0], price: 100, m2: 10, rental_yield_percent: 5, investment_metrics: {} }], imageKeys: [] });
+assert.equal(investment.warnings.find((item) => item.id === "investmentMetricSource")?.count, 2);
+
 const handler = await readFile(new URL("./handlers/site-versions.mjs", import.meta.url), "utf8");
 assert.match(handler, /PUBLISH_QUALITY_BLOCKED/);
 assert.match(handler, /auditPublishQuality/);
