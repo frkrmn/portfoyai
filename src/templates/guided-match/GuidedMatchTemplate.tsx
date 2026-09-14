@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Bath, BedDouble, HeartHandshake, MapPin, Maximize2, Sparkles } from "lucide-react";
@@ -13,8 +13,9 @@ import { ClosedListingsGroups } from "../ClosedListingsGroups";
 import { matchesPropertyTaxonomy, PropertyTaxonomyBadge, PropertyTaxonomySelect } from "../PropertyTaxonomy";
 import { contentFields, objectArrayField, stringArrayField } from "../content-schema";
 import { imageSlots } from "../image-schema";
-import { SiteCredit, SiteLanguageToggle } from "../site-locale";
+import { SiteCredit, SiteLanguageToggle, useSiteLocale } from "../site-locale";
 import { useSharedLeadForm } from "../shared/ThemeCommon";
+import { protectedLeadPayload } from "../lead-protection-payload";
 
 export const imageSchema = imageSlots([
   { key: "media.heroImage", label: "Ana Görsel (Hero)", type: "single", recommendedSize: "1920x1080" },
@@ -70,16 +71,21 @@ function ListingCard({ config, listing }: { config: TemplateConfig; listing: Lis
 
 function GuidedIntake({ config }: SiteTemplateProps) {
   const c = config.content;
+  const { locale } = useSiteLocale();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ location: "", feeling: "", minPrice: "", maxPrice: "", timing: "" });
-  const submit = (event: FormEvent) => {
+  const [form, setForm] = useState({ location: "", feeling: "", minPrice: "", maxPrice: "", timing: "", name: "", phone: "", consent: false });
+  const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const params = new URLSearchParams({ guided: "1" });
-    Object.entries(form).forEach(([key, value]) => { if (value) params.set(key, value); });
-    navigate(`/site/${config.slug}/listings?${params}`);
+    setStatus("submitting");
+    try {
+      const response = await fetch("/api/guided-matches", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(protectedLeadPayload(event, { site_id: config.siteId, name: form.name, phone: form.phone, consent: form.consent, locale, answers: { location: form.location, feeling: form.feeling, timing: form.timing, min_price: form.minPrice || null, max_price: form.maxPrice || null } })) });
+      if (!response.ok) throw new Error(); const payload = await response.json();
+      navigate(`/site/${config.slug}/listings?match=${encodeURIComponent(payload.token)}`);
+    } catch { setStatus("error"); }
   };
   const field = "h-12 w-full rounded-xl border border-[var(--gm-line)] bg-[var(--gm-bg)] px-4 text-sm outline-none focus:border-[var(--gm-accent)]";
-  return <section id="eslesme" className="relative z-20 mx-auto -mt-12 max-w-[1120px] px-5 sm:px-8"><form onSubmit={submit} className="rounded-[2rem] border border-[var(--gm-line)] bg-[var(--gm-bg)] p-6 shadow-[0_28px_80px_rgba(55,35,25,.16)] lg:p-9"><div className="grid gap-8 lg:grid-cols-[.72fr_1.28fr]"><div><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[var(--gm-accent)]"><Sparkles className="h-4 w-4" />{c.matchEyebrow}</div><h2 className="mt-3 font-[family-name:var(--gm-heading)] text-5xl italic leading-none">{c.matchTitle}</h2><p className="mt-4 text-sm leading-7 opacity-65">{c.matchDescription}</p></div><div className="grid gap-3 sm:grid-cols-2"><input className={field} placeholder={c.locationLabel} value={form.location} onChange={(event) => setForm({ ...form, location: event.target.value })} /><select aria-label={c.feelingLabel} className={field} value={form.feeling} onChange={(event) => setForm({ ...form, feeling: event.target.value })}><option value="">{c.feelingLabel}</option>{c.feelings.map((feeling) => <option key={feeling} value={feeling}>{feeling}</option>)}</select><input type="number" min="0" className={field} placeholder={c.budgetMinLabel} value={form.minPrice} onChange={(event) => setForm({ ...form, minPrice: event.target.value })} /><input type="number" min="0" className={field} placeholder={c.budgetMaxLabel} value={form.maxPrice} onChange={(event) => setForm({ ...form, maxPrice: event.target.value })} /><select aria-label={c.timingLabel} className={field} value={form.timing} onChange={(event) => setForm({ ...form, timing: event.target.value })}><option value="">{c.timingLabel}</option>{c.timings.map((timing) => <option key={timing} value={timing}>{timing}</option>)}</select><button data-site-button className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--gm-accent)] px-5 text-xs font-bold text-[var(--gm-on-primary)]">{c.matchSubmitLabel}<ArrowRight className="h-4 w-4" /></button></div></div></form></section>;
+  return <section id="eslesme" className="relative z-20 mx-auto -mt-12 max-w-[1120px] px-5 sm:px-8"><form onSubmit={submit} className="rounded-[2rem] border border-[var(--gm-line)] bg-[var(--gm-bg)] p-6 shadow-[0_28px_80px_rgba(55,35,25,.16)] lg:p-9"><div className="grid gap-8 lg:grid-cols-[.72fr_1.28fr]"><div><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[var(--gm-accent)]"><Sparkles className="h-4 w-4" />{c.matchEyebrow}</div><h2 className="mt-3 font-[family-name:var(--gm-heading)] text-5xl italic leading-none">{c.matchTitle}</h2><p className="mt-4 text-sm leading-7 opacity-65">{c.matchDescription}</p></div><div className="grid gap-3 sm:grid-cols-2"><input required className={field} placeholder={c.fullNameLabel} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /><input required className={field} placeholder={c.phoneLabel} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /><input className={field} placeholder={c.locationLabel} value={form.location} onChange={(event) => setForm({ ...form, location: event.target.value })} /><select aria-label={c.feelingLabel} className={field} value={form.feeling} onChange={(event) => setForm({ ...form, feeling: event.target.value })}><option value="">{c.feelingLabel}</option>{c.feelings.map((feeling) => <option key={feeling} value={feeling}>{feeling}</option>)}</select><input type="number" min="0" className={field} placeholder={c.budgetMinLabel} value={form.minPrice} onChange={(event) => setForm({ ...form, minPrice: event.target.value })} /><input type="number" min="0" className={field} placeholder={c.budgetMaxLabel} value={form.maxPrice} onChange={(event) => setForm({ ...form, maxPrice: event.target.value })} /><select aria-label={c.timingLabel} className={field} value={form.timing} onChange={(event) => setForm({ ...form, timing: event.target.value })}><option value="">{c.timingLabel}</option>{c.timings.map((timing) => <option key={timing} value={timing}>{timing}</option>)}</select><label className="flex items-center gap-2 text-xs"><input required type="checkbox" checked={form.consent} onChange={(event) => setForm({ ...form, consent: event.target.checked })} />{locale === "en" ? "I consent to storing my answers with my inquiry." : "Cevaplarımın talebimle birlikte saklanmasına izin veriyorum."}</label><button disabled={status === "submitting"} data-site-button className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--gm-accent)] px-5 text-xs font-bold text-[var(--gm-on-primary)]">{status === "submitting" ? c.formSubmitting : c.matchSubmitLabel}<ArrowRight className="h-4 w-4" /></button>{status === "error" ? <p role="alert" className="text-xs">{c.formError}</p> : null}</div></div></form></section>;
 }
 
 function LeadForm({ config, listing }: { config: TemplateConfig; listing: Listing }) {
@@ -98,29 +104,36 @@ export function GuidedMatchHome({ config }: SiteTemplateProps) {
 
 export function GuidedMatchListings({ config }: SiteTemplateProps) {
   const c = config.content;
+  const { locale } = useSiteLocale();
   const [params, setParams] = useSearchParams();
   const [location, setLocation] = useState(params.get("location") || "");
   const [minPrice, setMinPrice] = useState(params.get("minPrice") || "");
   const [maxPrice, setMaxPrice] = useState(params.get("maxPrice") || "");
   const [type, setType] = useState(params.get("type") || "all");
   const [propertyType, setPropertyType] = useState(params.get("property") || "all");
-  const feeling = params.get("feeling") || "";
-  const timing = params.get("timing") || "";
-  const guided = params.get("guided") === "1";
-  const filtered = useMemo(() => config.listings.filter((listing) => {
+  const matchToken = params.get("match") || "";
+  const [match, setMatch] = useState<{ summary: string; recommendations: Array<{ listing_id: string; score: number; reasons: string[] }> } | null>(null);
+  const [matchError, setMatchError] = useState(false);
+  useEffect(() => { if (!matchToken) return; let active = true; fetch(`/api/guided-matches/${encodeURIComponent(matchToken)}`).then(async (response) => { if (!response.ok) throw new Error(); return response.json(); }).then((payload) => { if (active) setMatch(payload); }).catch(() => { if (active) setMatchError(true); }); return () => { active = false; }; }, [matchToken]);
+  const guided = Boolean(matchToken);
+  const filtered = useMemo(() => {
+    if (match) { const byId = new Map(config.listings.map((listing) => [listing.id, listing])); return match.recommendations.map((item) => byId.get(item.listing_id)).filter((listing): listing is Listing => Boolean(listing)); }
+    return config.listings.filter((listing) => {
     if (location && !normalize(`${formatListingLocation(listing)} ${listing.address || ""} ${listing.title}`).includes(normalize(location))) return false;
     if (minPrice && Number(listing.price) < Number(minPrice)) return false;
     if (maxPrice && Number(listing.price) > Number(maxPrice)) return false;
     if (!matchesPropertyTaxonomy(listing, propertyType)) return false;
     return type === "all" || listing.listing_type === type;
-  }), [config.listings, location, minPrice, maxPrice, propertyType, type]);
+    });
+  }, [config.listings, location, match, minPrice, maxPrice, propertyType, type]);
+  const recommendationFor = (id: string) => match?.recommendations.find((item) => item.listing_id === id);
   const update = (next: { location: string; minPrice: string; maxPrice: string; type: string }) => {
     const updated = new URLSearchParams(params);
     Object.entries(next).forEach(([key, value]) => value && value !== "all" ? updated.set(key, value) : updated.delete(key));
     setParams(updated, { replace: true });
   };
   const field = "h-12 w-full rounded-xl border border-[var(--gm-line)] bg-[var(--gm-bg)] px-4 text-sm outline-none focus:border-[var(--gm-accent)]";
-  return <div {...fineTuneAttributes(config)} style={guidedStyle(config)}><Header config={config} /><main><section className="bg-[var(--gm-soft)] px-5 py-16 sm:px-8 lg:px-10"><div className="mx-auto max-w-[1360px]"><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[var(--gm-accent)]"><Sparkles className="h-4 w-4" />{guided ? c.matchEyebrow : c.featuredEyebrow}</div><h1 className="mt-4 font-[family-name:var(--gm-heading)] text-6xl italic">{guided ? c.matchResultsTitle : c.listingsTitle}</h1><p className="mt-4 max-w-2xl text-sm leading-7 opacity-65">{guided ? c.matchResultsDescription : c.listingsDescription}</p>{guided && (feeling || timing) ? <div className="mt-6 flex flex-wrap gap-2">{feeling ? <span className="rounded-full bg-[var(--gm-bg)] px-4 py-2 text-xs">{c.feelingLabel}: {feeling}</span> : null}{timing ? <span className="rounded-full bg-[var(--gm-bg)] px-4 py-2 text-xs">{c.timingLabel}: {timing}</span> : null}</div> : null}</div></section><section className="mx-auto max-w-[1360px] px-5 py-10 sm:px-8 lg:px-10"><div className="grid gap-3 rounded-2xl border border-[var(--gm-line)] p-4 md:grid-cols-5"><input className={field} placeholder={c.locationLabel} value={location} onChange={(event) => { setLocation(event.target.value); update({ location: event.target.value, minPrice, maxPrice, type }); }} /><input type="number" min="0" className={field} placeholder={c.budgetMinLabel} value={minPrice} onChange={(event) => { setMinPrice(event.target.value); update({ location, minPrice: event.target.value, maxPrice, type }); }} /><input type="number" min="0" className={field} placeholder={c.budgetMaxLabel} value={maxPrice} onChange={(event) => { setMaxPrice(event.target.value); update({ location, minPrice, maxPrice: event.target.value, type }); }} /><select className={field} value={type} onChange={(event) => { setType(event.target.value); update({ location, minPrice, maxPrice, type: event.target.value }); }}><option value="all">{c.allLabel}</option><option value="sale">{c.saleLabel}</option><option value="rent">{c.rentLabel}</option></select><PropertyTaxonomySelect config={config} value={propertyType} onChange={setPropertyType} className={field} /></div>{filtered.length ? <div data-guided-results-count={filtered.length} className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">{filtered.map((listing) => <ListingCard key={listing.id} config={config} listing={listing} />)}</div> : <p className="mt-10 rounded-2xl border border-[var(--gm-line)] p-8 text-sm opacity-65">{c.emptyListings}</p>}</section><ClosedListingsGroups config={config} renderListing={(listing) => <ListingCard config={config} listing={listing} />}/></main><Footer config={config} /></div>;
+  return <div {...fineTuneAttributes(config)} style={guidedStyle(config)}><Header config={config} /><main><section className="bg-[var(--gm-soft)] px-5 py-16 sm:px-8 lg:px-10"><div className="mx-auto max-w-[1360px]"><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[var(--gm-accent)]"><Sparkles className="h-4 w-4" />{guided ? c.matchEyebrow : c.featuredEyebrow}</div><h1 className="mt-4 font-[family-name:var(--gm-heading)] text-6xl italic">{guided ? c.matchResultsTitle : c.listingsTitle}</h1><p className="mt-4 max-w-2xl text-sm leading-7 opacity-65">{match?.summary || (guided ? c.matchResultsDescription : c.listingsDescription)}</p>{match ? <button type="button" className="mt-5 rounded-full bg-[var(--gm-primary)] px-5 py-3 text-xs font-bold text-[var(--gm-on-primary)]" onClick={() => void navigator.clipboard.writeText(window.location.href)}>{locale === "en" ? "Copy share link" : "Paylaşım linkini kopyala"}</button> : null}{matchError ? <p role="alert" className="mt-5 text-sm">{locale === "en" ? "This match link expired or was revoked." : "Bu eşleşme bağlantısının süresi dolmuş veya bağlantı iptal edilmiş."}</p> : null}</div></section><section className="mx-auto max-w-[1360px] px-5 py-10 sm:px-8 lg:px-10">{!guided ? <div className="grid gap-3 rounded-2xl border border-[var(--gm-line)] p-4 md:grid-cols-5"><input className={field} placeholder={c.locationLabel} value={location} onChange={(event) => { setLocation(event.target.value); update({ location: event.target.value, minPrice, maxPrice, type }); }} /><input type="number" min="0" className={field} placeholder={c.budgetMinLabel} value={minPrice} onChange={(event) => { setMinPrice(event.target.value); update({ location, minPrice: event.target.value, maxPrice, type }); }} /><input type="number" min="0" className={field} placeholder={c.budgetMaxLabel} value={maxPrice} onChange={(event) => { setMaxPrice(event.target.value); update({ location, minPrice, maxPrice: event.target.value, type }); }} /><select className={field} value={type} onChange={(event) => { setType(event.target.value); update({ location, minPrice, maxPrice, type: event.target.value }); }}><option value="all">{c.allLabel}</option><option value="sale">{c.saleLabel}</option><option value="rent">{c.rentLabel}</option></select><PropertyTaxonomySelect config={config} value={propertyType} onChange={setPropertyType} className={field} /></div> : null}{filtered.length ? <div data-guided-results-count={filtered.length} className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">{filtered.map((listing) => { const recommendation = recommendationFor(listing.id); return <div key={listing.id}>{recommendation ? <div className="rounded-t-2xl bg-[var(--gm-primary)] px-4 py-3 text-xs text-[var(--gm-on-primary)]"><strong>%{recommendation.score}</strong> · {recommendation.reasons.join(" · ")}</div> : null}<ListingCard config={config} listing={listing} /></div>; })}</div> : <p className="mt-10 rounded-2xl border border-[var(--gm-line)] p-8 text-sm opacity-65">{c.emptyListings}</p>}</section>{!guided ? <ClosedListingsGroups config={config} renderListing={(listing) => <ListingCard config={config} listing={listing} />}/> : null}</main><Footer config={config} /></div>;
 }
 
 export function GuidedMatchDetail({ config }: SiteTemplateProps) {

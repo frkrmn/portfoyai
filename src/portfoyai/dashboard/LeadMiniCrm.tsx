@@ -247,7 +247,8 @@ export function LeadMiniCrm({
                   <div className="mt-2 space-y-2 text-xs text-[#69756e]">
                     {selected.activities?.map((activity) => (
                       <div key={activity.id} className="border-l-2 pl-3">
-                        {activity.detail || activity.activity_type}
+                        <div>{activity.payload?.summary || activity.detail || activity.activity_type}</div>
+                        {activity.activity_type === "guided_match" && activity.payload ? <div className="mt-2 space-y-2 rounded-xl bg-[#f5f3ed] p-3"><div>{Object.entries(activity.payload.answers || {}).filter(([, value]) => value != null && value !== "").map(([key, value]) => `${key}: ${value}`).join(" · ")}</div><div>{(activity.payload.recommendations || []).map((item) => `${listingTitles.get(item.listing_id) || item.listing_id} (%${item.score})`).join(" · ") || t("dashboard.leads.noMatches")}</div>{activity.payload.share_path ? <div className="flex flex-wrap gap-2"><Button asChild size="sm" variant="outline"><a href={activity.payload.share_path} target="_blank" rel="noreferrer">{t("dashboard.leads.openMatch")}</a></Button><Button size="sm" variant="outline" onClick={() => void navigator.clipboard.writeText(`${window.location.origin}${activity.payload?.share_path || ""}`)}>{t("dashboard.leads.copyMatch")}</Button><Button size="sm" variant="outline" onClick={() => void onUpdate(selected, { action: "revoke_match", match_id: activity.payload?.match_id })}>{t("dashboard.leads.revokeMatch")}</Button></div> : null}</div> : null}
                         <div>
                           {new Date(activity.created_at).toLocaleString()}
                         </div>

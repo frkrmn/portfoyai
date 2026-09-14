@@ -62,7 +62,7 @@ const getOwnedLeads = async (request, response) => {
   const { data: leads, error } = await supabase.from("leads").select(leadFields).in("site_id", siteIds).order("created_at", { ascending: false });
   if (error) throw new Error(`Failed to load owned leads: ${error.message}`);
   const leadIds = (leads || []).map((lead) => lead.id);
-  const activitiesResult = leadIds.length ? await supabase.from("lead_activities").select("id,lead_id,activity_type,detail,created_at").in("lead_id", leadIds).order("created_at", { ascending: false }) : { data: [], error: null };
+  const activitiesResult = leadIds.length ? await supabase.from("lead_activities").select("id,lead_id,activity_type,detail,schema_version,payload,consent,created_at").in("lead_id", leadIds).order("created_at", { ascending: false }) : { data: [], error: null };
   if (activitiesResult.error) throw new Error(`Failed to load lead activities: ${activitiesResult.error.message}`);
   return sendJson(response, 200, { leads: (leads || []).map((lead) => ({ ...lead, activities: (activitiesResult.data || []).filter((activity) => activity.lead_id === lead.id) })) });
 };
@@ -74,6 +74,13 @@ const updateOwnedLead = async (request, response) => {
   const statuses = ["new", "contacted", "appointment", "won", "lost"];
   const siteIds = await accessibleSiteIds(user.id, body.action === "merge" ? "lead.merge" : "lead.write");
   const supabase = getSupabaseClient();
+  if (body.action === "revoke_match") {
+    if (!uuidPattern.test(String(body.match_id || ""))) return sendJson(response, 400, { error: "A valid match id is required." });
+    const { data, error } = await supabase.from("guided_match_results").update({ revoked_at: new Date().toISOString() }).eq("id", body.match_id).eq("lead_id", body.id).in("site_id", siteIds).select("id").maybeSingle();
+    if (error) throw error; if (!data) return sendJson(response, 404, { error: "Match not found." });
+    await supabase.from("lead_activities").insert({ lead_id: body.id, user_id: user.id, activity_type: "guided_match_revoked", detail: `Match link revoked: ${body.match_id}` });
+    return sendJson(response, 200, { revoked_match_id: body.match_id });
+  }
   if (body.action === "merge") {
     if (!uuidPattern.test(String(body.duplicate_id || ""))) return sendJson(response, 400, { error: "A valid duplicate id is required." });
     const { data: merged, error: mergeError } = await supabase.rpc("merge_owned_leads", { p_primary_id: body.id, p_duplicate_id: body.duplicate_id, p_user_id: user.id });

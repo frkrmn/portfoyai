@@ -3,6 +3,7 @@ import analytics from "./handlers/analytics.mjs";
 import fonts from "./handlers/fonts.mjs";
 import generateTheme from "./handlers/generate-theme.mjs";
 import leads from "./handlers/leads.mjs";
+import guidedMatches from "./handlers/guided-matches.mjs";
 import leadNotifications from "./handlers/lead-notifications.mjs";
 import locations from "./handlers/locations.mjs";
 import listing from "./handlers/listing.mjs";
@@ -37,6 +38,8 @@ export const apiRouteInventory = [
   { pattern: /^\/api\/platform-content$/, methods: ["GET"], handler: publicPlatformContent },
   { pattern: /^\/api\/admin\/platform-content$/, methods: ["GET", "PATCH"], handler: adminPlatformContent },
   { pattern: /^\/api\/leads$/, methods: ["GET", "POST", "PATCH"], handler: leads },
+  { pattern: /^\/api\/guided-matches$/, methods: ["POST"], handler: guidedMatches },
+  { pattern: /^\/api\/guided-matches\/([A-Za-z0-9_-]{40,100})$/, methods: ["GET"], params: ["token"], handler: guidedMatches },
   { pattern: /^\/api\/lead-notifications$/, methods: ["GET", "PATCH", "POST"], handler: leadNotifications },
   { pattern: /^\/api\/support-requests$/, methods: ["POST"], handler: supportRequests },
   { pattern: new RegExp(`^/api/workspaces/${uuidSource}/members$`, "i"), methods: ["GET"], params: ["workspaceId"], fixedParams: { workspaceAction: "members" }, handler: workspaces },

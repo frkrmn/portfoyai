@@ -15,7 +15,7 @@ export type DashboardLead = {
   assignee: string | null;
   note: string | null;
   reminder_at: string | null;
-  activities?: Array<{ id: string; activity_type: string; detail: string | null; created_at: string }>;
+  activities?: Array<{ id: string; activity_type: string; detail: string | null; schema_version?: number; consent?: boolean; payload?: { match_id?: string; share_token?: string; share_path?: string; summary?: string; answers?: Record<string, string | number | null>; recommendations?: Array<{ listing_id: string; score: number; reasons: string[] }> }; created_at: string }>;
 };
 
 type LeadRealtimePayload = {
