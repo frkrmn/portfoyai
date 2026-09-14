@@ -41,6 +41,13 @@ import { dashboardQueryKeys, dashboardRequest } from "@/lib/dashboard-query";
 import { HelpCenter } from "./dashboard/HelpCenter";
 
 type DashboardTab = "overview" | "analytics" | "site" | "content" | "images" | "listings" | "leads";
+type SettingsSection = "general" | "contact" | "design" | "team" | "publishing" | "language-seo" | "advanced";
+
+const settingsSections: SettingsSection[] = ["general", "contact", "design", "team", "publishing", "language-seo", "advanced"];
+const settingsSectionLabels = {
+  tr: { general: "Genel", contact: "İletişim ve lokasyon", design: "Tasarım", team: "Ekip", publishing: "Yayın ve domain", "language-seo": "Dil ve SEO", advanced: "Gelişmiş" },
+  en: { general: "General", contact: "Contact and location", design: "Design", team: "Team", publishing: "Publishing and domain", "language-seo": "Language and SEO", advanced: "Advanced" },
+} satisfies Record<"tr" | "en", Record<SettingsSection, string>>;
 
 export type DashboardSite = {
   id: string;
@@ -396,6 +403,8 @@ export function DashboardPage() {
   const { session, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedSiteId = searchParams.get("site") || "";
+  const requestedSettingsSection = searchParams.get("settings");
+  const activeSettingsSection: SettingsSection = settingsSections.includes(requestedSettingsSection as SettingsSection) ? (requestedSettingsSection as SettingsSection) : "general";
   const [teamDraft, setTeamDraft] = useState<TeamDraft>(blankTeamMember);
   const [teamLabel, setTeamLabel] = useState("");
   const [savingTeam, setSavingTeam] = useState(false);
@@ -569,6 +578,11 @@ export function DashboardPage() {
   const siteLeads = leads.filter((lead) => lead.site_id === activeSite?.id);
   const persistedSiteDraft = activeSite ? siteDraftFrom(activeSite) : null;
   const themeDirty = Boolean(siteDraft && persistedSiteDraft && themeFields.some((field) => siteDraft[field] !== persistedSiteDraft[field]));
+
+  useEffect(() => {
+    if (activeTab !== "site" || !requestedSettingsSection || !settingsSections.includes(requestedSettingsSection as SettingsSection)) return;
+    window.requestAnimationFrame(() => document.getElementById(`settings-${requestedSettingsSection}`)?.focus());
+  }, [activeTab, requestedSettingsSection]);
   const contentSchema = templateFamily?.contentSchema || [];
   const imageSchema = templateFamily?.imageSchema || [];
   const contentDirty = JSON.stringify(contentDraft) !== JSON.stringify(persistedContent);
@@ -1121,6 +1135,15 @@ export function DashboardPage() {
 
   const saleCount = listings.filter((listing) => listing.listing_type === "sale").length;
   const rentCount = listings.filter((listing) => listing.listing_type === "rent").length;
+  const settingsLocale = i18n.resolvedLanguage === "en" ? "en" : "tr";
+  const selectSettingsSection = (section: SettingsSection) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set("settings", section);
+      return next;
+    }, { replace: true });
+    window.requestAnimationFrame(() => document.getElementById(`settings-${section}`)?.focus());
+  };
 
   return (
     <Shell
@@ -1293,12 +1316,17 @@ export function DashboardPage() {
 
         {activeSite && activeTab === "site" && siteDraft ? (
           <div className="grid gap-6 xl:grid-cols-2">
+            <nav aria-label={settingsLocale === "tr" ? "Ayar bölümleri" : "Settings sections"} className="sticky top-2 z-20 -mx-1 flex gap-2 overflow-x-auto rounded-2xl border bg-white/95 p-2 shadow-sm backdrop-blur xl:col-span-2">
+              {settingsSections.map((section) => <Button key={section} type="button" size="sm" variant={activeSettingsSection === section ? "default" : "ghost"} className="shrink-0 rounded-full" aria-current={activeSettingsSection === section ? "page" : undefined} onClick={() => selectSettingsSection(section)}>{settingsSectionLabels[settingsLocale][section]}</Button>)}
+            </nav>
             <TemplateSwitcher siteId={activeSite.id} slug={activeSite.slug} currentTemplateId={activeTemplateId} selectionContext={activeSite.theme_config.selection_context} canUndo={activeSite.can_undo} saving={savingSite || refining} onApply={switchTemplate} onUndo={undoTemplateSwitch} />
             <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
               <CardHeader>
                 <CardTitle>{t("dashboard.site.title")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <section id="settings-general" tabIndex={-1} aria-labelledby="settings-general-title" className="space-y-4 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#173f32]">
+                  <h3 id="settings-general-title" className="text-lg font-semibold text-[#173f32]">{settingsSectionLabels[settingsLocale].general}</h3>
                 <div>
                   <Label>{t("dashboard.site.businessName")}</Label>
                   <Input
@@ -1319,6 +1347,9 @@ export function DashboardPage() {
                   <Label>{t("dashboard.site.shortDescription")}</Label>
                   <Textarea value={siteDraft.tone} onChange={(e) => setSiteDraft({ ...siteDraft, tone: e.target.value })} />
                 </div>
+                </section>
+                <section id="settings-contact" tabIndex={-1} aria-labelledby="settings-contact-title" className="space-y-4 rounded-2xl border-t pt-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#173f32]">
+                  <h3 id="settings-contact-title" className="text-lg font-semibold text-[#173f32]">{settingsSectionLabels[settingsLocale].contact}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <Label>{t("dashboard.site.phone")}</Label>
@@ -1353,7 +1384,9 @@ export function DashboardPage() {
                     })
                   }
                 />
-                <section className="space-y-3 rounded-2xl border bg-white p-4">
+                </section>
+                <section id="settings-language-seo" tabIndex={-1} aria-labelledby="settings-language-seo-title" className="space-y-3 rounded-2xl border bg-white p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#173f32]">
+                  <h3 id="settings-language-seo-title" className="text-lg font-semibold text-[#173f32]">{settingsSectionLabels[settingsLocale]["language-seo"]}</h3>
                   <div className="font-semibold">{t("dashboard.seo.siteTitle")}</div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
@@ -1500,6 +1533,8 @@ export function DashboardPage() {
                     {t("dashboard.seo.index")}
                   </label>
                 </section>
+                <section id="settings-publishing" tabIndex={-1} aria-labelledby="settings-publishing-title" className="space-y-4 rounded-2xl border-t pt-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#173f32]">
+                  <h3 id="settings-publishing-title" className="text-lg font-semibold text-[#173f32]">{settingsSectionLabels[settingsLocale].publishing}</h3>
                 <div className="flex flex-wrap gap-2">
                   <Button onClick={saveIdentity} disabled={savingSite}>
                     {t("dashboard.site.save")}
@@ -1534,9 +1569,10 @@ export function DashboardPage() {
                     </button>
                   )}
                 </div>
+                </section>
               </CardContent>
             </Card>
-            <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
+            <Card id="settings-team" tabIndex={-1} className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#173f32]">
               <CardHeader>
                 <CardTitle>{t("dashboard.team.title")}</CardTitle>
                 <CardDescription>{t("dashboard.team.description")}</CardDescription>
@@ -1650,7 +1686,7 @@ export function DashboardPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
+            <Card id="settings-design" tabIndex={-1} className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#173f32]">
               <CardHeader>
                 <CardTitle>{t("dashboard.theme.title")}</CardTitle>
               </CardHeader>
@@ -1762,7 +1798,7 @@ export function DashboardPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] xl:col-span-2">
+            <Card id="settings-advanced" tabIndex={-1} className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#173f32] xl:col-span-2">
               <CardHeader>
                 <CardTitle>{t("dashboard.refine.title")}</CardTitle>
                 <CardDescription>{t("dashboard.refine.description")}</CardDescription>
