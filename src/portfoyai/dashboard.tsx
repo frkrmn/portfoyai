@@ -35,6 +35,7 @@ import { AnalyticsPanel } from "./dashboard/AnalyticsPanel";
 import { OverviewChecklist } from "./dashboard/OverviewChecklist";
 import { TemplateSwitcher, type SwitchableTemplateId } from "./dashboard/TemplateSwitcher";
 import { PublishQualityDialog } from "./dashboard/PublishQualityDialog";
+import { LeadMiniCrm } from "./dashboard/LeadMiniCrm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashboardQueryKeys, dashboardRequest } from "@/lib/dashboard-query";
 
@@ -50,13 +51,32 @@ export type DashboardSite = {
   headline: string;
   theme_config: {
     template_id?: string;
-    colors?: { background?: string; primary?: string; accent?: string; text?: string; buttonColorSource?: "accent" | "primary" | "custom"; buttonColorCustom?: string };
-    fonts?: { heading?: string; body?: string; headingWeight?: number; headingItalic?: boolean; bodyWeight?: number; bodyItalic?: boolean };
+    colors?: {
+      background?: string;
+      primary?: string;
+      accent?: string;
+      text?: string;
+      buttonColorSource?: "accent" | "primary" | "custom";
+      buttonColorCustom?: string;
+    };
+    fonts?: {
+      heading?: string;
+      body?: string;
+      headingWeight?: number;
+      headingItalic?: boolean;
+      bodyWeight?: number;
+      bodyItalic?: boolean;
+    };
     content?: ContentRecord;
     media?: SiteMedia;
     layout?: Record<string, unknown>;
     seo?: SeoConfig;
-    selection_context?: { template_id: string; audience: string; region: string; reason: { tr: string; en?: string } };
+    selection_context?: {
+      template_id: string;
+      audience: string;
+      region: string;
+      reason: { tr: string; en?: string };
+    };
     layout_fine_tune?: {
       buttonStyle?: "solid" | "outline" | "pill" | "sharp";
       navAlignment?: "left" | "center" | "split";
@@ -107,19 +127,32 @@ type SiteDraft = {
 };
 
 export type GoogleFont = { family: string; variants: string[] };
-type TeamDraft = { id?: string; name: string; role: string; bio: string; photo_url: string };
-const blankTeamMember = (): TeamDraft => ({ name: "", role: "", bio: "", photo_url: "" });
+type TeamDraft = {
+  id?: string;
+  name: string;
+  role: string;
+  bio: string;
+  photo_url: string;
+};
+const blankTeamMember = (): TeamDraft => ({
+  name: "",
+  role: "",
+  bio: "",
+  photo_url: "",
+});
 
 const variantWeight = (variant: string) => Number.parseInt(variant, 10) || 400;
 const weightsFor = (font: GoogleFont | undefined, italic: boolean) => {
   if (!font) return [400];
-  const weights = font.variants
-    .filter((variant) => italic ? variant === "italic" || variant.endsWith("italic") : variant === "regular" || /^\d+$/.test(variant))
-    .map(variantWeight);
+  const weights = font.variants.filter((variant) => (italic ? variant === "italic" || variant.endsWith("italic") : variant === "regular" || /^\d+$/.test(variant))).map(variantWeight);
   return [...new Set(weights)].sort((a, b) => a - b);
 };
-const closestWeight = (weights: number[], target: number) => weights.reduce((best, weight) => Math.abs(weight - target) < Math.abs(best - target) ? weight : best, weights[0] || 400);
-const familyName = (family: string) => family.split(",")[0].trim().replace(/^['"]|['"]$/g, "");
+const closestWeight = (weights: number[], target: number) => weights.reduce((best, weight) => (Math.abs(weight - target) < Math.abs(best - target) ? weight : best), weights[0] || 400);
+const familyName = (family: string) =>
+  family
+    .split(",")[0]
+    .trim()
+    .replace(/^['"]|['"]$/g, "");
 
 const previewStylesheetUrl = (fonts: GoogleFont[]) => {
   const families = fonts.map((font) => {
@@ -131,13 +164,7 @@ const previewStylesheetUrl = (fonts: GoogleFont[]) => {
   return families.length ? `https://fonts.googleapis.com/css2?${families.join("&")}&display=swap` : "";
 };
 
-function FontFamilyPicker({ id, fonts, family, disabled, onSelect }: {
-  id: string;
-  fonts: GoogleFont[];
-  family: string;
-  disabled: boolean;
-  onSelect: (font: GoogleFont) => void;
-}) {
+function FontFamilyPicker({ id, fonts, family, disabled, onSelect }: { id: string; fonts: GoogleFont[]; family: string; disabled: boolean; onSelect: (font: GoogleFont) => void }) {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -161,65 +188,149 @@ function FontFamilyPicker({ id, fonts, family, disabled, onSelect }: {
 
   useEffect(() => {
     if (!open) return;
-    const close = (event: MouseEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(false); };
+    const close = (event: MouseEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
 
-  return <div ref={root} className="relative mt-2">
-    {open && visibleFonts.length ? <link rel="stylesheet" href={previewStylesheetUrl(visibleFonts)} /> : null}
-    <button id={id} type="button" disabled={disabled} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="flex h-11 w-full items-center justify-between rounded-md border bg-white px-3 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50">
-      <span className="truncate" style={{ fontFamily: family }}>{selectedName || t("dashboard.fonts.select")}</span>
-      <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")} />
-    </button>
-    {open ? <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border bg-white shadow-xl">
-      <div className="border-b p-2"><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("dashboard.fonts.search")} className="pl-9" /></div></div>
-      <div ref={list} role="listbox" aria-labelledby={id} onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)} className="h-72 overflow-y-auto p-1">
-        <div className="relative" style={{ height: filteredFonts.length * rowHeight }}>
-        {visibleFonts.map((font, visibleIndex) => {
-          const selected = font.family === selectedName;
-          const previewWeight = closestWeight(weightsFor(font, false).length ? weightsFor(font, false) : weightsFor(font, true), 400);
-          return <button key={font.family} type="button" role="option" aria-selected={selected} onClick={() => { onSelect(font); setOpen(false); setQuery(""); }} className={cn("absolute left-0 flex w-full items-center gap-3 rounded-lg px-3 text-left hover:bg-[#f2f0e9]", selected && "bg-[#edf1eb]")} style={{ height: rowHeight, top: (startIndex + visibleIndex) * rowHeight }}>
-            <span className="min-w-0 flex-1"><span className="block truncate text-xs text-slate-500">{font.family}</span><span className="mt-1 block truncate text-lg" style={{ fontFamily: `'${font.family}'`, fontWeight: previewWeight }}>{t("dashboard.fonts.sample")}</span></span>
-            {selected ? <Check className="h-4 w-4 shrink-0 text-[#173f32]" /> : null}
-          </button>;
-        })}
+  return (
+    <div ref={root} className="relative mt-2">
+      {open && visibleFonts.length ? <link rel="stylesheet" href={previewStylesheetUrl(visibleFonts)} /> : null}
+      <button id={id} type="button" disabled={disabled} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="flex h-11 w-full items-center justify-between rounded-md border bg-white px-3 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50">
+        <span className="truncate" style={{ fontFamily: family }}>
+          {selectedName || t("dashboard.fonts.select")}
+        </span>
+        <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")} />
+      </button>
+      {open ? (
+        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border bg-white shadow-xl">
+          <div className="border-b p-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("dashboard.fonts.search")} className="pl-9" />
+            </div>
+          </div>
+          <div ref={list} role="listbox" aria-labelledby={id} onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)} className="h-72 overflow-y-auto p-1">
+            <div className="relative" style={{ height: filteredFonts.length * rowHeight }}>
+              {visibleFonts.map((font, visibleIndex) => {
+                const selected = font.family === selectedName;
+                const previewWeight = closestWeight(weightsFor(font, false).length ? weightsFor(font, false) : weightsFor(font, true), 400);
+                return (
+                  <button
+                    key={font.family}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => {
+                      onSelect(font);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                    className={cn("absolute left-0 flex w-full items-center gap-3 rounded-lg px-3 text-left hover:bg-[#f2f0e9]", selected && "bg-[#edf1eb]")}
+                    style={{
+                      height: rowHeight,
+                      top: (startIndex + visibleIndex) * rowHeight,
+                    }}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs text-slate-500">{font.family}</span>
+                      <span
+                        className="mt-1 block truncate text-lg"
+                        style={{
+                          fontFamily: `'${font.family}'`,
+                          fontWeight: previewWeight,
+                        }}
+                      >
+                        {t("dashboard.fonts.sample")}
+                      </span>
+                    </span>
+                    {selected ? <Check className="h-4 w-4 shrink-0 text-[#173f32]" /> : null}
+                  </button>
+                );
+              })}
+            </div>
+            {!filteredFonts.length ? <p className="p-5 text-center text-sm text-slate-500">{t("dashboard.fonts.noResults")}</p> : null}
+          </div>
         </div>
-        {!filteredFonts.length ? <p className="p-5 text-center text-sm text-slate-500">{t("dashboard.fonts.noResults")}</p> : null}
-      </div>
-    </div> : null}
-  </div>;
+      ) : null}
+    </div>
+  );
 }
 
-function FontControl({ id, label, fonts, family, weight, italic, disabled, onChange }: {
-  id: string;
-  label: string;
-  fonts: GoogleFont[];
-  family: string;
-  weight: number;
-  italic: boolean;
-  disabled: boolean;
-  onChange: (change: { family?: string; weight?: number; italic?: boolean }) => void;
-}) {
+function FontControl({ id, label, fonts, family, weight, italic, disabled, onChange }: { id: string; label: string; fonts: GoogleFont[]; family: string; weight: number; italic: boolean; disabled: boolean; onChange: (change: { family?: string; weight?: number; italic?: boolean }) => void }) {
   const { t } = useTranslation();
   const selected = fonts.find((font) => font.family === family);
   const resolvedSelected = selected || fonts.find((font) => font.family === familyName(family));
   const availableWeights = weightsFor(resolvedSelected, italic);
   const italicWeights = weightsFor(resolvedSelected, true);
   const canItalic = Boolean(resolvedSelected && resolvedSelected.variants.some((variant) => variant.includes("italic")));
-  return <div className="rounded-xl border bg-white p-4">
-    <Label htmlFor={`${id}-family`}>{label}</Label>
-    <FontFamilyPicker id={`${id}-family`} fonts={fonts} family={family} disabled={disabled} onSelect={(font) => {
-      const nextFamily = font.family;
-      const nextItalic = italic && font.variants.some((variant) => variant.includes("italic"));
-      const nextWeights = weightsFor(font, nextItalic);
-      onChange({ family: nextFamily, italic: nextItalic, weight: closestWeight(nextWeights, weight) });
-    }} />
-    <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-3">
-      <div><Label htmlFor={`${id}-weight`}>{t("dashboard.fonts.weight")}</Label><Select disabled={disabled || !resolvedSelected} value={String(availableWeights.includes(weight) ? weight : closestWeight(availableWeights, weight))} onValueChange={(value) => onChange({ weight: Number(value) })}><SelectTrigger id={`${id}-weight`} className="mt-2 bg-white"><SelectValue /></SelectTrigger><SelectContent>{availableWeights.map((option) => <SelectItem key={option} value={String(option)}><span style={{ fontFamily: family, fontWeight: option, fontStyle: italic ? "italic" : "normal" }}>{t(`dashboard.fonts.weights.${option}`, { defaultValue: `${t("dashboard.fonts.weight")} ${option}` })} ({option}) — {t("dashboard.fonts.sampleLabel")}</span></SelectItem>)}</SelectContent></Select></div>
-      <label className="flex h-10 items-center gap-2 rounded-md border px-3 text-sm"><input type="checkbox" checked={italic && canItalic} disabled={disabled || !canItalic} onChange={(event) => { const nextItalic = event.target.checked; const nextWeights = nextItalic ? italicWeights : weightsFor(resolvedSelected, false); onChange({ italic: nextItalic, weight: closestWeight(nextWeights, weight) }); }} /> {t("dashboard.fonts.italic")}</label>
+  return (
+    <div className="rounded-xl border bg-white p-4">
+      <Label htmlFor={`${id}-family`}>{label}</Label>
+      <FontFamilyPicker
+        id={`${id}-family`}
+        fonts={fonts}
+        family={family}
+        disabled={disabled}
+        onSelect={(font) => {
+          const nextFamily = font.family;
+          const nextItalic = italic && font.variants.some((variant) => variant.includes("italic"));
+          const nextWeights = weightsFor(font, nextItalic);
+          onChange({
+            family: nextFamily,
+            italic: nextItalic,
+            weight: closestWeight(nextWeights, weight),
+          });
+        }}
+      />
+      <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-3">
+        <div>
+          <Label htmlFor={`${id}-weight`}>{t("dashboard.fonts.weight")}</Label>
+          <Select disabled={disabled || !resolvedSelected} value={String(availableWeights.includes(weight) ? weight : closestWeight(availableWeights, weight))} onValueChange={(value) => onChange({ weight: Number(value) })}>
+            <SelectTrigger id={`${id}-weight`} className="mt-2 bg-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableWeights.map((option) => (
+                <SelectItem key={option} value={String(option)}>
+                  <span
+                    style={{
+                      fontFamily: family,
+                      fontWeight: option,
+                      fontStyle: italic ? "italic" : "normal",
+                    }}
+                  >
+                    {t(`dashboard.fonts.weights.${option}`, {
+                      defaultValue: `${t("dashboard.fonts.weight")} ${option}`,
+                    })}{" "}
+                    ({option}) — {t("dashboard.fonts.sampleLabel")}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <label className="flex h-10 items-center gap-2 rounded-md border px-3 text-sm">
+          <input
+            type="checkbox"
+            checked={italic && canItalic}
+            disabled={disabled || !canItalic}
+            onChange={(event) => {
+              const nextItalic = event.target.checked;
+              const nextWeights = nextItalic ? italicWeights : weightsFor(resolvedSelected, false);
+              onChange({
+                italic: nextItalic,
+                weight: closestWeight(nextWeights, weight),
+              });
+            }}
+          />{" "}
+          {t("dashboard.fonts.italic")}
+        </label>
+      </div>
     </div>
-  </div>;
+  );
 }
 
 const blankListing = (siteId: string, district = ""): ListingDraft & { id?: string } => ({
@@ -270,7 +381,11 @@ const siteDraftFrom = (site: DashboardSite): SiteDraft => ({
   body_italic: site.theme_config?.fonts?.bodyItalic === true,
   buttonColorSource: site.theme_config?.colors?.buttonColorSource || "accent",
   buttonColorCustom: site.theme_config?.colors?.buttonColorCustom || site.accent_color,
-  seo: site.theme_config?.seo || { title: {}, description: {}, robots_index: true },
+  seo: site.theme_config?.seo || {
+    title: {},
+    description: {},
+    robots_index: true,
+  },
 });
 
 const themeFields = ["primary_color", "accent_color", "heading_font", "body_font", "heading_weight", "heading_italic", "body_weight", "body_italic", "buttonColorSource", "buttonColorCustom"] as const;
@@ -309,10 +424,11 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const authHeaders = useMemo(() => session ? { Authorization: `Bearer ${session.access_token}` } : {}, [session]);
+  const authHeaders = useMemo(() => (session ? { Authorization: `Bearer ${session.access_token}` } : {}), [session]);
   const userId = user?.id || "";
   const sitesQuery = useQuery({
-    queryKey: dashboardQueryKeys.sites(userId), enabled: Boolean(session && userId),
+    queryKey: dashboardQueryKeys.sites(userId),
+    enabled: Boolean(session && userId),
     queryFn: ({ signal }) => dashboardRequest<{ sites?: DashboardSite[]; plan?: "free" | "pro" }>("/api/sites", authHeaders, signal),
   });
   const sites = useMemo(() => sitesQuery.data?.sites || [], [sitesQuery.data?.sites]);
@@ -320,55 +436,133 @@ export function DashboardPage() {
   const loading = sitesQuery.isLoading;
   const activeSite = sites.find((site) => site.id === selectedSiteId) || sites[0] || null;
   const leadsQuery = useQuery({
-    queryKey: dashboardQueryKeys.leads(userId), enabled: Boolean(session && userId),
+    queryKey: dashboardQueryKeys.leads(userId),
+    enabled: Boolean(session && userId),
     queryFn: ({ signal }) => dashboardRequest<{ leads?: DashboardLead[] }>("/api/leads", authHeaders, signal),
   });
   const leads = useMemo(() => leadsQuery.data?.leads || [], [leadsQuery.data?.leads]);
   const listingsQuery = useQuery({
-    queryKey: dashboardQueryKeys.listings(activeSite?.id || ""), enabled: Boolean(session && activeSite),
+    queryKey: dashboardQueryKeys.listings(activeSite?.id || ""),
+    enabled: Boolean(session && activeSite),
     queryFn: ({ signal }) => dashboardRequest<{ listings?: Listing[] }>(`/api/sites/${activeSite!.id}/listings`, authHeaders, signal),
   });
   const listings = useMemo(() => listingsQuery.data?.listings || [], [listingsQuery.data?.listings]);
   const teamQuery = useQuery({
-    queryKey: dashboardQueryKeys.team(activeSite?.id || ""), enabled: Boolean(session && activeSite),
+    queryKey: dashboardQueryKeys.team(activeSite?.id || ""),
+    enabled: Boolean(session && activeSite),
     queryFn: ({ signal }) => dashboardRequest<{ team_members?: TeamMember[] }>(`/api/sites/${activeSite!.id}/team-members`, authHeaders, signal),
   });
   const teamMembers = useMemo(() => teamQuery.data?.team_members || [], [teamQuery.data?.team_members]);
   const fontsQuery = useQuery({
-    queryKey: dashboardQueryKeys.fonts, enabled: Boolean(session),
-    queryFn: ({ signal }) => dashboardRequest<{ fonts?: GoogleFont[] }>("/api/fonts", authHeaders, signal), staleTime: 60 * 60_000,
+    queryKey: dashboardQueryKeys.fonts,
+    enabled: Boolean(session),
+    queryFn: ({ signal }) => dashboardRequest<{ fonts?: GoogleFont[] }>("/api/fonts", authHeaders, signal),
+    staleTime: 60 * 60_000,
   });
   const fonts = useMemo(() => fontsQuery.data?.fonts || [], [fontsQuery.data?.fonts]);
   const fontsLoading = fontsQuery.isLoading;
   const fontsError = fontsQuery.error instanceof Error ? fontsQuery.error.message : "";
   const adminQuery = useQuery({
-    queryKey: dashboardQueryKeys.adminAccess(userId), enabled: Boolean(session && userId), retry: false,
-    queryFn: async ({ signal }) => { const response = await fetch("/api/admin/platform-content?locale=tr", { headers: authHeaders, signal }); return response.ok; },
+    queryKey: dashboardQueryKeys.adminAccess(userId),
+    enabled: Boolean(session && userId),
+    retry: false,
+    queryFn: async ({ signal }) => {
+      const response = await fetch("/api/admin/platform-content?locale=tr", {
+        headers: authHeaders,
+        signal,
+      });
+      return response.ok;
+    },
   });
   const isAdmin = adminQuery.data === true;
-  const setSites = useCallback((update: (current: DashboardSite[]) => DashboardSite[]) => {
-    queryClient.setQueryData<{ sites?: DashboardSite[]; plan?: "free" | "pro" }>(dashboardQueryKeys.sites(userId), (current) => ({ ...current, sites: update(current?.sites || []) }));
-  }, [queryClient, userId]);
-  const setListings = useCallback((update: (current: Listing[]) => Listing[]) => {
-    if (!activeSite) return;
-    queryClient.setQueryData<{ listings?: Listing[] }>(dashboardQueryKeys.listings(activeSite.id), (current) => ({ ...current, listings: update(current?.listings || []) }));
-  }, [activeSite, queryClient]);
-  const setTeamMembers = useCallback((update: (current: TeamMember[]) => TeamMember[]) => {
-    if (!activeSite) return;
-    queryClient.setQueryData<{ team_members?: TeamMember[] }>(dashboardQueryKeys.team(activeSite.id), (current) => ({ ...current, team_members: update(current?.team_members || []) }));
-  }, [activeSite, queryClient]);
-  const setLeads = useCallback((update: (current: DashboardLead[]) => DashboardLead[]) => {
-    queryClient.setQueryData<{ leads?: DashboardLead[] }>(dashboardQueryKeys.leads(userId), (current) => ({ ...current, leads: update(current?.leads || []) }));
-  }, [queryClient, userId]);
+  const setSites = useCallback(
+    (update: (current: DashboardSite[]) => DashboardSite[]) => {
+      queryClient.setQueryData<{
+        sites?: DashboardSite[];
+        plan?: "free" | "pro";
+      }>(dashboardQueryKeys.sites(userId), (current) => ({
+        ...current,
+        sites: update(current?.sites || []),
+      }));
+    },
+    [queryClient, userId],
+  );
+  const setListings = useCallback(
+    (update: (current: Listing[]) => Listing[]) => {
+      if (!activeSite) return;
+      queryClient.setQueryData<{ listings?: Listing[] }>(dashboardQueryKeys.listings(activeSite.id), (current) => ({
+        ...current,
+        listings: update(current?.listings || []),
+      }));
+    },
+    [activeSite, queryClient],
+  );
+  const setTeamMembers = useCallback(
+    (update: (current: TeamMember[]) => TeamMember[]) => {
+      if (!activeSite) return;
+      queryClient.setQueryData<{ team_members?: TeamMember[] }>(dashboardQueryKeys.team(activeSite.id), (current) => ({
+        ...current,
+        team_members: update(current?.team_members || []),
+      }));
+    },
+    [activeSite, queryClient],
+  );
+  const setLeads = useCallback(
+    (update: (current: DashboardLead[]) => DashboardLead[]) => {
+      queryClient.setQueryData<{ leads?: DashboardLead[] }>(dashboardQueryKeys.leads(userId), (current) => ({ ...current, leads: update(current?.leads || []) }));
+    },
+    [queryClient, userId],
+  );
   const loadLeads = useCallback(async () => {
-    await queryClient.refetchQueries({ queryKey: dashboardQueryKeys.leads(userId), exact: true });
+    await queryClient.refetchQueries({
+      queryKey: dashboardQueryKeys.leads(userId),
+      exact: true,
+    });
   }, [queryClient, userId]);
   const markLeadContacted = async (lead: DashboardLead) => {
     const contactedAt = lead.contacted_at ? null : new Date().toISOString();
     try {
-      const payload = await dashboardRequest<{ lead: DashboardLead }>("/api/leads", authHeaders, undefined, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: lead.id, contacted_at: contactedAt }) });
-      setLeads((current) => current.map((item) => item.id === lead.id ? payload.lead : item));
-    } catch (error) { toast.error(error instanceof Error ? error.message : t("dashboard.leads.statusError")); }
+      const payload = await dashboardRequest<{ lead: DashboardLead }>("/api/leads", authHeaders, undefined, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: lead.id, contacted_at: contactedAt }),
+      });
+      setLeads((current) => current.map((item) => (item.id === lead.id ? payload.lead : item)));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("dashboard.leads.statusError"));
+    }
+  };
+  const updateLeadCrm = async (lead: DashboardLead, changes: Record<string, unknown>) => {
+    try {
+      const payload = await dashboardRequest<{ lead: DashboardLead }>("/api/leads", authHeaders, undefined, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: lead.id, ...changes }),
+      });
+      setLeads((current) => current.map((item) => (item.id === lead.id ? { ...item, ...payload.lead } : item)));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("dashboard.leads.statusError"));
+    }
+  };
+  const mergeLeads = async (primary: DashboardLead, duplicateId: string) => {
+    try {
+      const payload = await dashboardRequest<{
+        lead: DashboardLead;
+        deleted_id: string;
+      }>("/api/leads", authHeaders, undefined, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: primary.id,
+          duplicate_id: duplicateId,
+          action: "merge",
+        }),
+      });
+      setLeads((current) => current.filter((item) => item.id !== payload.deleted_id).map((item) => (item.id === primary.id ? { ...item, ...payload.lead } : item)));
+      toast.success(t("dashboard.leads.merged"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("dashboard.leads.statusError"));
+    }
   };
   const activeTemplateId = activeSite?.theme_config?.template_id;
   const siteLeads = leads.filter((lead) => lead.site_id === activeSite?.id);
@@ -380,10 +574,17 @@ export function DashboardPage() {
   const mediaDirty = JSON.stringify(mediaDraft) !== JSON.stringify(persistedMedia);
 
   useEffect(() => {
-    if (!activeSite) { setTemplateFamily(null); return; }
+    if (!activeSite) {
+      setTemplateFamily(null);
+      return;
+    }
     let active = true;
-    void loadTemplateFamily(activeTemplateId).then((family) => { if (active) setTemplateFamily(family); });
-    return () => { active = false; };
+    void loadTemplateFamily(activeTemplateId).then((family) => {
+      if (active) setTemplateFamily(family);
+    });
+    return () => {
+      active = false;
+    };
   }, [activeSite, activeTemplateId]);
 
   useEffect(() => {
@@ -392,9 +593,7 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (!sites.length) return;
-    setSelectedSiteId((current) => sites.some((site) => site.id === requestedSiteId)
-      ? requestedSiteId
-      : sites.some((site) => site.id === current) ? current : sites[0].id);
+    setSelectedSiteId((current) => (sites.some((site) => site.id === requestedSiteId) ? requestedSiteId : sites.some((site) => site.id === current) ? current : sites[0].id));
   }, [requestedSiteId, sites]);
 
   useEffect(() => {
@@ -417,9 +616,11 @@ export function DashboardPage() {
       contentDraftSiteId.current = activeSite.id;
       const stored = structuredClone(activeSite.theme_config?.content || {}) as ContentRecord;
       const content = materializeTranslatableContent(templateContentFallbacks(activeSite.theme_config?.template_id) as unknown as Record<string, unknown>, stored) as ContentRecord;
-      setContentDraft(content); setPersistedContent(content);
+      setContentDraft(content);
+      setPersistedContent(content);
       const media = structuredClone(activeSite.theme_config?.media || {}) as SiteMedia;
-      setMediaDraft(media); setPersistedMedia(media);
+      setMediaDraft(media);
+      setPersistedMedia(media);
     }
   }, [activeSite, session]);
 
@@ -509,13 +710,17 @@ export function DashboardPage() {
         headers: { ...authHeaders, "Content-Type": "application/json" },
         body: JSON.stringify(draft),
       });
-      const payload = await readApiJson<{ error?: string; code?: string; listing: Listing }>(response);
+      const payload = await readApiJson<{
+        error?: string;
+        code?: string;
+        listing: Listing;
+      }>(response);
       if (!response.ok && payload.code === "FREE_LISTING_LIMIT") {
         await openPaywall("listing_limit");
         return;
       }
       if (!response.ok) throw new Error(payload.error || t("dashboard.listings.saveError"));
-      setListings((current) => editing ? current.map((item) => item.id === payload.listing.id ? payload.listing : item) : [payload.listing, ...current]);
+      setListings((current) => (editing ? current.map((item) => (item.id === payload.listing.id ? payload.listing : item)) : [payload.listing, ...current]));
       setDraft({ ...payload.listing });
       toast.success(t(editing ? "dashboard.listings.updated" : "dashboard.listings.created"));
     } catch (error) {
@@ -532,10 +737,17 @@ export function DashboardPage() {
       headers: { ...authHeaders, "Content-Type": "application/json" },
       body: JSON.stringify(draft),
     });
-    const payload = await readApiJson<{ error?: string; platform_style?: string; seo_style?: string }>(response);
+    const payload = await readApiJson<{
+      error?: string;
+      platform_style?: string;
+      seo_style?: string;
+    }>(response);
     if (!response.ok) throw new Error(payload.error || t("dashboard.listingForm.copyError"));
     if (!payload.platform_style || !payload.seo_style) throw new Error(t("dashboard.errors.copyVariants"));
-    return { platform_style: payload.platform_style, seo_style: payload.seo_style };
+    return {
+      platform_style: payload.platform_style,
+      seo_style: payload.seo_style,
+    };
   };
 
   const loadSocialKit = async (format: "post" | "story") => {
@@ -552,7 +764,10 @@ export function DashboardPage() {
   const removeListing = async () => {
     if (!session || !activeSite || !draft.id || !window.confirm(t("dashboard.listings.deleteConfirm"))) return;
     try {
-      const response = await fetch(`/api/listings/${draft.id}`, { method: "DELETE", headers: authHeaders });
+      const response = await fetch(`/api/listings/${draft.id}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
       const payload = await readApiJson<{ error?: string; deleted?: boolean }>(response);
       if (!response.ok) throw new Error(payload.error || t("dashboard.listings.deleteError"));
       setListings((current) => current.filter((item) => item.id !== draft.id));
@@ -575,8 +790,8 @@ export function DashboardPage() {
       });
       const payload = await readApiJson<{ error?: string; listing?: Listing }>(response);
       if (!response.ok || !payload.listing) throw new Error(payload.error || t("dashboard.listings.statusError"));
-      setListings((current) => current.map((item) => item.id === payload.listing!.id ? payload.listing! : item));
-      setDraft((current) => current.id === payload.listing!.id ? { ...payload.listing! } : current);
+      setListings((current) => current.map((item) => (item.id === payload.listing!.id ? payload.listing! : item)));
+      setDraft((current) => (current.id === payload.listing!.id ? { ...payload.listing! } : current));
       toast.success(t(nextStatus === "active" ? "dashboard.listings.reopened" : nextStatus === "sold" ? "dashboard.listings.markedSold" : "dashboard.listings.markedRented"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("dashboard.listings.statusError"));
@@ -589,10 +804,20 @@ export function DashboardPage() {
     if (!session || !activeSite) return false;
     setSavingSite(true);
     try {
-      const response = await fetch(`/api/sites/${activeSite.id}`, { method: "PATCH", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ ...changes, expected_revision: activeSite.draft_revision }) });
-      const payload = await readApiJson<{ error?: string; site: DashboardSite }>(response);
+      const response = await fetch(`/api/sites/${activeSite.id}`, {
+        method: "PATCH",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...changes,
+          expected_revision: activeSite.draft_revision,
+        }),
+      });
+      const payload = await readApiJson<{
+        error?: string;
+        site: DashboardSite;
+      }>(response);
       if (!response.ok) throw new Error(payload.error || t("dashboard.site.saveError"));
-      setSites((current) => current.map((site) => site.id === payload.site.id ? payload.site : site));
+      setSites((current) => current.map((site) => (site.id === payload.site.id ? payload.site : site)));
       setSiteDraft(siteDraftFrom(payload.site));
       if (notify) toast.success(success);
       return true;
@@ -604,18 +829,46 @@ export function DashboardPage() {
     }
   };
 
-  const saveIdentity = () => siteDraft && patchSite({ business_name: siteDraft.business_name, headline: siteDraft.headline, tone: siteDraft.tone, phone: siteDraft.phone, email: siteDraft.email, address: siteDraft.address, region_focus: siteDraft.region_focus, map_url: siteDraft.map_url, country_id: siteDraft.country_id, province_id: siteDraft.province_id, district_id: siteDraft.district_id, neighborhood_id: siteDraft.neighborhood_id }, t("dashboard.site.saved"));
+  const saveIdentity = () =>
+    siteDraft &&
+    patchSite(
+      {
+        business_name: siteDraft.business_name,
+        headline: siteDraft.headline,
+        tone: siteDraft.tone,
+        phone: siteDraft.phone,
+        email: siteDraft.email,
+        address: siteDraft.address,
+        region_focus: siteDraft.region_focus,
+        map_url: siteDraft.map_url,
+        country_id: siteDraft.country_id,
+        province_id: siteDraft.province_id,
+        district_id: siteDraft.district_id,
+        neighborhood_id: siteDraft.neighborhood_id,
+      },
+      t("dashboard.site.saved"),
+    );
   const publishSite = async () => {
     if (!session || !activeSite) return;
     setSavingSite(true);
     try {
-      const response = await fetch(`/api/sites/${activeSite.id}/publish`, { method: "POST", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ expected_revision: activeSite.draft_revision }) });
-      const payload = await readApiJson<{ error?: string; site?: DashboardSite }>(response);
+      const response = await fetch(`/api/sites/${activeSite.id}/publish`, {
+        method: "POST",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ expected_revision: activeSite.draft_revision }),
+      });
+      const payload = await readApiJson<{
+        error?: string;
+        site?: DashboardSite;
+      }>(response);
       if (!response.ok || !payload.site) throw new Error(payload.error || t("dashboard.site.saveError"));
-      setSites((current) => current.map((site) => site.id === payload.site!.id ? payload.site! : site));
+      setSites((current) => current.map((site) => (site.id === payload.site!.id ? payload.site! : site)));
       toast.success(t("dashboard.site.published"));
-    } catch (error) { toast.error(error instanceof Error ? error.message : t("dashboard.site.saveError")); }
-    finally { setSavingSite(false); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("dashboard.site.saveError"));
+    } finally {
+      setSavingSite(false);
+    }
   };
   const togglePublication = () => setPublishQualityOpen(true);
   const toggleClosedListings = () => activeSite && patchSite({ show_closed_listings: !activeSite.show_closed_listings }, t(!activeSite.show_closed_listings ? "dashboard.site.closedListingsShown" : "dashboard.site.closedListingsHidden"));
@@ -629,8 +882,8 @@ export function DashboardPage() {
       void patchSite(siteDraft, "", false).then((saved) => setDraftSaveState(saved ? "saved" : "idle"));
     }, 900);
     return () => window.clearTimeout(timer);
-  // activeSite is the persisted baseline; patchSite is intentionally excluded to keep the debounce stable.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // activeSite is the persisted baseline; patchSite is intentionally excluded to keep the debounce stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSite, savingSite, siteDraft]);
 
   const saveTeamMember = async () => {
@@ -641,21 +894,33 @@ export function DashboardPage() {
       const response = await fetch(editing ? `/api/team-members/${teamDraft.id}` : `/api/sites/${activeSite.id}/team-members`, {
         method: editing ? "PATCH" : "POST",
         headers: { ...authHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify({ ...teamDraft, sort_order: editing ? undefined : teamMembers.length }),
+        body: JSON.stringify({
+          ...teamDraft,
+          sort_order: editing ? undefined : teamMembers.length,
+        }),
       });
-      const payload = await readApiJson<{ error?: string; team_member?: TeamMember }>(response);
+      const payload = await readApiJson<{
+        error?: string;
+        team_member?: TeamMember;
+      }>(response);
       if (!response.ok || !payload.team_member) throw new Error(payload.error || t("dashboard.team.saveError"));
-      setTeamMembers((current) => editing ? current.map((member) => member.id === payload.team_member!.id ? payload.team_member! : member) : [...current, payload.team_member!]);
+      setTeamMembers((current) => (editing ? current.map((member) => (member.id === payload.team_member!.id ? payload.team_member! : member)) : [...current, payload.team_member!]));
       setTeamDraft(blankTeamMember());
       toast.success(t(editing ? "dashboard.team.updated" : "dashboard.team.added"));
       setPreviewVersion((value) => value + 1);
-    } catch (error) { toast.error(error instanceof Error ? error.message : t("dashboard.team.saveError")); }
-    finally { setSavingTeam(false); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("dashboard.team.saveError"));
+    } finally {
+      setSavingTeam(false);
+    }
   };
 
   const deleteTeamMember = async (member: TeamMember) => {
     if (!session || !window.confirm(t("dashboard.team.deleteConfirm"))) return;
-    const response = await fetch(`/api/team-members/${member.id}`, { method: "DELETE", headers: authHeaders });
+    const response = await fetch(`/api/team-members/${member.id}`, {
+      method: "DELETE",
+      headers: authHeaders,
+    });
     const payload = await readApiJson<{ error?: string }>(response);
     if (!response.ok) return toast.error(payload.error || t("dashboard.team.deleteError"));
     setTeamMembers((current) => current.filter((item) => item.id !== member.id));
@@ -671,9 +936,24 @@ export function DashboardPage() {
     [next[index], next[otherIndex]] = [next[otherIndex], next[index]];
     setTeamMembers(next);
     try {
-      await Promise.all([next[index], next[otherIndex]].map((member, orderIndex) => fetch(`/api/team-members/${member.id}`, { method: "PATCH", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ sort_order: orderIndex === 0 ? index : otherIndex }) }).then(async (response) => { if (!response.ok) throw new Error((await readApiJson<{ error?: string }>(response)).error); })));
+      await Promise.all(
+        [next[index], next[otherIndex]].map((member, orderIndex) =>
+          fetch(`/api/team-members/${member.id}`, {
+            method: "PATCH",
+            headers: { ...authHeaders, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sort_order: orderIndex === 0 ? index : otherIndex,
+            }),
+          }).then(async (response) => {
+            if (!response.ok) throw new Error((await readApiJson<{ error?: string }>(response)).error);
+          }),
+        ),
+      );
       setPreviewVersion((value) => value + 1);
-    } catch { setTeamMembers(teamMembers); toast.error(t("dashboard.team.reorderError")); }
+    } catch {
+      setTeamMembers(teamMembers);
+      toast.error(t("dashboard.team.reorderError"));
+    }
   };
 
   const loadTeamPhoto = async (file?: File) => {
@@ -684,23 +964,28 @@ export function DashboardPage() {
     try {
       const uploaded = await uploadImage(file, activeSite.id, "team");
       setTeamDraft((current) => ({ ...current, photo_url: uploaded.url }));
-    } catch (error) { toast.error(error instanceof Error ? error.message : t("dashboard.teamPhoto.invalid")); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("dashboard.teamPhoto.invalid"));
+    }
   };
 
   const saveThemeSettings = async () => {
     if (!siteDraft) return;
-    const saved = await patchSite({
-      primary_color: siteDraft.primary_color,
-      accent_color: siteDraft.accent_color,
-      buttonColorSource: siteDraft.buttonColorSource,
-      buttonColorCustom: siteDraft.buttonColorCustom,
-      heading_font: siteDraft.heading_font,
-      heading_weight: siteDraft.heading_weight,
-      heading_italic: siteDraft.heading_italic,
-      body_font: siteDraft.body_font,
-      body_weight: siteDraft.body_weight,
-      body_italic: siteDraft.body_italic,
-    }, t("dashboard.theme.saved"));
+    const saved = await patchSite(
+      {
+        primary_color: siteDraft.primary_color,
+        accent_color: siteDraft.accent_color,
+        buttonColorSource: siteDraft.buttonColorSource,
+        buttonColorCustom: siteDraft.buttonColorCustom,
+        heading_font: siteDraft.heading_font,
+        heading_weight: siteDraft.heading_weight,
+        heading_italic: siteDraft.heading_italic,
+        body_font: siteDraft.body_font,
+        body_weight: siteDraft.body_weight,
+        body_italic: siteDraft.body_italic,
+      },
+      t("dashboard.theme.saved"),
+    );
     if (saved) setPreviewVersion((value) => value + 1);
   };
 
@@ -726,14 +1011,27 @@ export function DashboardPage() {
     if (!session || !activeSite || translatingContent) return;
     setTranslatingContent(true);
     try {
-      const saveResponse = await fetch(`/api/sites/${activeSite.id}`, { method: "PATCH", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ content: contentDraft }) });
-      const savedPayload = await readApiJson<{ error?: string; site?: DashboardSite }>(saveResponse);
+      const saveResponse = await fetch(`/api/sites/${activeSite.id}`, {
+        method: "PATCH",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ content: contentDraft }),
+      });
+      const savedPayload = await readApiJson<{
+        error?: string;
+        site?: DashboardSite;
+      }>(saveResponse);
       if (!saveResponse.ok || !savedPayload.site) throw new Error(savedPayload.error || t("dashboard.site.saveError"));
       let translatedContent: ContentRecord | undefined;
       for (let attempt = 0; attempt < 30; attempt += 1) {
         const response = await fetch(`/api/sites/${activeSite.id}/content-backfill`, { method: "POST", headers: authHeaders });
-        const payload = await readApiJson<{ error?: string; theme_config?: DashboardSite["theme_config"] }>(response);
-        if (response.ok && payload.theme_config?.content) { translatedContent = payload.theme_config.content; break; }
+        const payload = await readApiJson<{
+          error?: string;
+          theme_config?: DashboardSite["theme_config"];
+        }>(response);
+        if (response.ok && payload.theme_config?.content) {
+          translatedContent = payload.theme_config.content;
+          break;
+        }
         if (response.status !== 202) throw new Error(payload.error || t("dashboard.content.translateError"));
         await new Promise((resolve) => window.setTimeout(resolve, 500));
       }
@@ -741,7 +1039,16 @@ export function DashboardPage() {
       const nextContent = structuredClone(translatedContent);
       setContentDraft(nextContent);
       setPersistedContent(nextContent);
-      setSites((current) => current.map((site) => site.id === activeSite.id ? { ...site, theme_config: { ...site.theme_config, content: nextContent } } : site));
+      setSites((current) =>
+        current.map((site) =>
+          site.id === activeSite.id
+            ? {
+                ...site,
+                theme_config: { ...site.theme_config, content: nextContent },
+              }
+            : site,
+        ),
+      );
       setPreviewVersion((value) => value + 1);
       toast.success(t("dashboard.content.translateSuccess"));
     } catch (error) {
@@ -762,7 +1069,9 @@ export function DashboardPage() {
   const resetThemeSettings = () => {
     if (!siteDraft || !persistedSiteDraft) return;
     const next = { ...siteDraft };
-    themeFields.forEach((field) => { next[field] = persistedSiteDraft[field] as never; });
+    themeFields.forEach((field) => {
+      next[field] = persistedSiteDraft[field] as never;
+    });
     setSiteDraft(next);
   };
 
@@ -788,9 +1097,14 @@ export function DashboardPage() {
         headers: { ...authHeaders, "Content-Type": "application/json" },
         body: JSON.stringify(undo ? { action: "undo" } : { request: refineRequest.trim() }),
       });
-      const payload = await readApiJson<{ error?: string; site?: DashboardSite; unsupported_note?: string | null; applied_fields?: string[] }>(response);
+      const payload = await readApiJson<{
+        error?: string;
+        site?: DashboardSite;
+        unsupported_note?: string | null;
+        applied_fields?: string[];
+      }>(response);
       if (!response.ok || !payload.site) throw new Error(payload.error || t("dashboard.refine.error"));
-      setSites((current) => current.map((site) => site.id === payload.site!.id ? payload.site! : site));
+      setSites((current) => current.map((site) => (site.id === payload.site!.id ? payload.site! : site)));
       setSiteDraft(siteDraftFrom(payload.site));
       setRefineNote(payload.unsupported_note || null);
       setRefineFields(payload.applied_fields || []);
@@ -807,101 +1121,722 @@ export function DashboardPage() {
   const saleCount = listings.filter((listing) => listing.listing_type === "sale").length;
   const rentCount = listings.filter((listing) => listing.listing_type === "rent").length;
 
-  return <Shell businessName={activeSite?.business_name || ""} activeSection={activeTab} onSectionChange={setActiveTab} leadCount={siteLeads.length} isAdmin={isAdmin} actions={<div className="flex items-center gap-2">{activeSite ? <Button variant="outline" asChild className="rounded-full border-[#173f32]/10 bg-white"><a href={`/site/${activeSite.slug}`} target="_blank" rel="noreferrer"><Globe className="mr-2 h-4 w-4" />{t("dashboard.header.openSite")}</a></Button> : null}<Button variant="outline" size="icon" title={t("dashboard.header.refresh")} onClick={() => void loadLeads()} className="rounded-full border-[#173f32]/10 bg-white"><RefreshCw className="h-4 w-4" /></Button></div>}>
-    {siteDraft ? <GoogleFontStylesheet fonts={{ heading: siteDraft.heading_font, body: siteDraft.body_font, headingWeight: siteDraft.heading_weight, headingItalic: siteDraft.heading_italic, bodyWeight: siteDraft.body_weight, bodyItalic: siteDraft.body_italic }} /> : null}
-    {activeSite ? <div role="status" aria-live="polite" className="text-right text-xs text-[#69756e]">{savingSite || draftSaveState === "saving" ? t("common.saving") : draftSaveState === "saved" ? t("dashboard.content.savedState") : null}</div> : null}
-    <div className="space-y-7">
-      {activeSite && activeTab === "leads" && siteLeads.length ? <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader><CardTitle>{t("dashboard.leadFollowUp.title")}</CardTitle><CardDescription>{t("dashboard.leadFollowUp.description")}</CardDescription></CardHeader><CardContent className="flex flex-wrap gap-2">{siteLeads.map((lead) => <Button key={lead.id} size="sm" variant={lead.contacted_at ? "secondary" : "outline"} onClick={() => void markLeadContacted(lead)}>{lead.contacted_at ? <Check className="mr-2 h-4 w-4" /> : null}{lead.name} · {t(lead.contacted_at ? "dashboard.leadFollowUp.undo" : "dashboard.leadFollowUp.mark")}</Button>)}</CardContent></Card> : null}
-      {activeSite && activeTab === "analytics" ? <AnalyticsPanel siteId={activeSite.id} authHeaders={authHeaders} listings={listings} /> : null}
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm text-[#78827c]">{activeSite ? `${activeSite.business_name} · ${t(activeSite.status === "published" ? "common.published" : "common.draft")}` : loading ? t("dashboard.header.loadingSites") : t("dashboard.header.noSite")}</div><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">{t("dashboard.header.hello")}{user?.email ? `, ${user.email.split("@")[0]}` : ""}.</h1><p className="mt-2 text-sm text-[#69756e]">{t("dashboard.header.subtitle")}</p></div>{activeSite ? <div className="flex gap-2"><Select value={activeSite.id} onValueChange={selectSite}><SelectTrigger className="w-[220px] rounded-full bg-white"><SelectValue /></SelectTrigger><SelectContent>{sites.map((site) => <SelectItem key={site.id} value={site.id}>{site.business_name}</SelectItem>)}</SelectContent></Select><Button onClick={startNewListing} className="rounded-full bg-[#d86f45] text-white"><Plus className="mr-2 h-4 w-4" />{t("dashboard.header.newListing")}</Button></div> : null}</div>
-
-
-      {!activeSite && !loading ? <Card><CardContent className="p-8 text-center text-sm text-[#69756e]">{t("dashboard.empty.body")}</CardContent></Card> : null}
-
-      {activeSite && activeTab === "overview" ? <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric label={t("dashboard.overview.listings")} value={String(listings.length)} /><Metric label={t("common.sale")} value={String(saleCount)} /><Metric label={t("common.rent")} value={String(rentCount)} /><Metric label={t("dashboard.overview.leads")} value={String(siteLeads.length)} /></div><OverviewChecklist site={activeSite} listings={listings} leads={siteLeads} imageKeys={imageSchema.map((slot) => slot.key)} loading={listingsQuery.isLoading || leadsQuery.isLoading || teamQuery.isLoading} error={Boolean(listingsQuery.error || leadsQuery.error || teamQuery.error)} onNavigate={setActiveTab} /><div className="grid gap-6 xl:grid-cols-[1.4fr_.6fr]"><Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between"><div><CardTitle>{t("dashboard.overview.recent")}</CardTitle><CardDescription>{t("dashboard.overview.recentBody")}</CardDescription></div><Button variant="ghost" onClick={() => setActiveTab("listings")}>{t("dashboard.overview.all")} <ArrowRight className="ml-2 h-4 w-4" /></Button></CardHeader><CardContent className="grid gap-4 md:grid-cols-3">{listings.slice(0, 3).map((listing) => <button key={listing.id} onClick={() => { setDraft({ ...listing }); setActiveTab("listings"); }} className="overflow-hidden rounded-2xl border bg-white text-left"><img src={getListingImage(listing)} alt={listing.title} className="aspect-[4/3] w-full object-cover" /><div className="p-4"><div className="truncate font-semibold">{listing.title}</div><div className="mt-1 text-xs text-[#7a857e]">{formatListingLocation(listing)} · {listing.room_count} · {listing.m2} m²</div><div className="mt-3 font-semibold">{formatListingPrice(listing)}</div></div></button>)}</CardContent></Card><Card className="rounded-[2rem] border-0 bg-[#173f32] text-white"><CardContent className="p-7"><Badge className="bg-white/15 text-white">{t(activeSite.status === "published" ? "common.published" : "common.draft")}</Badge><h2 className="mt-8 text-3xl font-semibold">{activeSite.business_name}</h2><p className="mt-3 text-sm text-white/60">/site/{activeSite.slug}</p><Button onClick={togglePublication} disabled={savingSite} className="mt-7 w-full rounded-full bg-white text-[#173f32]">{t(activeSite.status === "published" ? "dashboard.site.unpublish" : "dashboard.site.publish")}</Button></CardContent></Card></div></> : null}
-
-      {activeSite && activeTab === "listings" ? <div className="grid gap-6 xl:grid-cols-[1fr_.9fr]"><Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between"><div><CardTitle>{t("dashboard.listings.title")}</CardTitle><CardDescription>{t("dashboard.listings.description", { count: listings.length })}</CardDescription></div><Button onClick={startNewListing} disabled={openingPaywall} className="rounded-full"><Plus className="mr-2 h-4 w-4" />{t("dashboard.listings.new")}</Button></CardHeader><CardContent className="space-y-3">{listings.map((listing) => <ListingManagementRow key={listing.id} listing={listing} selected={draft.id === listing.id} updating={updatingListingStatusId === listing.id} onSelect={() => setDraft({ ...listing })} onToggle={() => void toggleListingAvailability(listing)} />)}</CardContent></Card><ListingForm siteId={activeSite.id} draft={draft} onDraftChange={(patch) => setDraft((current) => ({ ...current, ...patch }))} onSave={() => void saveListing()} isSaving={savingListing} onGenerate={generateListingCopy} onLoadSocialKit={loadSocialKit} onReset={() => setDraft(blankListing(activeSite.id))} onDelete={() => void removeListing()} /></div> : null}
-
-      {activeSite && activeTab === "leads" ? <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none"><CardHeader className="flex-row items-center justify-between gap-4"><div><CardTitle>{t("dashboard.leads.title")}</CardTitle><CardDescription>{t("dashboard.leads.description")}</CardDescription></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void loadLeads()}><RefreshCw className="mr-2 h-4 w-4" />{t("common.refresh")}</Button><Button variant="outline" disabled={openingPaywall} onClick={() => plan === "free" ? void openPaywall("lead_export") : toast.info(t("dashboard.leads.exporting"))}><Download className="mr-2 h-4 w-4" />{t("dashboard.leads.export")}{plan === "free" ? <Lock className="ml-2 h-3.5 w-3.5" /> : null}</Button></div></CardHeader><CardContent><LeadNotificationSettings userId={userId} authHeaders={authHeaders} leads={siteLeads} />{siteLeads.length ? <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left"><thead className="border-y text-xs text-[#7a857e]"><tr><th className="py-4">{t("dashboard.leads.name")}</th><th>{t("dashboard.leads.phone")}</th><th>{t("dashboard.leads.message")}</th><th>{t("dashboard.leads.date")}</th></tr></thead><tbody>{siteLeads.map((lead) => <tr key={lead.id} className="border-b"><td className="py-5 font-semibold">{lead.name}</td><td><a href={`tel:${lead.phone}`}>{lead.phone}</a></td><td className="max-w-sm text-sm">{lead.message || "—"}</td><td className="text-xs text-[#7a857e]">{new Intl.DateTimeFormat(i18n.resolvedLanguage === "en" ? "en-US" : "tr-TR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(lead.created_at))}</td></tr>)}</tbody></table></div> : <p className="p-5 text-sm text-[#69756e]">{t("dashboard.leads.empty")}</p>}</CardContent></Card> : null}
-
-      {activeSite && activeTab === "content" ? <ContentEditor schema={contentSchema} content={contentDraft} previewUrl={`/site/${activeSite.slug}?previewSiteId=${activeSite.id}`} previewVersion={previewVersion} onChange={setContentDraft} onSave={() => void saveContent()} onTranslateMissing={() => void translateMissingContent()} saving={savingSite} translating={translatingContent} dirty={contentDirty} /> : null}
-
-      {activeSite && activeTab === "images" ? <ImageEditor siteId={activeSite.id} schema={imageSchema} media={mediaDraft} previewUrl={`/site/${activeSite.slug}?previewSiteId=${activeSite.id}`} previewVersion={previewVersion} onChange={setMediaDraft} onSave={() => void saveMedia()} saving={savingSite} dirty={mediaDirty} /> : null}
-
-      {activeSite && activeTab === "site" && siteDraft ? (
-        <div className="grid gap-6 xl:grid-cols-2">
-          <TemplateSwitcher siteId={activeSite.id} slug={activeSite.slug} currentTemplateId={activeTemplateId} selectionContext={activeSite.theme_config.selection_context} canUndo={activeSite.can_undo} saving={savingSite || refining} onApply={switchTemplate} onUndo={undoTemplateSwitch} />
-          <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
-            <CardHeader><CardTitle>{t("dashboard.site.title")}</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div><Label>{t("dashboard.site.businessName")}</Label><Input value={siteDraft.business_name} onChange={(e) => setSiteDraft({ ...siteDraft, business_name: e.target.value })} /></div>
-              <div><Label>{t("dashboard.site.headline")}</Label><Input value={siteDraft.headline} onChange={(e) => setSiteDraft({ ...siteDraft, headline: e.target.value })} /></div>
-              <div><Label>{t("dashboard.site.shortDescription")}</Label><Textarea value={siteDraft.tone} onChange={(e) => setSiteDraft({ ...siteDraft, tone: e.target.value })} /></div>
-              <div className="grid gap-4 sm:grid-cols-2"><div><Label>{t("dashboard.site.phone")}</Label><Input value={siteDraft.phone} onChange={(e) => setSiteDraft({ ...siteDraft, phone: e.target.value })} /></div><div><Label>{t("dashboard.site.email")}</Label><Input type="email" value={siteDraft.email} onChange={(e) => setSiteDraft({ ...siteDraft, email: e.target.value })} /></div></div>
-              <div><Label>{t("dashboard.site.address")}</Label><Input value={siteDraft.address} onChange={(e) => setSiteDraft({ ...siteDraft, address: e.target.value })} /></div>
-              <div><Label htmlFor="site-map-url">{t("dashboard.site.mapUrl")}</Label><Input id="site-map-url" type="url" inputMode="url" placeholder="https://maps.app.goo.gl/..." value={siteDraft.map_url} onChange={(e) => setSiteDraft({ ...siteDraft, map_url: e.target.value })} /><p className="mt-1 text-xs text-[#69756e]">{t("dashboard.site.mapUrlHelp")}</p></div>
-              <div><Label>{t("dashboard.site.region")}</Label><p className="mt-1 text-xs text-[#69756e]">{t("dashboard.site.regionHelp")}</p></div>
-              <LocationHierarchyFields idPrefix="site-region" value={siteDraft} onChange={(selection, names) => setSiteDraft({ ...siteDraft, ...selection, region_focus: [names.neighborhood, names.district, names.province].filter(Boolean).join(", ") })} />
-              <section className="space-y-3 rounded-2xl border bg-white p-4"><div className="font-semibold">{t("dashboard.seo.siteTitle")}</div><div className="grid gap-3 sm:grid-cols-2"><div><Label>{t("dashboard.seo.titleTr")}</Label><Input maxLength={70} value={siteDraft.seo.title?.tr || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, title: { ...siteDraft.seo.title, tr: event.target.value } } })} /></div><div><Label>{t("dashboard.seo.titleEn")}</Label><Input maxLength={70} value={siteDraft.seo.title?.en || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, title: { ...siteDraft.seo.title, en: event.target.value } } })} /></div></div><div className="grid gap-3 sm:grid-cols-2"><div><Label>{t("dashboard.seo.descriptionTr")}</Label><Textarea maxLength={170} value={siteDraft.seo.description?.tr || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, description: { ...siteDraft.seo.description, tr: event.target.value } } })} /></div><div><Label>{t("dashboard.seo.descriptionEn")}</Label><Textarea maxLength={170} value={siteDraft.seo.description?.en || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, description: { ...siteDraft.seo.description, en: event.target.value } } })} /></div></div><div><Label>{t("dashboard.seo.ogImage")}</Label><Input type="url" value={siteDraft.seo.og_image || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, og_image: event.target.value } })} /></div><div><Label>{t("dashboard.seo.favicon")}</Label><Input type="url" value={siteDraft.seo.favicon || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, favicon: event.target.value } })} /></div><div><Label>{t("dashboard.seo.canonical")}</Label><Input type="url" value={siteDraft.seo.canonical_url || ""} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, canonical_url: event.target.value } })} /></div><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={siteDraft.seo.robots_index !== false} onChange={(event) => setSiteDraft({ ...siteDraft, seo: { ...siteDraft.seo, robots_index: event.target.checked } })} />{t("dashboard.seo.index")}</label></section>
-              <div className="flex flex-wrap gap-2"><Button onClick={saveIdentity} disabled={savingSite}>{t("dashboard.site.save")}</Button><Button variant="outline" onClick={togglePublication} disabled={savingSite}>{t(activeSite.status === "published" ? "dashboard.site.unpublish" : "dashboard.site.publish")}</Button></div>
-              <div className="flex items-center justify-between gap-4 rounded-2xl border bg-white p-4">
-                <div><div className="font-semibold">{t("dashboard.site.showClosedListings")}</div><p className="mt-1 text-xs text-slate-500">{t("dashboard.site.showClosedListingsDescription")}</p></div>
-                <button type="button" role="switch" aria-checked={activeSite.show_closed_listings} aria-label={t("dashboard.site.showClosedListings")} disabled={savingSite} onClick={() => void toggleClosedListings()} className={cn("h-7 w-12 shrink-0 rounded-full p-1 transition", activeSite.show_closed_listings ? "bg-[#173f32]" : "bg-slate-200")}><span className={cn("block h-5 w-5 rounded-full bg-white shadow transition-transform", activeSite.show_closed_listings && "translate-x-5")} /></button>
-              </div>
-              <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border bg-white p-4">
-                <div><div className="flex items-center gap-2 font-semibold">{t("dashboard.site.branding")} {plan === "free" ? <Lock className="h-3.5 w-3.5 text-slate-400" /> : null}</div><p className="mt-1 text-xs text-slate-500">{t("dashboard.site.brandingDescription")}</p></div>
-                {plan === "free" ? <Button variant="outline" disabled={openingPaywall} onClick={() => void openPaywall("branding_removal")} className="shrink-0 rounded-full">{t("dashboard.site.brandingFree")}</Button> : <button type="button" role="switch" aria-checked="false" aria-label={t("dashboard.site.branding")} className="h-7 w-12 rounded-full bg-slate-200 p-1"><span className="block h-5 w-5 rounded-full bg-white shadow" /></button>}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
-            <CardHeader><CardTitle>{t("dashboard.team.title")}</CardTitle><CardDescription>{t("dashboard.team.description")}</CardDescription></CardHeader>
-            <CardContent className="space-y-5">
-              <div className="flex items-center justify-between gap-4 rounded-2xl border bg-white p-4"><div><div className="font-semibold">{t("dashboard.team.show")}</div><p className="mt-1 text-xs text-slate-500">{t("dashboard.team.showDescription")}</p></div><button type="button" role="switch" aria-checked={activeSite.show_team_section} disabled={savingSite} onClick={() => void toggleTeamSection()} className={cn("h-7 w-12 shrink-0 rounded-full p-1 transition", activeSite.show_team_section ? "bg-[#173f32]" : "bg-slate-200")}><span className={cn("block h-5 w-5 rounded-full bg-white shadow transition-transform", activeSite.show_team_section && "translate-x-5")} /></button></div>
-              <div><Label>{t("dashboard.team.label")}</Label><div className="mt-2 flex gap-2"><Input value={teamLabel} onChange={(event) => setTeamLabel(event.target.value)} placeholder={t("dashboard.team.labelPlaceholder")} /><Button variant="outline" onClick={() => void saveTeamLabel()} disabled={savingSite}>{t("common.save")}</Button></div></div>
-              <div className="space-y-3">{teamMembers.map((member, index) => <div key={member.id} className="flex items-center gap-3 rounded-2xl border bg-white p-3"><img src={getAgentImage(`${activeSite.id}-${member.id}`, member.photo_url)} alt={member.name} className="h-14 w-14 rounded-xl object-cover" /><div className="min-w-0 flex-1"><div className="truncate font-semibold">{member.name}</div><div className="truncate text-xs text-slate-500">{member.role}</div></div><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => void moveTeamMember(index, -1)} aria-label={t("dashboard.team.up")}><ArrowUp className="h-4 w-4" /></Button><Button type="button" variant="ghost" size="icon" disabled={index === teamMembers.length - 1} onClick={() => void moveTeamMember(index, 1)} aria-label={t("dashboard.team.down")}><ArrowDown className="h-4 w-4" /></Button><Button type="button" variant="ghost" size="icon" onClick={() => setTeamDraft({ id: member.id, name: member.name, role: member.role, bio: member.bio || "", photo_url: member.photo_url || "" })} aria-label={t("common.edit")}><Pencil className="h-4 w-4" /></Button><Button type="button" variant="ghost" size="icon" onClick={() => void deleteTeamMember(member)} aria-label={t("common.delete")}><Trash2 className="h-4 w-4" /></Button></div></div>)}</div>
-              <div className="space-y-3 rounded-2xl border bg-white p-4"><div className="font-semibold">{t(teamDraft.id ? "dashboard.team.editTitle" : "dashboard.team.addTitle")}</div><div className="grid gap-3 sm:grid-cols-2"><div><Label>{t("dashboard.team.name")}</Label><Input value={teamDraft.name} onChange={(event) => setTeamDraft({ ...teamDraft, name: event.target.value })} /></div><div><Label>{t("dashboard.team.role")}</Label><Input value={teamDraft.role} onChange={(event) => setTeamDraft({ ...teamDraft, role: event.target.value })} /></div></div><div><Label>{t("dashboard.team.bio")}</Label><Textarea value={teamDraft.bio} onChange={(event) => setTeamDraft({ ...teamDraft, bio: event.target.value })} /></div><div><Label>{t("dashboard.team.photo")}</Label><p className="mt-1 text-xs leading-5 text-slate-500">{t("dashboard.teamPhoto.help")}</p><Input type="file" accept="image/jpeg,image/png,image/webp" className="mt-2" onChange={(event) => loadTeamPhoto(event.target.files?.[0])} /></div>{teamDraft.photo_url ? <img src={teamDraft.photo_url} alt="" className="h-28 w-28 rounded-2xl object-cover" /> : null}<div className="flex gap-2"><Button onClick={() => void saveTeamMember()} disabled={savingTeam || !teamDraft.name.trim() || !teamDraft.role.trim()}>{t(teamDraft.id ? "dashboard.team.save" : "dashboard.team.add")}</Button>{teamDraft.id ? <Button variant="outline" onClick={() => setTeamDraft(blankTeamMember())}>{t("common.cancel")}</Button> : null}</div></div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
-            <CardHeader><CardTitle>{t("dashboard.theme.title")}</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4"><div><Label>{t("dashboard.theme.primary")}</Label><Input type="color" className="h-12 p-1" value={siteDraft.primary_color} onChange={(event) => setSiteDraft({ ...siteDraft, primary_color: event.target.value })} /></div><div><Label>{t("dashboard.theme.accent")}</Label><Input type="color" className="h-12 p-1" value={siteDraft.accent_color} onChange={(event) => setSiteDraft({ ...siteDraft, accent_color: event.target.value })} /></div></div>
-              <div><Label>{t("dashboard.theme.buttonColor")}</Label><Select value={siteDraft.buttonColorSource} onValueChange={(value: "accent" | "primary" | "custom") => setSiteDraft({ ...siteDraft, buttonColorSource: value })}><SelectTrigger className="mt-2"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="accent">{t("dashboard.theme.buttonAccent")}</SelectItem><SelectItem value="primary">{t("dashboard.theme.buttonPrimary")}</SelectItem><SelectItem value="custom">{t("dashboard.theme.buttonCustom")}</SelectItem></SelectContent></Select>{siteDraft.buttonColorSource === "custom" ? <div className="mt-3"><Label>{t("dashboard.theme.customColor")}</Label><Input type="color" className="mt-2 h-12 p-1" value={siteDraft.buttonColorCustom} onChange={(event) => setSiteDraft({ ...siteDraft, buttonColorCustom: event.target.value })} /></div> : null}</div>
-              {fontsError ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{fontsError}</div> : null}
-              {fontsLoading ? <p className="text-sm text-[#69756e]">{t("dashboard.theme.fontsLoading")}</p> : null}
-              <FontControl id="heading" label={t("dashboard.theme.headingFont")} fonts={fonts} family={siteDraft.heading_font} weight={siteDraft.heading_weight} italic={siteDraft.heading_italic} disabled={fontsLoading || Boolean(fontsError)} onChange={(change) => updateFont("heading", change)} />
-              <FontControl id="body" label={t("dashboard.theme.bodyFont")} fonts={fonts} family={siteDraft.body_font} weight={siteDraft.body_weight} italic={siteDraft.body_italic} disabled={fontsLoading || Boolean(fontsError)} onChange={(change) => updateFont("body", change)} />
-              <div className="rounded-2xl p-7 text-white" style={{ background: `linear-gradient(135deg, ${siteDraft.primary_color}, ${siteDraft.accent_color})`, fontFamily: siteDraft.body_font, fontWeight: siteDraft.body_weight, fontStyle: siteDraft.body_italic ? "italic" : "normal" }}><div className="text-xs opacity-70">{t("dashboard.theme.preview")}</div><h3 className="mt-8 text-4xl" style={{ fontFamily: siteDraft.heading_font, fontWeight: siteDraft.heading_weight, fontStyle: siteDraft.heading_italic ? "italic" : "normal" }}>{siteDraft.headline}</h3><span className="mt-6 inline-flex rounded-lg px-4 py-2 text-xs font-semibold" style={{ backgroundColor: siteDraft.buttonColorSource === "primary" ? siteDraft.primary_color : siteDraft.buttonColorSource === "custom" ? siteDraft.buttonColorCustom : siteDraft.accent_color }}>{t("dashboard.theme.sampleButton")}</span></div>
-              <div className="flex flex-wrap items-center gap-2"><Button onClick={() => void saveThemeSettings()} disabled={savingSite || !themeDirty}>{t(savingSite ? "common.saving" : "dashboard.theme.save")}</Button><Button type="button" variant="outline" onClick={resetThemeSettings} disabled={savingSite || !themeDirty}>{t("dashboard.theme.cancel")}</Button>{themeDirty ? <span className="text-xs text-amber-700">{t("dashboard.theme.unsaved")}</span> : null}</div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] xl:col-span-2">
-            <CardHeader><CardTitle>{t("dashboard.refine.title")}</CardTitle><CardDescription>{t("dashboard.refine.description")}</CardDescription></CardHeader>
-            <CardContent className="grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
-              <div className="space-y-4">
-                <div><Label htmlFor="fine-tune-request">{t("dashboard.refine.requestLabel")}</Label><Textarea id="fine-tune-request" value={refineRequest} onChange={(event) => setRefineRequest(event.target.value)} maxLength={500} rows={5} placeholder={t("dashboard.refine.placeholder")} /></div>
-                <div className="flex flex-wrap gap-2"><Button onClick={() => void refineSite(false)} disabled={refining || refineRequest.trim().length < 3}>{t(refining ? "dashboard.refine.applying" : "dashboard.refine.apply")}</Button><Button variant="outline" onClick={() => void refineSite(true)} disabled={refining || !activeSite.can_undo}>{t("dashboard.refine.undo")}</Button></div>
-                {refineFields.length ? <div className="flex flex-wrap gap-2">{refineFields.map((field) => <Badge key={field} variant="secondary">{field}</Badge>)}</div> : null}
-                {refineNote ? <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><strong>{t("dashboard.refine.unsupported")}:</strong> {refineNote}</div> : null}
-                <p className="text-xs leading-5 text-[#69756e]">{t("dashboard.refine.undoHelp")}</p>
-              </div>
-              <div className="overflow-hidden rounded-2xl border bg-white"><div className="border-b px-4 py-3 text-xs font-semibold text-[#69756e]">{t("dashboard.refine.preview")}</div><iframe key={`${activeSite.id}-${previewVersion}`} title={t("dashboard.refine.preview")} src={`/site/${activeSite.slug}?previewSiteId=${activeSite.id}`} className="h-[520px] w-full bg-white" /></div>
-            </CardContent>
-          </Card>
+  return (
+    <Shell
+      businessName={activeSite?.business_name || ""}
+      activeSection={activeTab}
+      onSectionChange={setActiveTab}
+      leadCount={siteLeads.length}
+      isAdmin={isAdmin}
+      actions={
+        <div className="flex items-center gap-2">
+          {activeSite ? (
+            <Button variant="outline" asChild className="rounded-full border-[#173f32]/10 bg-white">
+              <a href={`/site/${activeSite.slug}`} target="_blank" rel="noreferrer">
+                <Globe className="mr-2 h-4 w-4" />
+                {t("dashboard.header.openSite")}
+              </a>
+            </Button>
+          ) : null}
+          <Button variant="outline" size="icon" title={t("dashboard.header.refresh")} onClick={() => void loadLeads()} className="rounded-full border-[#173f32]/10 bg-white">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+      }
+    >
+      {siteDraft ? (
+        <GoogleFontStylesheet
+          fonts={{
+            heading: siteDraft.heading_font,
+            body: siteDraft.body_font,
+            headingWeight: siteDraft.heading_weight,
+            headingItalic: siteDraft.heading_italic,
+            bodyWeight: siteDraft.body_weight,
+            bodyItalic: siteDraft.body_italic,
+          }}
+        />
+      ) : null}
+      {activeSite ? (
+        <div role="status" aria-live="polite" className="text-right text-xs text-[#69756e]">
+          {savingSite || draftSaveState === "saving" ? t("common.saving") : draftSaveState === "saved" ? t("dashboard.content.savedState") : null}
         </div>
       ) : null}
-      {activeSite && siteDraft ? <PublishQualityDialog
-        open={publishQualityOpen}
-        site={{ ...activeSite, business_name: siteDraft.business_name, headline: siteDraft.headline, theme_config: { ...activeSite.theme_config, content: { ...contentDraft, phone: siteDraft.phone, email: siteDraft.email, address: siteDraft.address, mapUrl: siteDraft.map_url }, media: mediaDraft, seo: siteDraft.seo } }}
-        listings={listings}
-        imageKeys={imageSchema.map((slot) => slot.key)}
-        unsaved={contentDirty || mediaDirty || themeDirty || draftSaveState === "saving"}
-        publishing={savingSite}
-        onClose={() => setPublishQualityOpen(false)}
-        onNavigate={setActiveTab}
-        onPublish={() => { setPublishQualityOpen(false); void publishSite(); }}
-      /> : null}
-    </div>
-  </Shell>;
+      <div className="space-y-7">
+        {activeSite && activeTab === "analytics" ? <AnalyticsPanel siteId={activeSite.id} authHeaders={authHeaders} listings={listings} /> : null}
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="text-sm text-[#78827c]">{activeSite ? `${activeSite.business_name} · ${t(activeSite.status === "published" ? "common.published" : "common.draft")}` : loading ? t("dashboard.header.loadingSites") : t("dashboard.header.noSite")}</div>
+            <h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
+              {t("dashboard.header.hello")}
+              {user?.email ? `, ${user.email.split("@")[0]}` : ""}.
+            </h1>
+            <p className="mt-2 text-sm text-[#69756e]">{t("dashboard.header.subtitle")}</p>
+          </div>
+          {activeSite ? (
+            <div className="flex gap-2">
+              <Select value={activeSite.id} onValueChange={selectSite}>
+                <SelectTrigger className="w-[220px] rounded-full bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sites.map((site) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.business_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={startNewListing} className="rounded-full bg-[#d86f45] text-white">
+                <Plus className="mr-2 h-4 w-4" />
+                {t("dashboard.header.newListing")}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+
+        {!activeSite && !loading ? (
+          <Card>
+            <CardContent className="p-8 text-center text-sm text-[#69756e]">{t("dashboard.empty.body")}</CardContent>
+          </Card>
+        ) : null}
+        {activeSite && activeTab === "leads" ? <LeadMiniCrm leads={siteLeads} listingTitles={new Map(listings.map((listing) => [listing.id, listing.title]))} loading={leadsQuery.isLoading} onUpdate={updateLeadCrm} onMerge={mergeLeads} /> : null}
+
+        {activeSite && activeTab === "overview" ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <Metric label={t("dashboard.overview.listings")} value={String(listings.length)} />
+              <Metric label={t("common.sale")} value={String(saleCount)} />
+              <Metric label={t("common.rent")} value={String(rentCount)} />
+              <Metric label={t("dashboard.overview.leads")} value={String(siteLeads.length)} />
+            </div>
+            <OverviewChecklist site={activeSite} listings={listings} leads={siteLeads} imageKeys={imageSchema.map((slot) => slot.key)} loading={listingsQuery.isLoading || leadsQuery.isLoading || teamQuery.isLoading} error={Boolean(listingsQuery.error || leadsQuery.error || teamQuery.error)} onNavigate={setActiveTab} />
+            <div className="grid gap-6 xl:grid-cols-[1.4fr_.6fr]">
+              <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none">
+                <CardHeader className="flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>{t("dashboard.overview.recent")}</CardTitle>
+                    <CardDescription>{t("dashboard.overview.recentBody")}</CardDescription>
+                  </div>
+                  <Button variant="ghost" onClick={() => setActiveTab("listings")}>
+                    {t("dashboard.overview.all")} <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-3">
+                  {listings.slice(0, 3).map((listing) => (
+                    <button
+                      key={listing.id}
+                      onClick={() => {
+                        setDraft({ ...listing });
+                        setActiveTab("listings");
+                      }}
+                      className="overflow-hidden rounded-2xl border bg-white text-left"
+                    >
+                      <img src={getListingImage(listing)} alt={listing.title} className="aspect-[4/3] w-full object-cover" />
+                      <div className="p-4">
+                        <div className="truncate font-semibold">{listing.title}</div>
+                        <div className="mt-1 text-xs text-[#7a857e]">
+                          {formatListingLocation(listing)} · {listing.room_count} · {listing.m2} m²
+                        </div>
+                        <div className="mt-3 font-semibold">{formatListingPrice(listing)}</div>
+                      </div>
+                    </button>
+                  ))}
+                </CardContent>
+              </Card>
+              <Card className="rounded-[2rem] border-0 bg-[#173f32] text-white">
+                <CardContent className="p-7">
+                  <Badge className="bg-white/15 text-white">{t(activeSite.status === "published" ? "common.published" : "common.draft")}</Badge>
+                  <h2 className="mt-8 text-3xl font-semibold">{activeSite.business_name}</h2>
+                  <p className="mt-3 text-sm text-white/60">/site/{activeSite.slug}</p>
+                  <Button onClick={togglePublication} disabled={savingSite} className="mt-7 w-full rounded-full bg-white text-[#173f32]">
+                    {t(activeSite.status === "published" ? "dashboard.site.unpublish" : "dashboard.site.publish")}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        ) : null}
+
+        {activeSite && activeTab === "listings" ? (
+          <div className="grid gap-6 xl:grid-cols-[1fr_.9fr]">
+            <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-none">
+              <CardHeader className="flex-row items-center justify-between">
+                <div>
+                  <CardTitle>{t("dashboard.listings.title")}</CardTitle>
+                  <CardDescription>
+                    {t("dashboard.listings.description", {
+                      count: listings.length,
+                    })}
+                  </CardDescription>
+                </div>
+                <Button onClick={startNewListing} disabled={openingPaywall} className="rounded-full">
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("dashboard.listings.new")}
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {listings.map((listing) => (
+                  <ListingManagementRow key={listing.id} listing={listing} selected={draft.id === listing.id} updating={updatingListingStatusId === listing.id} onSelect={() => setDraft({ ...listing })} onToggle={() => void toggleListingAvailability(listing)} />
+                ))}
+              </CardContent>
+            </Card>
+            <ListingForm siteId={activeSite.id} draft={draft} onDraftChange={(patch) => setDraft((current) => ({ ...current, ...patch }))} onSave={() => void saveListing()} isSaving={savingListing} onGenerate={generateListingCopy} onLoadSocialKit={loadSocialKit} onReset={() => setDraft(blankListing(activeSite.id))} onDelete={() => void removeListing()} />
+          </div>
+        ) : null}
+
+        {activeSite && activeTab === "leads" ? <LeadNotificationSettings userId={userId} authHeaders={authHeaders} leads={siteLeads} /> : null}
+
+        {activeSite && activeTab === "content" ? <ContentEditor schema={contentSchema} content={contentDraft} previewUrl={`/site/${activeSite.slug}?previewSiteId=${activeSite.id}`} previewVersion={previewVersion} onChange={setContentDraft} onSave={() => void saveContent()} onTranslateMissing={() => void translateMissingContent()} saving={savingSite} translating={translatingContent} dirty={contentDirty} /> : null}
+
+        {activeSite && activeTab === "images" ? <ImageEditor siteId={activeSite.id} schema={imageSchema} media={mediaDraft} previewUrl={`/site/${activeSite.slug}?previewSiteId=${activeSite.id}`} previewVersion={previewVersion} onChange={setMediaDraft} onSave={() => void saveMedia()} saving={savingSite} dirty={mediaDirty} /> : null}
+
+        {activeSite && activeTab === "site" && siteDraft ? (
+          <div className="grid gap-6 xl:grid-cols-2">
+            <TemplateSwitcher siteId={activeSite.id} slug={activeSite.slug} currentTemplateId={activeTemplateId} selectionContext={activeSite.theme_config.selection_context} canUndo={activeSite.can_undo} saving={savingSite || refining} onApply={switchTemplate} onUndo={undoTemplateSwitch} />
+            <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
+              <CardHeader>
+                <CardTitle>{t("dashboard.site.title")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>{t("dashboard.site.businessName")}</Label>
+                  <Input
+                    value={siteDraft.business_name}
+                    onChange={(e) =>
+                      setSiteDraft({
+                        ...siteDraft,
+                        business_name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>{t("dashboard.site.headline")}</Label>
+                  <Input value={siteDraft.headline} onChange={(e) => setSiteDraft({ ...siteDraft, headline: e.target.value })} />
+                </div>
+                <div>
+                  <Label>{t("dashboard.site.shortDescription")}</Label>
+                  <Textarea value={siteDraft.tone} onChange={(e) => setSiteDraft({ ...siteDraft, tone: e.target.value })} />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>{t("dashboard.site.phone")}</Label>
+                    <Input value={siteDraft.phone} onChange={(e) => setSiteDraft({ ...siteDraft, phone: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>{t("dashboard.site.email")}</Label>
+                    <Input type="email" value={siteDraft.email} onChange={(e) => setSiteDraft({ ...siteDraft, email: e.target.value })} />
+                  </div>
+                </div>
+                <div>
+                  <Label>{t("dashboard.site.address")}</Label>
+                  <Input value={siteDraft.address} onChange={(e) => setSiteDraft({ ...siteDraft, address: e.target.value })} />
+                </div>
+                <div>
+                  <Label htmlFor="site-map-url">{t("dashboard.site.mapUrl")}</Label>
+                  <Input id="site-map-url" type="url" inputMode="url" placeholder="https://maps.app.goo.gl/..." value={siteDraft.map_url} onChange={(e) => setSiteDraft({ ...siteDraft, map_url: e.target.value })} />
+                  <p className="mt-1 text-xs text-[#69756e]">{t("dashboard.site.mapUrlHelp")}</p>
+                </div>
+                <div>
+                  <Label>{t("dashboard.site.region")}</Label>
+                  <p className="mt-1 text-xs text-[#69756e]">{t("dashboard.site.regionHelp")}</p>
+                </div>
+                <LocationHierarchyFields
+                  idPrefix="site-region"
+                  value={siteDraft}
+                  onChange={(selection, names) =>
+                    setSiteDraft({
+                      ...siteDraft,
+                      ...selection,
+                      region_focus: [names.neighborhood, names.district, names.province].filter(Boolean).join(", "),
+                    })
+                  }
+                />
+                <section className="space-y-3 rounded-2xl border bg-white p-4">
+                  <div className="font-semibold">{t("dashboard.seo.siteTitle")}</div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>{t("dashboard.seo.titleTr")}</Label>
+                      <Input
+                        maxLength={70}
+                        value={siteDraft.seo.title?.tr || ""}
+                        onChange={(event) =>
+                          setSiteDraft({
+                            ...siteDraft,
+                            seo: {
+                              ...siteDraft.seo,
+                              title: {
+                                ...siteDraft.seo.title,
+                                tr: event.target.value,
+                              },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label>{t("dashboard.seo.titleEn")}</Label>
+                      <Input
+                        maxLength={70}
+                        value={siteDraft.seo.title?.en || ""}
+                        onChange={(event) =>
+                          setSiteDraft({
+                            ...siteDraft,
+                            seo: {
+                              ...siteDraft.seo,
+                              title: {
+                                ...siteDraft.seo.title,
+                                en: event.target.value,
+                              },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>{t("dashboard.seo.descriptionTr")}</Label>
+                      <Textarea
+                        maxLength={170}
+                        value={siteDraft.seo.description?.tr || ""}
+                        onChange={(event) =>
+                          setSiteDraft({
+                            ...siteDraft,
+                            seo: {
+                              ...siteDraft.seo,
+                              description: {
+                                ...siteDraft.seo.description,
+                                tr: event.target.value,
+                              },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label>{t("dashboard.seo.descriptionEn")}</Label>
+                      <Textarea
+                        maxLength={170}
+                        value={siteDraft.seo.description?.en || ""}
+                        onChange={(event) =>
+                          setSiteDraft({
+                            ...siteDraft,
+                            seo: {
+                              ...siteDraft.seo,
+                              description: {
+                                ...siteDraft.seo.description,
+                                en: event.target.value,
+                              },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>{t("dashboard.seo.ogImage")}</Label>
+                    <Input
+                      type="url"
+                      value={siteDraft.seo.og_image || ""}
+                      onChange={(event) =>
+                        setSiteDraft({
+                          ...siteDraft,
+                          seo: {
+                            ...siteDraft.seo,
+                            og_image: event.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>{t("dashboard.seo.favicon")}</Label>
+                    <Input
+                      type="url"
+                      value={siteDraft.seo.favicon || ""}
+                      onChange={(event) =>
+                        setSiteDraft({
+                          ...siteDraft,
+                          seo: {
+                            ...siteDraft.seo,
+                            favicon: event.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>{t("dashboard.seo.canonical")}</Label>
+                    <Input
+                      type="url"
+                      value={siteDraft.seo.canonical_url || ""}
+                      onChange={(event) =>
+                        setSiteDraft({
+                          ...siteDraft,
+                          seo: {
+                            ...siteDraft.seo,
+                            canonical_url: event.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={siteDraft.seo.robots_index !== false}
+                      onChange={(event) =>
+                        setSiteDraft({
+                          ...siteDraft,
+                          seo: {
+                            ...siteDraft.seo,
+                            robots_index: event.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    {t("dashboard.seo.index")}
+                  </label>
+                </section>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={saveIdentity} disabled={savingSite}>
+                    {t("dashboard.site.save")}
+                  </Button>
+                  <Button variant="outline" onClick={togglePublication} disabled={savingSite}>
+                    {t(activeSite.status === "published" ? "dashboard.site.unpublish" : "dashboard.site.publish")}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between gap-4 rounded-2xl border bg-white p-4">
+                  <div>
+                    <div className="font-semibold">{t("dashboard.site.showClosedListings")}</div>
+                    <p className="mt-1 text-xs text-slate-500">{t("dashboard.site.showClosedListingsDescription")}</p>
+                  </div>
+                  <button type="button" role="switch" aria-checked={activeSite.show_closed_listings} aria-label={t("dashboard.site.showClosedListings")} disabled={savingSite} onClick={() => void toggleClosedListings()} className={cn("h-7 w-12 shrink-0 rounded-full p-1 transition", activeSite.show_closed_listings ? "bg-[#173f32]" : "bg-slate-200")}>
+                    <span className={cn("block h-5 w-5 rounded-full bg-white shadow transition-transform", activeSite.show_closed_listings && "translate-x-5")} />
+                  </button>
+                </div>
+                <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border bg-white p-4">
+                  <div>
+                    <div className="flex items-center gap-2 font-semibold">
+                      {t("dashboard.site.branding")} {plan === "free" ? <Lock className="h-3.5 w-3.5 text-slate-400" /> : null}
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{t("dashboard.site.brandingDescription")}</p>
+                  </div>
+                  {plan === "free" ? (
+                    <Button variant="outline" disabled={openingPaywall} onClick={() => void openPaywall("branding_removal")} className="shrink-0 rounded-full">
+                      {t("dashboard.site.brandingFree")}
+                    </Button>
+                  ) : (
+                    <button type="button" role="switch" aria-checked="false" aria-label={t("dashboard.site.branding")} className="h-7 w-12 rounded-full bg-slate-200 p-1">
+                      <span className="block h-5 w-5 rounded-full bg-white shadow" />
+                    </button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
+              <CardHeader>
+                <CardTitle>{t("dashboard.team.title")}</CardTitle>
+                <CardDescription>{t("dashboard.team.description")}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="flex items-center justify-between gap-4 rounded-2xl border bg-white p-4">
+                  <div>
+                    <div className="font-semibold">{t("dashboard.team.show")}</div>
+                    <p className="mt-1 text-xs text-slate-500">{t("dashboard.team.showDescription")}</p>
+                  </div>
+                  <button type="button" role="switch" aria-checked={activeSite.show_team_section} disabled={savingSite} onClick={() => void toggleTeamSection()} className={cn("h-7 w-12 shrink-0 rounded-full p-1 transition", activeSite.show_team_section ? "bg-[#173f32]" : "bg-slate-200")}>
+                    <span className={cn("block h-5 w-5 rounded-full bg-white shadow transition-transform", activeSite.show_team_section && "translate-x-5")} />
+                  </button>
+                </div>
+                <div>
+                  <Label>{t("dashboard.team.label")}</Label>
+                  <div className="mt-2 flex gap-2">
+                    <Input value={teamLabel} onChange={(event) => setTeamLabel(event.target.value)} placeholder={t("dashboard.team.labelPlaceholder")} />
+                    <Button variant="outline" onClick={() => void saveTeamLabel()} disabled={savingSite}>
+                      {t("common.save")}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {teamMembers.map((member, index) => (
+                    <div key={member.id} className="flex items-center gap-3 rounded-2xl border bg-white p-3">
+                      <img src={getAgentImage(`${activeSite.id}-${member.id}`, member.photo_url)} alt={member.name} className="h-14 w-14 rounded-xl object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-semibold">{member.name}</div>
+                        <div className="truncate text-xs text-slate-500">{member.role}</div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => void moveTeamMember(index, -1)} aria-label={t("dashboard.team.up")}>
+                          <ArrowUp className="h-4 w-4" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" disabled={index === teamMembers.length - 1} onClick={() => void moveTeamMember(index, 1)} aria-label={t("dashboard.team.down")}>
+                          <ArrowDown className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setTeamDraft({
+                              id: member.id,
+                              name: member.name,
+                              role: member.role,
+                              bio: member.bio || "",
+                              photo_url: member.photo_url || "",
+                            })
+                          }
+                          aria-label={t("common.edit")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => void deleteTeamMember(member)} aria-label={t("common.delete")}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-3 rounded-2xl border bg-white p-4">
+                  <div className="font-semibold">{t(teamDraft.id ? "dashboard.team.editTitle" : "dashboard.team.addTitle")}</div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>{t("dashboard.team.name")}</Label>
+                      <Input
+                        value={teamDraft.name}
+                        onChange={(event) =>
+                          setTeamDraft({
+                            ...teamDraft,
+                            name: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label>{t("dashboard.team.role")}</Label>
+                      <Input
+                        value={teamDraft.role}
+                        onChange={(event) =>
+                          setTeamDraft({
+                            ...teamDraft,
+                            role: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>{t("dashboard.team.bio")}</Label>
+                    <Textarea value={teamDraft.bio} onChange={(event) => setTeamDraft({ ...teamDraft, bio: event.target.value })} />
+                  </div>
+                  <div>
+                    <Label>{t("dashboard.team.photo")}</Label>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">{t("dashboard.teamPhoto.help")}</p>
+                    <Input type="file" accept="image/jpeg,image/png,image/webp" className="mt-2" onChange={(event) => loadTeamPhoto(event.target.files?.[0])} />
+                  </div>
+                  {teamDraft.photo_url ? <img src={teamDraft.photo_url} alt="" className="h-28 w-28 rounded-2xl object-cover" /> : null}
+                  <div className="flex gap-2">
+                    <Button onClick={() => void saveTeamMember()} disabled={savingTeam || !teamDraft.name.trim() || !teamDraft.role.trim()}>
+                      {t(teamDraft.id ? "dashboard.team.save" : "dashboard.team.add")}
+                    </Button>
+                    {teamDraft.id ? (
+                      <Button variant="outline" onClick={() => setTeamDraft(blankTeamMember())}>
+                        {t("common.cancel")}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
+              <CardHeader>
+                <CardTitle>{t("dashboard.theme.title")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>{t("dashboard.theme.primary")}</Label>
+                    <Input
+                      type="color"
+                      className="h-12 p-1"
+                      value={siteDraft.primary_color}
+                      onChange={(event) =>
+                        setSiteDraft({
+                          ...siteDraft,
+                          primary_color: event.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>{t("dashboard.theme.accent")}</Label>
+                    <Input
+                      type="color"
+                      className="h-12 p-1"
+                      value={siteDraft.accent_color}
+                      onChange={(event) =>
+                        setSiteDraft({
+                          ...siteDraft,
+                          accent_color: event.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>{t("dashboard.theme.buttonColor")}</Label>
+                  <Select value={siteDraft.buttonColorSource} onValueChange={(value: "accent" | "primary" | "custom") => setSiteDraft({ ...siteDraft, buttonColorSource: value })}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="accent">{t("dashboard.theme.buttonAccent")}</SelectItem>
+                      <SelectItem value="primary">{t("dashboard.theme.buttonPrimary")}</SelectItem>
+                      <SelectItem value="custom">{t("dashboard.theme.buttonCustom")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {siteDraft.buttonColorSource === "custom" ? (
+                    <div className="mt-3">
+                      <Label>{t("dashboard.theme.customColor")}</Label>
+                      <Input
+                        type="color"
+                        className="mt-2 h-12 p-1"
+                        value={siteDraft.buttonColorCustom}
+                        onChange={(event) =>
+                          setSiteDraft({
+                            ...siteDraft,
+                            buttonColorCustom: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                {fontsError ? (
+                  <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                    {fontsError}
+                  </div>
+                ) : null}
+                {fontsLoading ? <p className="text-sm text-[#69756e]">{t("dashboard.theme.fontsLoading")}</p> : null}
+                <FontControl id="heading" label={t("dashboard.theme.headingFont")} fonts={fonts} family={siteDraft.heading_font} weight={siteDraft.heading_weight} italic={siteDraft.heading_italic} disabled={fontsLoading || Boolean(fontsError)} onChange={(change) => updateFont("heading", change)} />
+                <FontControl id="body" label={t("dashboard.theme.bodyFont")} fonts={fonts} family={siteDraft.body_font} weight={siteDraft.body_weight} italic={siteDraft.body_italic} disabled={fontsLoading || Boolean(fontsError)} onChange={(change) => updateFont("body", change)} />
+                <div
+                  className="rounded-2xl p-7 text-white"
+                  style={{
+                    background: `linear-gradient(135deg, ${siteDraft.primary_color}, ${siteDraft.accent_color})`,
+                    fontFamily: siteDraft.body_font,
+                    fontWeight: siteDraft.body_weight,
+                    fontStyle: siteDraft.body_italic ? "italic" : "normal",
+                  }}
+                >
+                  <div className="text-xs opacity-70">{t("dashboard.theme.preview")}</div>
+                  <h3
+                    className="mt-8 text-4xl"
+                    style={{
+                      fontFamily: siteDraft.heading_font,
+                      fontWeight: siteDraft.heading_weight,
+                      fontStyle: siteDraft.heading_italic ? "italic" : "normal",
+                    }}
+                  >
+                    {siteDraft.headline}
+                  </h3>
+                  <span
+                    className="mt-6 inline-flex rounded-lg px-4 py-2 text-xs font-semibold"
+                    style={{
+                      backgroundColor: siteDraft.buttonColorSource === "primary" ? siteDraft.primary_color : siteDraft.buttonColorSource === "custom" ? siteDraft.buttonColorCustom : siteDraft.accent_color,
+                    }}
+                  >
+                    {t("dashboard.theme.sampleButton")}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button onClick={() => void saveThemeSettings()} disabled={savingSite || !themeDirty}>
+                    {t(savingSite ? "common.saving" : "dashboard.theme.save")}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={resetThemeSettings} disabled={savingSite || !themeDirty}>
+                    {t("dashboard.theme.cancel")}
+                  </Button>
+                  {themeDirty ? <span className="text-xs text-amber-700">{t("dashboard.theme.unsaved")}</span> : null}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] xl:col-span-2">
+              <CardHeader>
+                <CardTitle>{t("dashboard.refine.title")}</CardTitle>
+                <CardDescription>{t("dashboard.refine.description")}</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="fine-tune-request">{t("dashboard.refine.requestLabel")}</Label>
+                    <Textarea id="fine-tune-request" value={refineRequest} onChange={(event) => setRefineRequest(event.target.value)} maxLength={500} rows={5} placeholder={t("dashboard.refine.placeholder")} />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={() => void refineSite(false)} disabled={refining || refineRequest.trim().length < 3}>
+                      {t(refining ? "dashboard.refine.applying" : "dashboard.refine.apply")}
+                    </Button>
+                    <Button variant="outline" onClick={() => void refineSite(true)} disabled={refining || !activeSite.can_undo}>
+                      {t("dashboard.refine.undo")}
+                    </Button>
+                  </div>
+                  {refineFields.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {refineFields.map((field) => (
+                        <Badge key={field} variant="secondary">
+                          {field}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : null}
+                  {refineNote ? (
+                    <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                      <strong>{t("dashboard.refine.unsupported")}:</strong> {refineNote}
+                    </div>
+                  ) : null}
+                  <p className="text-xs leading-5 text-[#69756e]">{t("dashboard.refine.undoHelp")}</p>
+                </div>
+                <div className="overflow-hidden rounded-2xl border bg-white">
+                  <div className="border-b px-4 py-3 text-xs font-semibold text-[#69756e]">{t("dashboard.refine.preview")}</div>
+                  <iframe key={`${activeSite.id}-${previewVersion}`} title={t("dashboard.refine.preview")} src={`/site/${activeSite.slug}?previewSiteId=${activeSite.id}`} className="h-[520px] w-full bg-white" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
+        {activeSite && siteDraft ? (
+          <PublishQualityDialog
+            open={publishQualityOpen}
+            site={{
+              ...activeSite,
+              business_name: siteDraft.business_name,
+              headline: siteDraft.headline,
+              theme_config: {
+                ...activeSite.theme_config,
+                content: {
+                  ...contentDraft,
+                  phone: siteDraft.phone,
+                  email: siteDraft.email,
+                  address: siteDraft.address,
+                  mapUrl: siteDraft.map_url,
+                },
+                media: mediaDraft,
+                seo: siteDraft.seo,
+              },
+            }}
+            listings={listings}
+            imageKeys={imageSchema.map((slot) => slot.key)}
+            unsaved={contentDirty || mediaDirty || themeDirty || draftSaveState === "saving"}
+            publishing={savingSite}
+            onClose={() => setPublishQualityOpen(false)}
+            onNavigate={setActiveTab}
+            onPublish={() => {
+              setPublishQualityOpen(false);
+              void publishSite();
+            }}
+          />
+        ) : null}
+      </div>
+    </Shell>
+  );
 }

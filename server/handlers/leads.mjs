@@ -7,6 +7,7 @@ export const createLead = async (request, response, { supabase = getSupabaseClie
   const siteId = typeof body.site_id === "string" ? body.site_id.trim() : "";
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const phone = typeof body.phone === "string" ? body.phone.trim() : "";
+  const email = typeof body.email === "string" ? body.email.trim() : "";
   const message = typeof body.message === "string" ? body.message.trim() : "";
   const captchaToken = typeof body.turnstile_token === "string" ? body.turnstile_token : "";
   const listingId = typeof body.listing_id === "string" && uuidPattern.test(body.listing_id) ? body.listing_id : null;
@@ -32,7 +33,7 @@ export const createLead = async (request, response, { supabase = getSupabaseClie
     return sendJson(response, 400, { error: "CAPTCHA verification failed. Please try again." });
   }
   if (await duplicateCheck(supabase, site.id, phone)) return sendJson(response, 409, { error: "This request was already received recently." });
-  let { data: lead, error } = await supabase.from("leads").insert({ site_id: site.id, listing_id: listingId, name, phone, message: message || null }).select("id, site_id, listing_id, name, phone, message, created_at").single();
+  let { data: lead, error } = await supabase.from("leads").insert({ site_id: site.id, listing_id: listingId, name, phone, email: email || null, message: message || null }).select("id, site_id, listing_id, name, phone, message, created_at").single();
   if (error?.code === "23502" && error.message.includes("source")) {
     const retry = await supabase.from("leads").insert({ site_id: site.id, listing_id: listingId, name, phone, message: message || null, source: "public-site" }).select("id, site_id, listing_id, name, phone, message, created_at").single();
     lead = retry.data;
@@ -50,7 +51,7 @@ export const createLead = async (request, response, { supabase = getSupabaseClie
   return sendJson(response, 201, { id: lead.id, created_at: lead.created_at });
 };
 
-const leadFields = "id, site_id, listing_id, name, phone, message, created_at, contacted_at";
+const leadFields = "id, site_id, listing_id, name, phone, email, message, source, created_at, contacted_at, crm_status, assignee, note, reminder_at";
 
 const getOwnedLeads = async (request, response) => {
   const user = await getAuthenticatedUser(request);
@@ -58,22 +59,41 @@ const getOwnedLeads = async (request, response) => {
   if (sitesError) throw new Error(`Failed to load lead sites: ${sitesError.message}`);
   const siteIds = (sites || []).map((site) => site.id);
   if (siteIds.length === 0) return sendJson(response, 200, { leads: [] });
-  const { data: leads, error } = await getSupabaseClient().from("leads").select(leadFields).in("site_id", siteIds).order("created_at", { ascending: false });
+  const supabase = getSupabaseClient();
+  const { data: leads, error } = await supabase.from("leads").select(leadFields).in("site_id", siteIds).order("created_at", { ascending: false });
   if (error) throw new Error(`Failed to load owned leads: ${error.message}`);
-  return sendJson(response, 200, { leads: leads || [] });
+  const leadIds = (leads || []).map((lead) => lead.id);
+  const activitiesResult = leadIds.length ? await supabase.from("lead_activities").select("id,lead_id,activity_type,detail,created_at").in("lead_id", leadIds).order("created_at", { ascending: false }) : { data: [], error: null };
+  if (activitiesResult.error) throw new Error(`Failed to load lead activities: ${activitiesResult.error.message}`);
+  return sendJson(response, 200, { leads: (leads || []).map((lead) => ({ ...lead, activities: (activitiesResult.data || []).filter((activity) => activity.lead_id === lead.id) })) });
 };
 
 const updateOwnedLead = async (request, response) => {
   const user = await getAuthenticatedUser(request);
   const body = await readJsonBody(request);
   if (!uuidPattern.test(String(body.id || ""))) return sendJson(response, 400, { error: "A valid lead id is required." });
-  if (body.contacted_at !== null && (typeof body.contacted_at !== "string" || !Number.isFinite(Date.parse(body.contacted_at)))) return sendJson(response, 400, { error: "contacted_at must be an ISO date or null." });
+  const statuses = ["new", "contacted", "appointment", "won", "lost"];
   const { data: sites, error: sitesError } = await getSupabaseClient().from("sites").select("id").eq("user_id", user.id);
   if (sitesError) throw new Error(`Failed to verify lead ownership: ${sitesError.message}`);
-  const { data: lead, error } = await getSupabaseClient().from("leads").update({ contacted_at: body.contacted_at }).eq("id", body.id).in("site_id", (sites || []).map((site) => site.id)).select(leadFields).maybeSingle();
+  const supabase = getSupabaseClient();
+  if (body.action === "merge") {
+    if (!uuidPattern.test(String(body.duplicate_id || ""))) return sendJson(response, 400, { error: "A valid duplicate id is required." });
+    const { data: merged, error: mergeError } = await supabase.rpc("merge_owned_leads", { p_primary_id: body.id, p_duplicate_id: body.duplicate_id, p_user_id: user.id });
+    if (mergeError) throw mergeError;
+    return sendJson(response, 200, { lead: merged, deleted_id: body.duplicate_id });
+  }
+  const updates = {};
+  if (body.contacted_at === null || (typeof body.contacted_at === "string" && Number.isFinite(Date.parse(body.contacted_at)))) updates.contacted_at = body.contacted_at;
+  if (body.crm_status !== undefined) { if (!statuses.includes(body.crm_status)) return sendJson(response, 400, { error: "Invalid CRM status." }); updates.crm_status = body.crm_status; updates.contacted_at = body.crm_status === "new" ? null : new Date().toISOString(); }
+  for (const key of ["assignee", "note"]) if (body[key] === null || typeof body[key] === "string") updates[key] = body[key]?.trim() || null;
+  if (body.reminder_at === null || (typeof body.reminder_at === "string" && Number.isFinite(Date.parse(body.reminder_at)))) updates.reminder_at = body.reminder_at;
+  if (!Object.keys(updates).length) return sendJson(response, 400, { error: "No valid CRM changes supplied." });
+  const { data: lead, error } = await supabase.from("leads").update(updates).eq("id", body.id).in("site_id", (sites || []).map((site) => site.id)).select(leadFields).maybeSingle();
   if (error) throw new Error(`Failed to update lead: ${error.message}`);
   if (!lead) return sendJson(response, 404, { error: "Lead not found." });
-  return sendJson(response, 200, { lead });
+  const detail = Object.entries(updates).map(([key, value]) => `${key}: ${value ?? "—"}`).join(", ");
+  await supabase.from("lead_activities").insert({ lead_id: lead.id, user_id: user.id, activity_type: body.crm_status ? "status_changed" : "updated", detail });
+  return sendJson(response, 200, { lead: { ...lead, activities: [{ id: crypto.randomUUID(), activity_type: body.crm_status ? "status_changed" : "updated", detail, created_at: new Date().toISOString() }, ...(body.activities || [])] } });
 };
 
 export default async function handler(request, response) {
