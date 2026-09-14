@@ -56,6 +56,7 @@
     "test:settings-ia": "node server/settings-information-architecture.test.mjs",
     "test:workspace-collaboration": "node server/workspace-collaboration.test.mjs",
     "test:onboarding-guidance": "node server/onboarding-prompt-guidance.test.mjs",
+    "test:theme-experience": "node server/theme-experience-differentiation.test.mjs",
     "test:quality-gate": "npm run lint && npm run build && npm run test:schema-audits && npm run test:i18n-audits && npm run test:ci-contract"
   },
   "dependencies": {

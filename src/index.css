@@ -251,6 +251,28 @@ All colors MUST be HSL.
     min-width: 0;
     overflow-wrap: anywhere;
   }
+
+  /* Theme experience identities: structural character beyond color tokens. */
+  .template-experience[data-geometry="square"] :is(main article, main aside, main form, main img) { border-radius: 0 !important; }
+  .template-experience[data-geometry="soft"] :is(main article, main aside, main form) { border-radius: clamp(1.25rem, 3vw, 2.75rem); }
+  .template-experience[data-density="dense"] main { font-variant-numeric: tabular-nums; }
+  .template-experience[data-density="dense"] main :is(h1, h2, h3) { letter-spacing: -0.035em; }
+  .template-experience[data-composition="cinematic-stage"] main img { filter: saturate(.82) contrast(1.08); }
+  .template-experience[data-composition="cinematic-stage"] main h1 { text-wrap: balance; }
+  .template-experience[data-composition="catalog-grid"] main article { transition: border-color 180ms ease, transform 180ms ease; }
+  .template-experience[data-composition="catalog-grid"] main article:hover { transform: translateY(-2px); }
+  .template-experience[data-composition="local-guide"] main img { object-position: center 30%; }
+  .template-experience[data-composition="local-guide"] main article { box-shadow: 0 16px 40px rgb(15 45 35 / .08); }
+  .template-experience[data-composition="data-terminal"] main :is(article, aside) { background-image: linear-gradient(to bottom, transparent 95%, currentColor 96%); background-size: 100% 2rem; }
+  .template-experience[data-composition="deal-feed"] main article { transition: transform 160ms ease; }
+  .template-experience[data-composition="deal-feed"] main article:hover { transform: translateX(4px); }
+  .template-experience[data-composition="guided-journey"] main :is(section, article) { scroll-margin-top: 5rem; }
+  .template-experience[data-composition="guided-journey"] main button[aria-pressed="true"] { transform: scale(1.025); }
+  .template-experience[data-composition="land-survey"] main { background-image: repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, currentColor 4%, transparent) 48px); }
+  .template-experience[data-composition="editorial-flow"] main h1,
+  .template-experience[data-composition="editorial-flow"] main h2 { text-wrap: balance; }
+  .template-experience[data-media-treatment] img { background: color-mix(in srgb, currentColor 6%, transparent); }
+  .template-experience main :is(h1, h2, h3, p) { max-width: 100%; }
 }
 
 @layer base {

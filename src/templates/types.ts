@@ -3,6 +3,7 @@ import type { LayoutFineTune, Listing, TeamMember, ThemeConfig } from "@/portfoy
 import type { ContentFieldDescriptor } from "./content-schema";
 import type { ImageSlotDescriptor } from "./image-schema";
 import { resolveStoredContent, type StoredContentRecord } from "./content-localization";
+import { resolveTemplateExperience } from "./experience";
 
 export type TemplateView = "home" | "listings" | "detail" | "team";
 
@@ -219,8 +220,16 @@ type NestedThemeConfig = {
   layout_fine_tune?: LayoutFineTune;
 };
 
-export const fineTuneAttributes = (config: TemplateConfig) => ({
-  className: "site-fine-tune min-h-screen",
+export const fineTuneAttributes = (config: TemplateConfig) => {
+  const experience = resolveTemplateExperience(config.templateId);
+  return ({
+  className: "site-fine-tune template-experience min-h-screen",
+  "data-template": config.templateId,
+  "data-composition": experience.composition,
+  "data-interaction": experience.interaction,
+  "data-density": experience.density,
+  "data-geometry": experience.geometry,
+  "data-media-treatment": experience.media,
   "data-button-style": config.layoutFineTune.buttonStyle,
   "data-nav-alignment": config.layoutFineTune.navAlignment,
   "data-spacing-density": config.layoutFineTune.spacingDensity,
@@ -230,7 +239,8 @@ export const fineTuneAttributes = (config: TemplateConfig) => ({
   "data-heading-italic": config.fonts.headingItalic === undefined ? undefined : String(config.fonts.headingItalic),
   "data-body-weight": config.fonts.bodyWeight,
   "data-body-italic": config.fonts.bodyItalic === undefined ? undefined : String(config.fonts.bodyItalic),
-});
+  });
+};
 
 export const themeStyleVariables = (config: TemplateConfig) => ({
   "--site-button": config.colors.button,
