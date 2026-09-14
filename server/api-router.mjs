@@ -10,11 +10,13 @@ import listing from "./handlers/listing.mjs";
 import generateListingCopy from "./handlers/listing-copy.mjs";
 import socialKit from "./handlers/listing-social-kit.mjs";
 import publicSite from "./handlers/public-site.mjs";
+import publicDomain from "./handlers/public-domain.mjs";
 import renderPage from "./handlers/render-page.mjs";
 import site from "./handlers/site.mjs";
 import sitePreview from "./handlers/site-preview.mjs";
 import siteVersions from "./handlers/site-versions.mjs";
 import siteListings from "./handlers/site-listings.mjs";
+import siteDomain from "./handlers/site-domain.mjs";
 import refineSite from "./handlers/site-refine.mjs";
 import backfillSiteContent from "./handlers/site-content-backfill.mjs";
 import sites from "./handlers/sites.mjs";
@@ -53,7 +55,9 @@ export const apiRouteInventory = [
   { pattern: /^\/api\/listings\/generate-copy$/, methods: ["POST"], handler: generateListingCopy },
   { pattern: new RegExp(`^/api/listings/${uuidSource}$`, "i"), methods: ["PATCH", "DELETE"], params: ["id"], handler: listing },
   { pattern: /^\/api\/public-sites\/([a-z0-9]+(?:-[a-z0-9]+)*)$/, methods: ["GET"], params: ["slug"], handler: publicSite },
+  { pattern: /^\/api\/public-domains\/([^/]+)$/i, methods: ["GET"], params: ["domain"], handler: publicDomain },
   { pattern: new RegExp(`^/api/sites/${uuidSource}/listings$`, "i"), methods: ["GET", "POST"], params: ["id"], handler: siteListings },
+  { pattern: new RegExp(`^/api/sites/${uuidSource}/domain$`, "i"), methods: ["GET", "POST", "DELETE"], params: ["id"], handler: siteDomain },
   { pattern: new RegExp(`^/api/sites/${uuidSource}/team-members$`, "i"), methods: ["GET", "POST"], params: ["siteId"], handler: teamMembers },
   { pattern: new RegExp(`^/api/team-members/${uuidSource}$`, "i"), methods: ["PATCH", "DELETE"], params: ["memberId"], handler: teamMembers },
   { pattern: new RegExp(`^/api/sites/${uuidSource}/refine$`, "i"), methods: ["POST"], params: ["id"], handler: refineSite },

@@ -26,9 +26,17 @@ export const applySiteVisibility = (query, options = {}) => options.ownerId
   : query.eq("slug", options.slug).eq("status", "published");
 
 export async function loadPublicSite(slug, options = {}) {
-  if (!options.siteId && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error("VALIDATION:A valid slug is required.");
+  if (!options.siteId && !options.domain && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error("VALIDATION:A valid slug is required.");
   const siteQuery = getSupabaseClient().from("sites").select(siteSelect);
-  const { data: storedSite, error } = await applySiteVisibility(siteQuery, { ...options, slug }).maybeSingle();
+  let domainSiteId = null;
+  if (options.domain) {
+    const domainResult = await getSupabaseClient().from("site_domains").select("site_id").eq("domain", options.domain).eq("status", "verified").eq("ssl_status", "active").maybeSingle();
+    if (domainResult.error) throw new Error(`Failed to resolve custom domain: ${domainResult.error.message}`);
+    domainSiteId = domainResult.data?.site_id || null;
+    if (!domainSiteId) return null;
+  }
+  const visibleSiteQuery = options.domain ? siteQuery.eq("id", domainSiteId).eq("status", "published") : applySiteVisibility(siteQuery, { ...options, slug });
+  const { data: storedSite, error } = await visibleSiteQuery.maybeSingle();
   if (error) throw new Error(`Failed to load public site: ${error.message}`);
   if (!storedSite) return null;
   const published = storedSite.published_snapshot;

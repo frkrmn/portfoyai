@@ -40,6 +40,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashboardQueryKeys, dashboardRequest } from "@/lib/dashboard-query";
 import { HelpCenter } from "./dashboard/HelpCenter";
 import { WorkspaceMembers } from "./dashboard/WorkspaceMembers";
+import { CustomDomainSettings } from "./dashboard/CustomDomainSettings";
 
 type DashboardTab = "overview" | "analytics" | "site" | "content" | "images" | "listings" | "leads";
 type SettingsSection = "general" | "contact" | "design" | "team" | "publishing" | "language-seo" | "advanced";
@@ -1540,6 +1541,7 @@ export function DashboardPage() {
                 </section>
                 <section id="settings-publishing" tabIndex={-1} aria-labelledby="settings-publishing-title" className="space-y-4 rounded-2xl border-t pt-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#173f32]">
                   <h3 id="settings-publishing-title" className="text-lg font-semibold text-[#173f32]">{settingsSectionLabels[settingsLocale].publishing}</h3>
+                <CustomDomainSettings siteId={activeSite.id} authHeaders={authHeaders} />
                 <div className="flex flex-wrap gap-2">
                   <Button onClick={saveIdentity} disabled={savingSite}>
                     {t("dashboard.site.save")}

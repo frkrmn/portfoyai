@@ -36,6 +36,13 @@ Configure these Vercel environment variables for Production and Preview:
 
 Do not expose `SUPABASE_SERVICE_ROLE_KEY` through a `VITE_` variable.
 
+Custom domains require a Vercel access token with project-domain permissions in
+`VERCEL_TOKEN`, plus `VERCEL_PROJECT_ID` and (for team-owned projects)
+`VERCEL_TEAM_ID`. Set the platform's own production hostnames as comma-separated
+values in both `PLATFORM_DOMAINS` (server) and `VITE_PLATFORM_HOSTS` (browser) so
+they are never interpreted as customer domains. Never expose `VERCEL_TOKEN`
+through a `VITE_` variable.
+
 ## Main routes
 
 - `/` — marketing landing page

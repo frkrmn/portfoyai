@@ -78,6 +78,13 @@ const resolveSubdomainSlug = (request, pathname) => {
   const slug = hostname.slice(0, -(baseDomain.length + 1));
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? slug : null;
 };
+const resolveCustomDomain = (request) => {
+  const hostname = String(request.headers["x-forwarded-host"] || request.headers.host || "").split(":")[0].toLowerCase();
+  const baseDomain = process.env.SITE_BASE_DOMAIN?.toLowerCase().replace(/^\.+|\.+$/g, "");
+  const platformDomains = String(process.env.PLATFORM_DOMAINS || process.env.VERCEL_URL || "").split(",").map((item) => item.trim().toLowerCase()).filter(Boolean);
+  if (!hostname || hostname === "localhost" || hostname.endsWith(".localhost") || hostname.endsWith(".vercel.app") || hostname === baseDomain || platformDomains.includes(hostname) || (baseDomain && hostname.endsWith(`.${baseDomain}`))) return null;
+  return hostname;
+};
 const requestOrigin = (request) => {
   const protocol = String(request.headers["x-forwarded-proto"] || "https").split(",")[0] === "http" ? "http" : "https";
   const host = String(request.headers["x-forwarded-host"] || request.headers.host || "localhost").split(",")[0];
@@ -89,16 +96,18 @@ export async function resolvePageMetadata(request) {
   const pathname = resolvePagePath(request);
   const match = pathname.match(sitePathPattern);
   const slug = match?.[1] || resolveSubdomainSlug(request, pathname);
-  if (!slug) return { locale, metadata: platformPageMetadata(locale), statusCode: 200 };
+  const customDomain = slug ? null : resolveCustomDomain(request);
+  if (!slug && !customDomain) return { locale, metadata: platformPageMetadata(locale), statusCode: 200 };
 
-  const payload = await loadPublicSite(slug);
+  const payload = customDomain ? await loadPublicSite("", { domain: customDomain }) : await loadPublicSite(slug);
   if (!payload) return { locale, metadata: { ...platformPageMetadata(locale), robots: "noindex,nofollow" }, statusCode: 404 };
-  const listingId = match?.[2];
-  const view = listingId ? "detail" : match && pathname.includes("/listings") ? "listings" : "home";
+  const customListingMatch = customDomain ? pathname.match(/^\/listings\/([0-9a-f-]{36})\/?$/i) : null;
+  const listingId = match?.[2] || customListingMatch?.[1];
+  const view = listingId ? "detail" : pathname.includes("/listings") ? "listings" : "home";
   const listing = listingId ? payload.listings.find((item) => item.id === listingId) : undefined;
   if (view === "detail" && !listing) return { locale, metadata: { ...publicSitePageMetadata({ payload, view: "listings", locale }), robots: "noindex,nofollow" }, statusCode: 404 };
   const metadata = publicSitePageMetadata({ payload, view, listing, locale });
-  const canonicalPath = view === "detail" ? `/site/${slug}/listings/${listing.id}` : view === "listings" ? `/site/${slug}/listings` : `/site/${slug}`;
+  const canonicalPath = customDomain ? (view === "detail" ? `/listings/${listing.id}` : view === "listings" ? "/listings" : "/") : (view === "detail" ? `/site/${slug}/listings/${listing.id}` : view === "listings" ? `/site/${slug}/listings` : `/site/${slug}`);
   metadata.canonicalUrl ||= `${requestOrigin(request)}${canonicalPath}`;
   metadata.structuredData = view === "detail" ? {
     "@context": "https://schema.org", "@type": "Residence", name: listing.title, description: listing.description, url: metadata.canonicalUrl,

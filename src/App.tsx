@@ -22,6 +22,17 @@ const PricingPage = lazy(() => import("./portfoyai/pricing").then((module) => ({
 const PlatformContentAdminPage = lazy(() => import("./portfoyai/platform-content-admin").then((module) => ({ default: module.PlatformContentAdminPage })));
 const WorkspaceInvitationPage = lazy(() => import("./portfoyai/invite").then((module) => ({ default: module.WorkspaceInvitationPage })));
 const SiteRenderer = lazy(() => import("./templates/SiteRenderer").then((module) => ({ default: module.SiteRenderer })));
+const customDomainHost = () => {
+  const hostname = window.location.hostname.toLowerCase();
+  const platformHosts = String(import.meta.env.VITE_PLATFORM_HOSTS || "").split(",").map((item) => item.trim()).filter(Boolean);
+  if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname.endsWith(".vercel.app") || platformHosts.includes(hostname)) return "";
+  return hostname;
+};
+const RootRoute = ({ view }: { view: "home" | "listings" | "detail" | "team" }) => {
+  const domain = customDomainHost();
+  if (domain) return <SiteRenderer view={view} customDomain={domain} />;
+  return view === "home" ? <LandingPage /> : <NotFoundPage />;
+};
 const RouteLoading = () => {
   const { t } = useTranslation();
   return <div className="grid min-h-screen place-items-center bg-[#f4f1ea] text-sm text-slate-600">{t("common.loading")}</div>;
@@ -46,7 +57,10 @@ export default function App() {
         <PortfoyAIProvider>
           <BrowserRouter>
             <Suspense fallback={<RouteLoading />}><Routes>
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={<RootRoute view="home" />} />
+              <Route path="/listings" element={<RootRoute view="listings" />} />
+              <Route path="/listings/:listingId" element={<RootRoute view="detail" />} />
+              <Route path="/team" element={<RootRoute view="team" />} />
               <Route path="/auth" element={<RequireAuth><AuthPage /></RequireAuth>} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />

@@ -27,7 +27,7 @@ function RendererMessage({ children }: { children: string }) {
   return <div className="grid min-h-screen place-items-center bg-[#f1eadf] px-5 text-center text-sm text-[#25231f]">{children}</div>;
 }
 
-export function SiteRenderer({ view }: { view: TemplateView }) {
+export function SiteRenderer({ view, customDomain }: { view: TemplateView; customDomain?: string }) {
   const { slug = "", listingId } = useParams();
   const [searchParams] = useSearchParams();
   const previewSiteId = searchParams.get("previewSiteId");
@@ -45,7 +45,7 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
       if (view === "detail" && listingId) params.set("listingId", listingId);
       if (previewSiteId && previewTemplateId) params.set("templateId", previewTemplateId);
       const suffix = params.size ? `?${params}` : "";
-      if (!previewSiteId) return fetch(`/api/public-sites/${encodeURIComponent(slug)}${suffix}`, { signal: controller.signal });
+      if (!previewSiteId) return fetch(customDomain ? `/api/public-domains/${encodeURIComponent(customDomain)}${suffix}` : `/api/public-sites/${encodeURIComponent(slug)}${suffix}`, { signal: controller.signal });
       const { data: { session } } = await supabase.auth.getSession();
       return fetch(`/api/sites/${encodeURIComponent(previewSiteId)}/preview${suffix}`, { signal: controller.signal, headers: session ? { Authorization: `Bearer ${session.access_token}` } : {} });
     };
@@ -65,7 +65,7 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
         setError(reason instanceof Error ? reason.message : "Site yüklenemedi.");
       });
     return () => controller.abort();
-  }, [listingId, previewSiteId, previewTemplateId, slug, view]);
+  }, [customDomain, listingId, previewSiteId, previewTemplateId, slug, view]);
 
   const listing = useMemo(
     () => payload?.listings?.find((item) => item.id === listingId),
@@ -101,7 +101,7 @@ export function SiteRenderer({ view }: { view: TemplateView }) {
   if (view === "team" && (!config.showTeamSection || !config.teamMembers.length)) return <RendererMessage>Sayfa bulunamadı.</RendererMessage>;
   if (view === "team") return <Navigate to={`/site/${slug}#ekibimiz`} replace />;
   const Component = view === "home" ? family.Home : view === "listings" ? family.Listings : family.Detail;
-  return <SiteLocaleProvider defaultLocale={config.language} slug={slug}><LocalizedSite config={config} Component={Component} listingStatus={listing?.listing_status} /></SiteLocaleProvider>;
+  return <SiteLocaleProvider defaultLocale={config.language} slug={slug || customDomain || "site"}><LocalizedSite config={config} Component={Component} listingStatus={listing?.listing_status} /></SiteLocaleProvider>;
 }
 
 export function TemplateNotFoundLink({ slug }: { slug: string }) {
