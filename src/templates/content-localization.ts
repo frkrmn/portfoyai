@@ -21,14 +21,14 @@ export const translatableRootFields = new Set([
   "eyebrow", "headline", "headlineAccent", "bio", "featuredEyebrow", "featuredTitle", "categoriesEyebrow", "categoriesTitle",
   "tourTitle", "tourDescription", "tagline", "showcaseEyebrow", "showcaseTitle", "whyEyebrow", "whyTitle",
   "testimonialQuote", "testimonialAuthor", "testimonialRole", "listingsTitle", "listingsDescription", "findHomeTitle", "findHomeDescription",
-  "neighborhoodsTitle", "neighborhoodsDescription", "featuredStripTitle", "aboutTitle", "aboutDescription", "investmentWhyTitle",
+  "neighborhoodsTitle", "neighborhoodsDescription", "neighborhoodLifeVisibility", "featuredStripTitle", "aboutTitle", "aboutDescription", "investmentWhyTitle",
   "dealsSectionTitle", "dealsSectionDescription", "matchEyebrow", "matchTitle", "matchDescription", "matchResultsTitle", "matchResultsDescription",
   "guideTitle", "guideQuote", "servicesTitle", "servicesDescription", "teamTitle", "teamDescription", "processTitle",
 ]);
 const translatableNestedFields: Record<string, Set<string>> = {
   stats: new Set(["label"]),
   whyItems: new Set(["title", "description"]),
-  neighborhoods: new Set(["description"]),
+  neighborhoods: new Set(["description", "transit", "schools", "greenSpace", "priceRange", "lifestyle", "source", "asOf"]),
   teamMembers: new Set(["role", "bio"]),
   services: new Set(["title", "description"]),
   processSteps: new Set(["title", "description"]),

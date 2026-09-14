@@ -21,7 +21,9 @@
     "rent": "For rent",
     "active": "Active",
     "draft": "Draft",
-    "published": "Published"
+    "published": "Published",
+    "show": "Show",
+    "hide": "Hide"
   },
   "landing": {
     "meta": {

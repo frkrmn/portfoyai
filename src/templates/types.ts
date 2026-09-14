@@ -86,7 +86,8 @@ export type TemplateContent = {
   areaLabel: string;
   bedLabel: string;
   bathLabel: string;
-  neighborhoods: Array<{ name: string; description: string }>;
+  neighborhoods: Array<{ name: string; description: string; transit?: string; schools?: string; greenSpace?: string; priceRange?: string; lifestyle?: string; source?: string; asOf?: string }>;
+  neighborhoodLifeVisibility?: string;
   neighborhoodsTitle: string;
   neighborhoodsDescription: string;
   neighborhoodListingLabel: string;
@@ -496,10 +497,11 @@ export const neighborhoodFriendlyFallbacks: TemplateContent = {
   searchLabel: "Ev ara",
   directContactLabel: "WhatsApp’tan yaz",
   neighborhoods: [
-    { name: "Kadıköy", description: "Sokağı canlı, ulaşımı kolay, her köşesi kendine özgü." },
-    { name: "Moda", description: "Sahile yakın, sakin ve güçlü mahalle kültürüne sahip." },
-    { name: "Bostancı", description: "Aile yaşamı, sahil ve ulaşım seçenekleri bir arada." },
+    { name: "Kadıköy", description: "Sokağı canlı, ulaşımı kolay, her köşesi kendine özgü.", transit: "Metro, Marmaray ve vapur", schools: "Yakındaki okul seçenekleri", greenSpace: "Sahil ve parklar", lifestyle: "Canlı ve şehirli", source: "Danışman yerel bilgisi", asOf: "2026-09" },
+    { name: "Moda", description: "Sahile yakın, sakin ve güçlü mahalle kültürüne sahip.", transit: "Tramvay ve vapur bağlantısı", schools: "Yakındaki okul seçenekleri", greenSpace: "Moda Sahili", lifestyle: "Sakin ve sosyal", source: "Danışman yerel bilgisi", asOf: "2026-09" },
+    { name: "Bostancı", description: "Aile yaşamı, sahil ve ulaşım seçenekleri bir arada.", transit: "Metro, Marmaray ve deniz otobüsü", schools: "Yakındaki okul seçenekleri", greenSpace: "Bostancı Sahili", lifestyle: "Aile dostu", source: "Danışman yerel bilgisi", asOf: "2026-09" },
   ],
+  neighborhoodLifeVisibility: "shown",
 };
 
 export const investmentFocusedFallbacks: TemplateContent = {

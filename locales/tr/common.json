@@ -21,7 +21,9 @@
     "rent": "Kiralık",
     "active": "Aktif",
     "draft": "Taslak",
-    "published": "Yayında"
+    "published": "Yayında",
+    "show": "Göster",
+    "hide": "Gizle"
   },
   "landing": {
     "meta": {

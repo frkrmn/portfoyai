@@ -59,7 +59,14 @@
             "additionalProperties": false,
             "properties": {
               "name": { "type": "string" },
-              "description": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] }
+              "description": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] },
+              "transit": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] },
+              "schools": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] },
+              "greenSpace": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] },
+              "priceRange": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] },
+              "lifestyle": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] },
+              "source": { "type": "object", "additionalProperties": false, "properties": { "tr": { "type": "string" }, "en": { "type": "string" } }, "required": ["tr", "en"] },
+              "asOf": { "type": "string" }
             },
             "required": ["name", "description"]
           }

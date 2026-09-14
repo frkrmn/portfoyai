@@ -60,7 +60,7 @@ export type GeneratedSiteConfig = {
     | "guided-match"
     | "land-plots";
   content?: {
-    neighborhoods?: Array<{ name: string; description: LocalizedText }>;
+    neighborhoods?: Array<{ name: string; description: LocalizedText; transit?: LocalizedText; schools?: LocalizedText; greenSpace?: LocalizedText; priceRange?: LocalizedText; lifestyle?: LocalizedText; source?: LocalizedText; asOf?: string }>;
     feelings?: LocalizedText[];
     timings?: LocalizedText[];
     teamMembers?: Array<{

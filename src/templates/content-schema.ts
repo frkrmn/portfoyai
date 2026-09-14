@@ -27,6 +27,7 @@ const labels: Record<string, string> = {
   matchSubmitLabel: "Eşleştirme butonu", matchTitle: "Eşleştirme formu başlığı", messageLabel: "Mesaj alanı etiketi",
   navAbout: "Hakkımızda menü metni", navContact: "İletişim menü metni", navListings: "Portföyler menü metni",
   neighborhoodListingLabel: "Mahalle ilan sayısı etiketi", neighborhoodsDescription: "Mahalleler açıklaması", neighborhoodsTitle: "Mahalleler başlığı",
+  neighborhoodLifeVisibility: "Yerel yaşam bölümü (shown / hidden)",
   opportunityLabel: "Fırsat etiketi", originalPriceLabel: "Eski fiyat etiketi", phoneLabel: "Telefon alanı etiketi",
   priceDroppedLabel: "Fiyat düştü etiketi", pricePerM2Label: "Metrekare fiyatı etiketi", priceRangeLabel: "Fiyat etiketi", processTitle: "Nasıl çalışıyoruz başlığı",
   propertyTypeLabel: "Emlak türü alanı etiketi", regionalGrowthLabel: "Bölgesel değer artışı etiketi", rentLabel: "Kiralık etiketi",
