@@ -1,4 +1,5 @@
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, routeParam, sendJson, uuidPattern, dashboardSite } from "../api-utils.mjs";
+import { auditPublishQuality } from "../../src/lib/publish-quality.mjs";
 
 export default async function handler(request, response) {
   if (!["GET", "POST"].includes(request.method || "")) return methodNotAllowed(response, ["GET", "POST"]);
@@ -7,7 +8,7 @@ export default async function handler(request, response) {
     const siteId = routeParam(request, "id");
     if (!uuidPattern.test(siteId)) return sendJson(response, 400, { error: "A valid site id is required." });
     const supabase = getSupabaseClient();
-    const { data: owned, error: ownershipError } = await supabase.from("sites").select("id").eq("id", siteId).eq("user_id", user.id).maybeSingle();
+    const { data: owned, error: ownershipError } = await supabase.from("sites").select("*").eq("id", siteId).eq("user_id", user.id).maybeSingle();
     if (ownershipError) throw ownershipError;
     if (!owned) return sendJson(response, 404, { error: "Owned site not found." });
     if (request.method === "GET") {
@@ -17,6 +18,12 @@ export default async function handler(request, response) {
     }
     const body = await readJsonBody(request);
     const action = routeParam(request, "action");
+    if (action !== "rollback") {
+      const { data: listings, error: listingsError } = await supabase.from("listings").select("id,status,listing_status,media").eq("site_id", siteId);
+      if (listingsError) throw listingsError;
+      const quality = auditPublishQuality({ site: dashboardSite(owned), listings: listings || [] });
+      if (!quality.canPublish) return sendJson(response, 422, { error: "Yayın öncesi kritik eksikleri tamamlayın.", code: "PUBLISH_QUALITY_BLOCKED", quality });
+    }
     const rpc = action === "rollback" ? "rollback_site_version" : "publish_site_version";
     const args = action === "rollback"
       ? { p_site_id: siteId, p_user_id: user.id, p_version: Number(body.version) }

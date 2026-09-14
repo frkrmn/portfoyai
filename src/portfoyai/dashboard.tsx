@@ -34,6 +34,7 @@ import { LeadNotificationSettings } from "./dashboard/LeadNotificationSettings";
 import { AnalyticsPanel } from "./dashboard/AnalyticsPanel";
 import { OverviewChecklist } from "./dashboard/OverviewChecklist";
 import { TemplateSwitcher, type SwitchableTemplateId } from "./dashboard/TemplateSwitcher";
+import { PublishQualityDialog } from "./dashboard/PublishQualityDialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashboardQueryKeys, dashboardRequest } from "@/lib/dashboard-query";
 
@@ -292,6 +293,7 @@ export function DashboardPage() {
   const [savingListing, setSavingListing] = useState(false);
   const [updatingListingStatusId, setUpdatingListingStatusId] = useState("");
   const [savingSite, setSavingSite] = useState(false);
+  const [publishQualityOpen, setPublishQualityOpen] = useState(false);
   const [draftSaveState, setDraftSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [translatingContent, setTranslatingContent] = useState(false);
   const [openingPaywall, setOpeningPaywall] = useState(false);
@@ -602,7 +604,7 @@ export function DashboardPage() {
   };
 
   const saveIdentity = () => siteDraft && patchSite({ business_name: siteDraft.business_name, headline: siteDraft.headline, tone: siteDraft.tone, phone: siteDraft.phone, email: siteDraft.email, address: siteDraft.address, region_focus: siteDraft.region_focus, map_url: siteDraft.map_url, country_id: siteDraft.country_id, province_id: siteDraft.province_id, district_id: siteDraft.district_id, neighborhood_id: siteDraft.neighborhood_id }, t("dashboard.site.saved"));
-  const togglePublication = async () => {
+  const publishSite = async () => {
     if (!session || !activeSite) return;
     setSavingSite(true);
     try {
@@ -614,6 +616,7 @@ export function DashboardPage() {
     } catch (error) { toast.error(error instanceof Error ? error.message : t("dashboard.site.saveError")); }
     finally { setSavingSite(false); }
   };
+  const togglePublication = () => setPublishQualityOpen(true);
   const toggleClosedListings = () => activeSite && patchSite({ show_closed_listings: !activeSite.show_closed_listings }, t(!activeSite.show_closed_listings ? "dashboard.site.closedListingsShown" : "dashboard.site.closedListingsHidden"));
   const toggleTeamSection = () => activeSite && patchSite({ show_team_section: !activeSite.show_team_section }, t(!activeSite.show_team_section ? "dashboard.team.shown" : "dashboard.team.hidden"));
   const saveTeamLabel = () => patchSite({ team_section_label: teamLabel.trim() || null }, t("dashboard.team.labelSaved"));
@@ -887,6 +890,17 @@ export function DashboardPage() {
           </Card>
         </div>
       ) : null}
+      {activeSite && siteDraft ? <PublishQualityDialog
+        open={publishQualityOpen}
+        site={{ ...activeSite, business_name: siteDraft.business_name, headline: siteDraft.headline, theme_config: { ...activeSite.theme_config, content: { ...contentDraft, phone: siteDraft.phone, email: siteDraft.email, address: siteDraft.address, mapUrl: siteDraft.map_url }, media: mediaDraft, seo: siteDraft.seo } }}
+        listings={listings}
+        imageKeys={imageSchema.map((slot) => slot.key)}
+        unsaved={contentDirty || mediaDirty || themeDirty || draftSaveState === "saving"}
+        publishing={savingSite}
+        onClose={() => setPublishQualityOpen(false)}
+        onNavigate={setActiveTab}
+        onPublish={() => { setPublishQualityOpen(false); void publishSite(); }}
+      /> : null}
     </div>
   </Shell>;
 }
