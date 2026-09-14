@@ -58,6 +58,7 @@ export type GeneratedSiteConfig = {
   headline: LocalizedText;
   region_focus?: string;
   layout_fine_tune?: LayoutFineTune;
+  selection_context?: { template_id: string; audience: string; region: string; reason: LocalizedText };
 };
 
 export type Agent = {

@@ -56,6 +56,7 @@ export type DashboardSite = {
     media?: SiteMedia;
     layout?: Record<string, unknown>;
     seo?: SeoConfig;
+    selection_context?: { template_id: string; audience: string; region: string; reason: { tr: string; en?: string } };
     layout_fine_tune?: {
       buttonStyle?: "solid" | "outline" | "pill" | "sharp";
       navAlignment?: "left" | "center" | "split";
@@ -829,7 +830,7 @@ export function DashboardPage() {
 
       {activeSite && activeTab === "site" && siteDraft ? (
         <div className="grid gap-6 xl:grid-cols-2">
-          <TemplateSwitcher siteId={activeSite.id} slug={activeSite.slug} currentTemplateId={activeTemplateId} canUndo={activeSite.can_undo} saving={savingSite || refining} onApply={switchTemplate} onUndo={undoTemplateSwitch} />
+          <TemplateSwitcher siteId={activeSite.id} slug={activeSite.slug} currentTemplateId={activeTemplateId} selectionContext={activeSite.theme_config.selection_context} canUndo={activeSite.can_undo} saving={savingSite || refining} onApply={switchTemplate} onUndo={undoTemplateSwitch} />
           <Card className="rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7]">
             <CardHeader><CardTitle>{t("dashboard.site.title")}</CardTitle></CardHeader>
             <CardContent className="space-y-4">

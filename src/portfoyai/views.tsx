@@ -56,6 +56,7 @@ import { LocationHierarchyFields } from "./location-fields";
 import { useTranslation } from "react-i18next";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { uploadImage } from "@/lib/media-storage";
+import { selectableTemplateIds, understandThemePrompt } from "@/lib/theme-selection.mjs";
 
 const getThemeStyles = (theme: Pick<ThemeConfig, "primary" | "accent" | "fontPairing">) =>
   ({
@@ -715,6 +716,10 @@ export function AuthPage() {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState("");
+  const understood = useMemo(() => understandThemePrompt(prompt), [prompt]);
+  const [templatePreference, setTemplatePreference] = useState("");
+  const [audiencePreference, setAudiencePreference] = useState("");
+  const [regionPreference, setRegionPreference] = useState("");
   const generationStarted = useRef(false);
 
   usePageMeta(t("auth.resume.metaTitle"), t("auth.resume.metaDescription"));
@@ -740,7 +745,7 @@ export function AuthPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, preferences: { templateId: templatePreference || understood.templateId, audience: audiencePreference || understood.audience, region: regionPreference || understood.region } }),
       });
       const payload = await readApiJson<{ error?: string; code?: string; site_id?: string; slug?: string; public_path?: string; redirect_path?: string }>(response);
       if (response.status === 409 && payload.code === "SITE_LIMIT_REACHED") {
@@ -754,7 +759,7 @@ export function AuthPage() {
 
       clearPendingPrompt();
       toast.success(t("auth.resume.readyToast", { path: payload.public_path }));
-      navigate(payload.public_path);
+      navigate(`/dashboard?site=${payload.site_id}&generated=1`);
     } catch (error) {
       const message = error instanceof Error ? error.message : t("auth.resume.unexpectedError");
       console.error("[onboarding] generate-theme request failed", error);
@@ -764,11 +769,7 @@ export function AuthPage() {
     } finally {
       setIsGenerating(false);
     }
-  }, [navigate, prompt, session, t]);
-
-  useEffect(() => {
-    void handleGenerateSite();
-  }, [handleGenerateSite]);
+  }, [audiencePreference, navigate, prompt, regionPreference, session, t, templatePreference, understood]);
 
   return (
     <div className="min-h-screen bg-[#f4f1ea] text-[#17231e]">
@@ -787,7 +788,8 @@ export function AuthPage() {
 
           <Card className="mt-8 rounded-[2rem] border-[#173f32]/10 bg-[#fbfaf7] shadow-[0_22px_65px_rgba(39,52,45,0.10)]">
             <CardContent className="space-y-5 p-6 sm:p-7">
-              <div className="space-y-2"><Label htmlFor="auth-prompt">{t("auth.resume.promptLabel")}</Label><Textarea id="auth-prompt" value={prompt} readOnly className="min-h-28 resize-none rounded-xl border-[#173f32]/10 bg-white leading-6" /></div>
+              <div className="space-y-2"><Label htmlFor="auth-prompt">{t("auth.resume.promptLabel")}</Label><Textarea id="auth-prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} className="min-h-28 resize-none rounded-xl border-[#173f32]/10 bg-white leading-6" /></div>
+              <div className="rounded-2xl border border-[#173f32]/10 bg-[#edf1eb] p-4"><div className="text-xs font-semibold uppercase tracking-wider text-[#527064]">{t("auth.resume.understoodTitle")}</div><div className="mt-4 grid gap-3 sm:grid-cols-2"><div><Label>{t("auth.resume.audience")}</Label><Input value={audiencePreference || understood.audience} onChange={(event) => setAudiencePreference(event.target.value)} /></div><div><Label>{t("auth.resume.region")}</Label><Input value={regionPreference || understood.region} onChange={(event) => setRegionPreference(event.target.value)} /></div></div><div className="mt-3"><Label>{t("auth.resume.theme")}</Label><Select value={templatePreference || understood.templateId} onValueChange={setTemplatePreference}><SelectTrigger className="mt-2 bg-white"><SelectValue /></SelectTrigger><SelectContent>{selectableTemplateIds.map((id) => <SelectItem key={id} value={id}>{t(`dashboard.templateSwitch.templates.${id}`)}</SelectItem>)}</SelectContent></Select></div><p className="mt-3 text-xs leading-5 text-[#607068]">{t("auth.resume.understoodHelp")}</p></div>
               {generationError ? <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700" role="alert">{generationError}</div> : null}
               <Button className="h-12 w-full rounded-full bg-[#d86f45] text-white shadow-[0_10px_24px_rgba(216,111,69,0.22)] hover:bg-[#c76039]" onClick={() => { generationStarted.current = false; void handleGenerateSite(); }} disabled={isGenerating || prompt.trim().length < 10}><Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />{isGenerating ? t("auth.resume.generating") : generationError ? t("auth.resume.retry") : t("auth.resume.generate")}</Button>
               <div className="flex items-center justify-center gap-2 text-[11px] text-[#7d8781]"><Check className="h-3.5 w-3.5 text-[#3b725d]" />{t("auth.resume.cacheNote")}</div>

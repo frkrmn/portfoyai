@@ -1,0 +1,23 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { buildThemeSelectionContext, understandThemePrompt } from "../src/lib/theme-selection.mjs";
+
+assert.deepEqual(understandThemePrompt("Bodrum'da lüks villa portföyü"), { templateId: "bold-luxury", audience: "Üst segment konut alıcıları", region: "Bodrum" });
+assert.deepEqual(understandThemePrompt("Genel bir emlak sitesi istiyorum"), { templateId: "clean-modern", audience: "Genel konut alıcıları", region: "Belirtilmedi" });
+const corrected = buildThemeSelectionContext("Kadıköy'de lüks konut", "bold-luxury", { templateId: "neighborhood-friendly", audience: "İlk kez ev alacaklar", region: "Üsküdar" });
+assert.equal(corrected.template_id, "neighborhood-friendly");
+assert.equal(corrected.audience, "İlk kez ev alacaklar");
+assert.equal(corrected.region, "Üsküdar");
+assert.match(corrected.reason.tr, /İlk kez ev alacaklar/);
+assert.match(corrected.reason.tr, /Üsküdar/);
+const generation = await readFile(new URL("./handlers/generate-theme.mjs", import.meta.url), "utf8");
+assert.match(generation, /body\.preferences/);
+assert.match(generation, /selection_context/);
+const views = await readFile(new URL("../src/portfoyai/views.tsx", import.meta.url), "utf8");
+assert.match(views, /understoodTitle/);
+assert.match(views, /audiencePreference/);
+assert.doesNotMatch(views, /useEffect\(\(\) => \{\s*void handleGenerateSite/);
+const dashboard = await readFile(new URL("../src/portfoyai/dashboard/TemplateSwitcher.tsx", import.meta.url), "utf8");
+assert.match(dashboard, /whyTitle/);
+assert.match(dashboard, /reasonEmpty/);
+console.log("Theme selection explanation checks passed.");

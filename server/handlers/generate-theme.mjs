@@ -5,6 +5,7 @@ import { adminEmails } from "../admin-auth.mjs";
 import { insertGeneratedSite } from "../site-persistence.mjs";
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
 import { CURRENT_THEME_SCHEMA_VERSION, validateGeneratedSiteConfig } from "../theme-config.mjs";
+import { buildThemeSelectionContext } from "../../src/lib/theme-selection.mjs";
 
 export const siteConfigSchema = JSON.parse(readFileSync(new URL("../site-config.schema.json", import.meta.url), "utf8"));
 export const siteConfigModel = "gemini-3.5-flash-lite";
@@ -101,7 +102,9 @@ export default async function handler(request, response) {
       config: { systemInstruction: siteConfigSystemPrompt, responseMimeType: "application/json", responseSchema: siteConfigSchema },
     }) });
     if (!result.text) throw new Error("Gemini returned an empty response.");
-    const config = validateGeneratedSiteConfig(ensureLandPlotsContent(JSON.parse(result.text)));
+    const generated = validateGeneratedSiteConfig(ensureLandPlotsContent(JSON.parse(result.text)));
+    const selectionContext = buildThemeSelectionContext(prompt, generated.template_id, body.preferences);
+    const config = ensureLandPlotsContent({ ...generated, template_id: selectionContext.template_id, region_focus: selectionContext.region === "Belirtilmedi" ? generated.region_focus : selectionContext.region, selection_context: selectionContext });
     const model = result.modelVersion || siteConfigModel;
     let site;
     try {

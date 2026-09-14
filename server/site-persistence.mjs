@@ -73,6 +73,7 @@ export const buildThemeConfig = (input) => {
       show_testimonial: isBoldLuxury || isCleanModern,
     },
     ...(config.layout_fine_tune ? { layout_fine_tune: config.layout_fine_tune } : {}),
+    ...(config.selection_context ? { selection_context: config.selection_context } : {}),
   });
 };
 

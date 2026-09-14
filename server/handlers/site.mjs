@@ -1,5 +1,6 @@
 import { dashboardSite, getAuthenticatedUser, getSupabaseClient, handleKnownError, hexColorPattern, methodNotAllowed, readJsonBody, routeParam, sanitizeSeo, sendJson, uuidPattern } from "../api-utils.mjs";
 import { mergeThemeConfig, switchTemplateConfig } from "../site-theme.mjs";
+import { buildThemeSelectionContext } from "../../src/lib/theme-selection.mjs";
 import { removeReplacedMedia } from "../media-storage.mjs";
 import { siteSelect } from "../site-source-of-truth.mjs";
 
@@ -113,6 +114,7 @@ const updateSite = async (request, response, siteId) => {
   const baseThemeConfig = body.restore_previous_template === true ? current.previous_theme_config : current.theme_config;
   const { themeConfig: mergedThemeConfig, topLevel } = mergeThemeConfig(baseThemeConfig, themePatch);
   const themeConfig = body.template_id !== undefined ? switchTemplateConfig(mergedThemeConfig, String(body.template_id)) : mergedThemeConfig;
+  if (body.template_id !== undefined) themeConfig.selection_context = buildThemeSelectionContext("", String(body.template_id), { audience: current.theme_config?.selection_context?.audience, region: current.theme_config?.selection_context?.region });
   if (body.template_id !== undefined && body.template_id !== current.theme_config?.template_id) updates.previous_theme_config = current.theme_config;
   if (body.restore_previous_template === true) updates.previous_theme_config = null;
   Object.assign(updates, topLevel, { theme_config: themeConfig, draft_revision: Number(current.draft_revision || 1) + 1 });
