@@ -20,6 +20,7 @@ import sites from "./handlers/sites.mjs";
 import seoFiles from "./handlers/seo-files.mjs";
 import teamMembers from "./handlers/team-members.mjs";
 import adminPlatformContent, { publicPlatformContent } from "./handlers/platform-content.mjs";
+import supportRequests from "./handlers/support-requests.mjs";
 import { methodNotAllowed, sendJson } from "./api-utils.mjs";
 import { withRequestObservability } from "./observability.mjs";
 
@@ -36,6 +37,7 @@ export const apiRouteInventory = [
   { pattern: /^\/api\/admin\/platform-content$/, methods: ["GET", "PATCH"], handler: adminPlatformContent },
   { pattern: /^\/api\/leads$/, methods: ["GET", "POST", "PATCH"], handler: leads },
   { pattern: /^\/api\/lead-notifications$/, methods: ["GET", "PATCH", "POST"], handler: leadNotifications },
+  { pattern: /^\/api\/support-requests$/, methods: ["POST"], handler: supportRequests },
   { pattern: /^\/api\/locations\/(provinces|districts|neighborhoods)$/, methods: ["GET"], params: ["locationResource"], handler: locations },
   { pattern: new RegExp(`^/api/listings/${uuidSource}/social-kit$`, "i"), methods: ["GET"], params: ["id"], handler: socialKit },
   { pattern: /^\/api\/listings\/generate-copy$/, methods: ["POST"], handler: generateListingCopy },

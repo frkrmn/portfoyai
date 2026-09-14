@@ -38,6 +38,7 @@ import { PublishQualityDialog } from "./dashboard/PublishQualityDialog";
 import { LeadMiniCrm } from "./dashboard/LeadMiniCrm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashboardQueryKeys, dashboardRequest } from "@/lib/dashboard-query";
+import { HelpCenter } from "./dashboard/HelpCenter";
 
 type DashboardTab = "overview" | "analytics" | "site" | "content" | "images" | "listings" | "leads";
 
@@ -1836,6 +1837,7 @@ export function DashboardPage() {
             }}
           />
         ) : null}
+        <HelpCenter siteId={activeSite?.id} activeSection={activeTab} authHeaders={authHeaders} />
       </div>
     </Shell>
   );

@@ -1,0 +1,15 @@
+export const HELP_CONTENT_VERSION = 1;
+export type HelpLocale = "tr" | "en";
+export type HelpArticle = { id: string; contexts: string[]; title: Record<HelpLocale, string>; body: Record<HelpLocale, string> };
+export const helpArticles: HelpArticle[] = [
+  { id: "start", contexts: ["overview"], title: { tr: "İlk sitenizi hazırlayın", en: "Prepare your first site" }, body: { tr: "Önce site ve iletişim bilgilerini doğrulayın, içerik ve görselleri düzenleyin. Genel Bakış'taki Yayın Hazırlığı kartı eksik gerçek verileri gösterir.", en: "Verify site and contact details, then edit content and images. Launch Readiness on Overview shows real missing data." } },
+  { id: "draft", contexts: ["content","images","site"], title: { tr: "Taslak ve kaydetme", en: "Drafts and saving" }, body: { tr: "Değişiklikler önce taslağa kaydedilir; canlı site yayınla aksiyonuna kadar değişmez. Kaydediliyor göstergesi bitmeden yayınlamayın.", en: "Changes are saved to a draft first; the live site stays unchanged until you publish. Wait for saving to finish before publishing." } },
+  { id: "publish", contexts: ["overview","site"], title: { tr: "Kalite kontrolü ve yayın", en: "Quality check and publishing" }, body: { tr: "Yayın düğmesi kritik eksikleri ve önerileri gösterir. Her bulgu ilgili düzenleme alanını açar; kritikler tamamlanınca yayınlayabilirsiniz.", en: "Publish shows critical gaps and recommendations. Each finding opens the relevant editor; publishing unlocks after critical items are fixed." } },
+  { id: "listings", contexts: ["listings"], title: { tr: "Portföy yönetimi", en: "Portfolio management" }, body: { tr: "İlan bilgilerini, fotoğrafları, durumu ve SEO alanlarını Portföyler bölümünden yönetin. En az bir aktif ilan yayın için gereklidir.", en: "Manage listing details, photos, status and SEO from Listings. At least one active listing is required to publish." } },
+  { id: "leads", contexts: ["leads"], title: { tr: "Mini CRM ile lead takibi", en: "Track leads with Mini CRM" }, body: { tr: "Lead durumunu, sorumlusunu, notunu ve hatırlatmasını güncelleyin; arama, filtre, CSV ve iletişim aksiyonlarını kullanın.", en: "Update lead status, assignee, note and reminder; use search, filters, CSV and contact actions." } },
+  { id: "analytics", contexts: ["analytics"], title: { tr: "Analitik verilerini okuyun", en: "Understand analytics" }, body: { tr: "Görüntülenme, dönüşüm ve trafik kaynağını tarih aralığında inceleyin. Yeni sitelerde veri oluşması zaman alabilir.", en: "Review views, conversions and traffic sources by date range. New sites may take time to accumulate data." } },
+];
+export const searchHelpArticles = (query: string, locale: HelpLocale, context?: string) => {
+  const needle = query.trim().toLocaleLowerCase(locale === "tr" ? "tr-TR" : "en-US");
+  return helpArticles.filter((article) => (!context || article.contexts.includes(context) || !needle) && (!needle || `${article.title[locale]} ${article.body[locale]}`.toLocaleLowerCase(locale === "tr" ? "tr-TR" : "en-US").includes(needle)));
+};
