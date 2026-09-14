@@ -7,6 +7,7 @@ import {
 import { requestContext, structuredLog } from "./observability.mjs";
 import { sanitizeInvestmentMetrics } from "../src/lib/investment-metrics.mjs";
 import { sanitizePriceHistory, verifiedReduction } from "../src/lib/deal-verification.mjs";
+import { sanitizeLandDetails } from "../src/lib/land-details.mjs";
 
 export const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -329,7 +330,7 @@ const relationName = (relation) => {
   return typeof value?.name === "string" ? value.name : null;
 };
 
-export const serializeListing = (listing) => {
+export const serializeListing = (listing, { publicView = false } = {}) => {
   const features = Array.isArray(listing.features) ? listing.features : [];
   const yieldFeature = features.find(
     (feature) =>
@@ -428,6 +429,7 @@ export const serializeListing = (listing) => {
     urgent_verified_at: listing.urgent_verified_at || null,
     urgent_expires_at: listing.urgent_expires_at || null,
     price_history: sanitizePriceHistory(listing.price_history),
+    land_details: sanitizeLandDetails(listing.land_details, { publicView, siteId: listing.site_id, listingId: listing.id }),
   };
 };
 
@@ -635,6 +637,7 @@ export const listingPayload = (body, siteId) => {
     investment_metrics: sanitizeInvestmentMetrics(body.investment_metrics),
     price_reduced_from: priceReducedFrom,
     urgent_sale: body.urgent_sale === true,
+    land_details: propertyCategory === "arsa" ? sanitizeLandDetails(body.land_details, { siteId, listingId: body.id }) : {},
   };
 };
 

@@ -1,7 +1,7 @@
 import { getSupabaseClient, handleKnownError, methodNotAllowed, routeParam, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
 import { canonicalSiteProjection, siteSelect } from "../site-source-of-truth.mjs";
 
-export const publicListingSelect = "id,title,description,price,currency,m2,room_count,listing_type,district,lat,lng,media,status,listing_status,property_category,property_subtype,created_at,features,urgent_sale,price_reduced_from,price_history,urgent_verified_at,urgent_expires_at,country:countries(name),province:provinces(name),structured_district:districts(name),neighborhood:neighborhoods(name)";
+export const publicListingSelect = "id,title,description,price,currency,m2,room_count,listing_type,district,lat,lng,media,status,listing_status,property_category,property_subtype,created_at,features,urgent_sale,price_reduced_from,price_history,urgent_verified_at,urgent_expires_at,land_details,country:countries(name),province:provinces(name),structured_district:districts(name),neighborhood:neighborhoods(name)";
 const publicThemeKeys = ["template_id", "language", "colors", "fonts", "content", "media", "layout", "layout_fine_tune"];
 const withoutInlineImages = (value) => {
   if (typeof value === "string") return value.startsWith("data:image/") ? "" : value;
@@ -15,7 +15,7 @@ export const publicThemeConfig = (themeConfig) => Object.fromEntries(publicTheme
   .map((key) => [key, withoutInlineImages(themeConfig[key])]));
 
 export const serializePublicListing = (row) => {
-  const listing = serializeListing(row);
+  const listing = serializeListing(row, { publicView: true });
   for (const key of ["site_id", "country_id", "province_id", "district_id", "neighborhood_id", "status"]) delete listing[key];
   listing.media = listing.media.filter((item) => !item?.url?.startsWith("data:image/")).map(withoutInlineImages);
   return listing;

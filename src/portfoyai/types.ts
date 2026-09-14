@@ -203,6 +203,33 @@ export type Listing = {
   urgent_verified_at?: string | null;
   urgent_expires_at?: string | null;
   price_history?: Array<{ old_price: number; new_price: number; currency: "TRY" | "USD" | "GBP" | "EUR"; changed_at: string }>;
+  land_details?: LandDetails;
+};
+
+export type LandDocument = {
+  id: string;
+  name: string;
+  path: string;
+  kind: "deed" | "zoning" | "survey" | "other";
+  mime_type: string;
+  size: number | null;
+  uploaded_at: string | null;
+};
+
+export type LandDetails = {
+  block?: string | null;
+  parcel?: string | null;
+  zoning_status?: string | null;
+  deed_type?: "independent" | "shared" | "allocation" | "unknown";
+  frontage_m?: number | null;
+  infrastructure?: Array<"road" | "electricity" | "water" | "sewer" | "natural_gas" | "internet">;
+  slope_percent?: number | null;
+  intended_use?: string | null;
+  coordinates?: { lat: number; lng: number } | null;
+  verification_status?: "unverified" | "owner_declared" | "document_checked" | "official_source";
+  verified_at?: string | null;
+  source?: { label: string | null; url: string | null; checked_at: string | null };
+  documents?: LandDocument[];
 };
 
 export type Lead = {

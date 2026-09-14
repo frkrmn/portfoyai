@@ -145,6 +145,23 @@ export const buildStarterListings = (config, siteId) => {
           price_per_m2: { source: "Danışman tarafından girilen ilan fiyatı ve brüt alan", as_of: new Date().toISOString().slice(0, 10), status: "actual", hidden: false },
         },
       } : {}),
+      ...(landPlots ? {
+        land_details: {
+          block: `${100 + index}`,
+          parcel: `${20 + index}`,
+          zoning_status: index === 1 ? "Tarım arazisi" : "Konut imarlı",
+          deed_type: "independent",
+          frontage_m: 18 + index * 4,
+          infrastructure: ["road", "electricity", "water"],
+          slope_percent: 3 + index,
+          intended_use: index === 1 ? "Tarımsal kullanım" : "Konut geliştirme",
+          coordinates: { lat: 41.0082 + index * 0.006, lng: 28.9784 + index * 0.006 },
+          verification_status: "owner_declared",
+          verified_at: null,
+          source: { label: "Başlangıç portföy beyanı", url: null, checked_at: null },
+          documents: [],
+        },
+      } : {}),
       ...(urgentDeals ? {
         urgent_sale: false,
         price_reduced_from: null,

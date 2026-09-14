@@ -77,12 +77,15 @@ import type {
 
 const generatedText = (value: string | { tr: string; en?: string }) =>
   typeof value === "string" ? value : value.tr;
+const landDocumentAccept = "application/pdf,image/jpeg,image/png,image/webp";
+const safeNewWindowFeatures = "noopener,noreferrer";
 import { formatListingLocation } from "./listing-location";
 import { getListingImage } from "@/templates/mediaFallbacks";
 import { LocationHierarchyFields } from "./location-fields";
 import { useTranslation } from "react-i18next";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { uploadImage } from "@/lib/media-storage";
+import { removeLandDocument, signedLandDocumentUrl, uploadLandDocument } from "@/lib/land-documents";
 import {
   selectableTemplateIds,
   understandThemePrompt,
@@ -607,6 +610,22 @@ export function ListingForm({
     story: string;
   } | null>(null);
   const [featureInput, setFeatureInput] = useState("");
+  const landDetails = draft.land_details || {};
+  const updateLandDetails = (patch: Partial<NonNullable<Listing["land_details"]>>) =>
+    onDraftChange({ land_details: { ...landDetails, ...patch } });
+  const handleLandDocument = async (file: File | undefined) => {
+    if (!file) return;
+    if (!draft.id) {
+      toast.error(t("dashboard.listingForm.saveBeforeLandDocument"));
+      return;
+    }
+    try {
+      const document = await uploadLandDocument(file, siteId, draft.id, "other");
+      updateLandDetails({ documents: [...(landDetails.documents || []), document] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("dashboard.listingForm.landDocumentError"));
+    }
+  };
   const copyFactsSignature = JSON.stringify([
     draft.id,
     draft.title,
@@ -925,6 +944,32 @@ export function ListingForm({
               onDraftChange({ ...selection, district: names.district })
             }
           />
+          {draft.property_category === "arsa" ? (
+            <section
+              className="space-y-4 rounded-2xl border bg-white p-4 md:col-span-2"
+              data-land-details
+            >
+              <div>
+                <div className="font-semibold">{t("dashboard.listingForm.landDetails")}</div>
+                <p className="mt-1 text-xs text-slate-500">{t("dashboard.listingForm.landDetailsHelp")}</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2"><Label>{t("dashboard.listingForm.block")}</Label><Input value={landDetails.block || ""} onChange={(event) => updateLandDetails({ block: event.target.value })} /></div>
+                <div className="space-y-2"><Label>{t("dashboard.listingForm.parcel")}</Label><Input value={landDetails.parcel || ""} onChange={(event) => updateLandDetails({ parcel: event.target.value })} /></div>
+                <div className="space-y-2 md:col-span-2"><Label>{t("dashboard.listingForm.zoningStatus")}</Label><Input value={landDetails.zoning_status || ""} onChange={(event) => updateLandDetails({ zoning_status: event.target.value })} /></div>
+                <div className="space-y-2"><Label>{t("dashboard.listingForm.deedType")}</Label><Select value={landDetails.deed_type || "unknown"} onValueChange={(value) => updateLandDetails({ deed_type: value as NonNullable<typeof landDetails.deed_type> })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unknown">{t("dashboard.listingForm.unknown")}</SelectItem><SelectItem value="independent">{t("dashboard.listingForm.independentDeed")}</SelectItem><SelectItem value="shared">{t("dashboard.listingForm.sharedDeed")}</SelectItem><SelectItem value="allocation">{t("dashboard.listingForm.allocationDeed")}</SelectItem></SelectContent></Select></div>
+                <div className="space-y-2"><Label>{t("dashboard.listingForm.frontage")}</Label><Input type="number" min="0" value={landDetails.frontage_m ?? ""} onChange={(event) => updateLandDetails({ frontage_m: event.target.value === "" ? null : Number(event.target.value) })} /></div>
+                <div className="space-y-2"><Label>{t("dashboard.listingForm.slope")}</Label><Input type="number" min="0" max="100" value={landDetails.slope_percent ?? ""} onChange={(event) => updateLandDetails({ slope_percent: event.target.value === "" ? null : Number(event.target.value) })} /></div>
+                <div className="space-y-2"><Label>{t("dashboard.listingForm.intendedUse")}</Label><Input value={landDetails.intended_use || ""} onChange={(event) => updateLandDetails({ intended_use: event.target.value })} /></div>
+                <div className="space-y-2"><Label>{t("dashboard.listingForm.latitude")}</Label><Input type="number" min="-90" max="90" step="any" value={landDetails.coordinates?.lat ?? ""} onChange={(event) => updateLandDetails({ coordinates: event.target.value === "" ? null : { lat: Number(event.target.value), lng: landDetails.coordinates?.lng ?? draft.lng } })} /></div>
+                <div className="space-y-2"><Label>{t("dashboard.listingForm.longitude")}</Label><Input type="number" min="-180" max="180" step="any" value={landDetails.coordinates?.lng ?? ""} onChange={(event) => updateLandDetails({ coordinates: event.target.value === "" ? null : { lat: landDetails.coordinates?.lat ?? draft.lat, lng: Number(event.target.value) } })} /></div>
+                <div className="space-y-2 md:col-span-2"><Label>{t("dashboard.listingForm.infrastructure")}</Label><div className="flex flex-wrap gap-3">{(["road", "electricity", "water", "sewer", "natural_gas", "internet"] as const).map((item) => <label key={item} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={landDetails.infrastructure?.includes(item) || false} onChange={(event) => updateLandDetails({ infrastructure: event.target.checked ? [...(landDetails.infrastructure || []), item] : (landDetails.infrastructure || []).filter((value) => value !== item) })} />{t(`dashboard.listingForm.infrastructure_${item}`)}</label>)}</div></div>
+                <div className="space-y-2"><Label>{t("dashboard.listingForm.verificationStatus")}</Label><Select value={landDetails.verification_status || "unverified"} onValueChange={(value) => updateLandDetails({ verification_status: value as NonNullable<typeof landDetails.verification_status>, verified_at: value === "unverified" ? null : new Date().toISOString() })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unverified">{t("dashboard.listingForm.unverified")}</SelectItem><SelectItem value="owner_declared">{t("dashboard.listingForm.ownerDeclared")}</SelectItem><SelectItem value="document_checked">{t("dashboard.listingForm.documentChecked")}</SelectItem><SelectItem value="official_source">{t("dashboard.listingForm.officialSource")}</SelectItem></SelectContent></Select></div>
+                <div className="space-y-2"><Label>{t("dashboard.listingForm.sourceLabel")}</Label><Input value={landDetails.source?.label || ""} onChange={(event) => updateLandDetails({ source: { label: event.target.value, url: landDetails.source?.url || null, checked_at: new Date().toISOString() } })} /></div>
+              </div>
+              <div className="space-y-2"><Label>{t("dashboard.listingForm.privateDocuments")}</Label><Input type="file" accept={landDocumentAccept} disabled={!draft.id} onChange={(event) => void handleLandDocument(event.target.files?.[0])} /><p className="text-xs text-slate-500">{t(draft.id ? "dashboard.listingForm.privateDocumentsHelp" : "dashboard.listingForm.saveBeforeLandDocument")}</p>{landDetails.documents?.map((document) => <div key={document.id} className="flex items-center justify-between gap-3 rounded-xl border p-3 text-sm"><span className="truncate">{document.name}</span><div className="flex gap-2"><Button type="button" size="sm" variant="secondary" onClick={() => void signedLandDocumentUrl(document.path).then((url) => window.open(url, "_blank", safeNewWindowFeatures))}>{t("dashboard.listingForm.openDocument")}</Button><Button type="button" size="sm" variant="ghost" onClick={() => void removeLandDocument(document.path).then(() => updateLandDetails({ documents: (landDetails.documents || []).filter((item) => item.id !== document.id) }))}>{t("dashboard.listingForm.removeDocument")}</Button></div></div>)}</div>
+            </section>
+          ) : null}
           <div className="space-y-2 md:col-span-2">
             <Label>{t("dashboard.listingForm.features")}</Label>
             <div className="flex flex-wrap gap-2">
