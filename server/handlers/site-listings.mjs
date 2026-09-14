@@ -19,7 +19,7 @@ export default async function handler(request, response) {
     }
     const body = await readJsonBody(request, 8 * 1024 * 1024);
     const payload = listingPayload(body, siteId);
-    const plan = await getUserPlan(user.id);
+    const plan = await getUserPlan(user.id, site.workspace_id);
     if (plan === "free" && payload.status === "active" && await countActiveListingsForUser(user.id) >= 5) {
       return sendJson(response, 402, {
         error: "Ücretsiz planda en fazla 5 aktif ilan yayınlayabilirsiniz.",

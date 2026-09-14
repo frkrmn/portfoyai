@@ -41,6 +41,7 @@ assert.match(leads, /accessibleSiteIds/);
 assert.match(site, /requireSitePermission/);
 assert.match(versions, /requireSitePermission/);
 assert.match(listings, /requireSitePermission/);
+assert.match(listings, /site\.workspace_id/);
 assert.match(team, /requireSitePermission/);
 assert.match(inviteUi, /\/api\/invitations\/\$\{token\}/);
 for (const action of ["Davet et", "Yeniden gönder", "İptal", "Çıkar"]) assert.ok(memberUi.includes(action));

@@ -150,10 +150,18 @@ export const resolveSubscription = async (request, response, { assignVariant = f
   return subscription;
 };
 
-export const getUserPlan = async (userId) => {
-  const { data, error } = await getSupabaseClient().from("subscriptions").select("plan").eq("user_id", userId).maybeSingle();
+export const getUserPlan = async (userId, workspaceId = null) => {
+  const { workspaceFeatureEnabled } = await import("./workspace-permissions.mjs");
+  let query = getSupabaseClient().from("subscriptions").select("plan");
+  if (workspaceFeatureEnabled()) {
+    let workspaceIds = workspaceId ? [workspaceId] : [];
+    if (!workspaceIds.length) { const memberships = await getSupabaseClient().from("workspace_memberships").select("workspace_id").eq("user_id", userId); if (memberships.error) throw memberships.error; workspaceIds = (memberships.data || []).map((item) => item.workspace_id); }
+    if (!workspaceIds.length) return "free";
+    query = query.in("workspace_id", workspaceIds);
+  } else query = query.eq("user_id", userId);
+  const { data, error } = await query;
   if (error) throw new Error(`Failed to load plan: ${error.message}`);
-  return data?.plan === "pro" ? "pro" : "free";
+  return (data || []).some((subscription) => subscription.plan === "pro") ? "pro" : "free";
 };
 
 export const countActiveListingsForUser = async (userId) => {
