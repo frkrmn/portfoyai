@@ -1,4 +1,5 @@
 import { getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, resolveSubscription, sendJson } from "../api-utils.mjs";
+import { claimExperimentBudget } from "../analytics-protection.mjs";
 
 const eventTypes = new Set(["pricing_view", "upgrade_click", "paywall_view", "prompt_suggestion_click", "prompt_quality_ready", "onboarding_generation_start"]);
 
@@ -11,8 +12,10 @@ export default async function handler(request, response) {
     if (!eventTypes.has(eventType)) return sendJson(response, 400, { error: "Invalid experiment event type." });
     if (context.length > 120) return sendJson(response, 400, { error: "Experiment context must be 120 characters or fewer." });
 
+    const supabase = getSupabaseClient();
+    if (!await claimExperimentBudget(supabase, request)) { response.setHeader("Retry-After", "600"); return sendJson(response, 429, { error: "Experiment event budget exceeded." }); }
     const subscription = await resolveSubscription(request, response, { assignVariant: true });
-    const { data: event, error } = await getSupabaseClient().from("experiment_events").insert({
+    const { data: event, error } = await supabase.from("experiment_events").insert({
       subject_id: subscription.subject_id,
       variant: subscription.pricing_variant,
       event_type: eventType,

@@ -34,6 +34,7 @@ export const apiRouteInventory = [
   { pattern: /^\/api\/(sitemap\.xml|robots\.txt)$/, methods: ["GET", "HEAD"], handler: seoFiles },
   { pattern: /^\/api\/render-page$/, methods: ["GET", "HEAD"], handler: renderPage },
   { pattern: /^\/api\/experiment$/, methods: ["POST"], handler: experiment },
+  { pattern: /^\/api\/analytics\/session$/, methods: ["GET"], fixedParams: { analyticsAction: "session" }, handler: analytics },
   { pattern: /^\/api\/analytics$/, methods: ["GET", "POST"], handler: analytics },
   { pattern: /^\/api\/fonts$/, methods: ["GET"], handler: fonts },
   { pattern: /^\/api\/generate-theme$/, methods: ["POST"], handler: generateTheme },

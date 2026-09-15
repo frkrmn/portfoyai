@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../api-utils.mjs";
 import { requireSitePermission } from "../workspace-permissions.mjs";
+import { claimAnalyticsBudget, mintAnalyticsToken, verifyAnalyticsToken } from "../analytics-protection.mjs";
 
-const eventTypes = new Set(["site_view", "listing_view", "lead_conversion"]);
+const eventTypes = new Set(["site_view", "listing_view"]);
 const botPattern = /bot|crawler|spider|slurp|headless|lighthouse|preview|vercel-screenshot/i;
 const clean = (value, max = 120) => typeof value === "string" ? value.trim().slice(0, max) || null : null;
 const day = () => new Date().toISOString().slice(0, 10);
@@ -16,14 +17,34 @@ export async function collectAnalytics(request, response, supabase = getSupabase
   const leadId = uuidPattern.test(body.lead_id || "") ? body.lead_id : null;
   const { data: site } = await supabase.from("sites").select("id").eq("id", body.site_id).eq("status", "published").maybeSingle();
   if (!site) return sendJson(response, 404, { error: "Published site not found." });
+  const visitor = verifyAnalyticsToken(request, body.visitor_token, site.id);
+  if (!visitor) return sendJson(response, 401, { error: "A valid analytics visitor token is required." });
   if (listingId) { const { data } = await supabase.from("listings").select("id").eq("id", listingId).eq("site_id", site.id).maybeSingle(); if (!data) return sendJson(response, 400, { error: "Listing does not belong to site." }); }
   if (leadId) { const { data } = await supabase.from("leads").select("id").eq("id", leadId).eq("site_id", site.id).maybeSingle(); if (!data) return sendJson(response, 400, { error: "Lead does not belong to site." }); }
-  const sessionHash = hash(clean(body.session_id, 160) || `${request.socket?.remoteAddress || "unknown"}:${request.headers?.["user-agent"] || ""}`);
+  if (!await claimAnalyticsBudget(supabase, site.id, visitor.visitor)) { response.setHeader("Retry-After", "600"); return sendJson(response, 429, { error: "Analytics event budget exceeded." }); }
+  const sessionHash = visitor.visitor;
   const source = clean(body.utm_source) || clean(body.referrer_host) || "direct";
   const eventKey = hash(`${sessionHash}:${body.event_type}:${listingId || "site"}:${leadId || "none"}`);
   const { data: event, error } = await supabase.from("analytics_events").upsert({ site_id: site.id, listing_id: listingId, lead_id: leadId, event_type: body.event_type, session_hash: sessionHash, source, referrer_host: clean(body.referrer_host), utm_source: clean(body.utm_source), utm_medium: clean(body.utm_medium), utm_campaign: clean(body.utm_campaign), event_key: eventKey }, { onConflict: "event_key", ignoreDuplicates: true }).select("id").maybeSingle();
   if (error) throw new Error(`Analytics event could not be saved: ${error.message}`);
   return sendJson(response, event ? 201 : 200, { accepted: true, duplicate: !event });
+}
+
+export async function issueAnalyticsToken(request, response, supabase = getSupabaseClient()) {
+  const requestUrl = new URL(request.url || "/api/analytics/session", `http://${request.headers?.host || "localhost"}`);
+  const siteId = clean(request.query?.site_id || requestUrl.searchParams.get("site_id"));
+  if (!siteId || !uuidPattern.test(siteId)) return sendJson(response, 400, { error: "Valid site_id required." });
+  const { data: site } = await supabase.from("sites").select("id").eq("id", siteId).eq("status", "published").maybeSingle();
+  if (!site) return sendJson(response, 404, { error: "Published site not found." });
+  response.setHeader("Cache-Control", "no-store");
+  return sendJson(response, 200, { token: mintAnalyticsToken(request, site.id), expires_in: 1800 });
+}
+
+export async function recordLeadConversion(supabase, lead) {
+  const sessionHash = hash(`lead:${lead.id}`);
+  const eventKey = hash(`conversion:${lead.id}`);
+  const { error } = await supabase.from("analytics_events").upsert({ site_id: lead.site_id, listing_id: lead.listing_id || null, lead_id: lead.id, event_type: "lead_conversion", session_hash: sessionHash, source: lead.source || "public-site", event_key: eventKey }, { onConflict: "event_key", ignoreDuplicates: true });
+  if (error) throw new Error(`Lead conversion could not be saved: ${error.message}`);
 }
 
 export async function reportAnalytics(request, response, supabase = getSupabaseClient()) {
@@ -45,6 +66,6 @@ export async function reportAnalytics(request, response, supabase = getSupabaseC
 
 export default async function handler(request, response) {
   if (!['GET', 'POST'].includes(request.method || '')) return methodNotAllowed(response, ['GET', 'POST']);
-  try { return request.method === 'POST' ? await collectAnalytics(request, response) : await reportAnalytics(request, response); }
+  try { return request.query?.analyticsAction === "session" ? await issueAnalyticsToken(request, response) : request.method === 'POST' ? await collectAnalytics(request, response) : await reportAnalytics(request, response); }
   catch (error) { return handleKnownError(response, error, "[analytics] Request failed"); }
 }

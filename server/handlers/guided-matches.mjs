@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../api-utils.mjs";
 import { claimLeadRateLimit, hashLeadIp, isDuplicateLead, normalizeLeadPhone, requestIp, verifyTurnstile } from "../lead-protection.mjs";
 import { GUIDED_MATCH_SCHEMA_VERSION, guidedMatchSummary, rankGuidedListings, sanitizeGuidedAnswers } from "../../src/lib/guided-match.mjs";
+import { recordLeadConversion } from "./analytics.mjs";
 
 const tokenHash = (token) => createHash("sha256").update(token).digest("hex");
 const publicResult = (row) => ({ id: row.id, locale: row.locale, answers: row.answers, recommendations: row.recommendations, summary: row.summary, expires_at: row.expires_at });
@@ -21,7 +22,7 @@ async function create(request, response) {
     const { data } = await supabase.from("leads").select("id,phone").eq("site_id", site.id).order("created_at", { ascending: false }).limit(25);
     lead = (data || []).find((item) => normalizeLeadPhone(item.phone || "") === normalizeLeadPhone(phone)); duplicateLead = Boolean(lead);
   }
-  if (!lead) { const result = await supabase.from("leads").insert({ site_id: site.id, name, phone, message: locale === "en" ? "Guided matching request" : "Rehberli eşleşme talebi", source: "guided-match" }).select("id").single(); if (result.error) throw result.error; lead = result.data; }
+  if (!lead) { const result = await supabase.from("leads").insert({ site_id: site.id, name, phone, message: locale === "en" ? "Guided matching request" : "Rehberli eşleşme talebi", source: "guided-match" }).select("id,site_id,listing_id,source").single(); if (result.error) throw result.error; lead = result.data; await recordLeadConversion(supabase, lead).catch((analyticsError) => console.error("[guided-match] Conversion analytics failed", analyticsError)); }
   const { data: listings, error: listingsError } = await supabase.from("listings").select("id,title,description,price,currency,district,address,features,property_category,property_subtype").eq("site_id", site.id).eq("status", "active").eq("listing_status", "active");
   if (listingsError) throw listingsError;
   const recommendations = rankGuidedListings(listings || [], answers, locale); const summary = guidedMatchSummary(answers, recommendations, locale); const token = randomBytes(32).toString("base64url");

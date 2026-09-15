@@ -2,8 +2,9 @@ import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAll
 import { claimLeadRateLimit, hashLeadIp, isDuplicateLead, requestIp, verifyTurnstile } from "../lead-protection.mjs";
 import { dispatchLeadNotifications } from "../lead-notifications.mjs";
 import { accessibleSiteIds } from "../workspace-permissions.mjs";
+import { recordLeadConversion } from "./analytics.mjs";
 
-export const createLead = async (request, response, { supabase = getSupabaseClient(), verifyCaptcha = verifyTurnstile, claimRate = claimLeadRateLimit, duplicateCheck = isDuplicateLead, hashIp = hashLeadIp, dispatchNotifications = dispatchLeadNotifications } = {}) => {
+export const createLead = async (request, response, { supabase = getSupabaseClient(), verifyCaptcha = verifyTurnstile, claimRate = claimLeadRateLimit, duplicateCheck = isDuplicateLead, hashIp = hashLeadIp, dispatchNotifications = dispatchLeadNotifications, recordConversion = recordLeadConversion } = {}) => {
   const body = await readJsonBody(request);
   const siteId = typeof body.site_id === "string" ? body.site_id.trim() : "";
   const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -41,6 +42,7 @@ export const createLead = async (request, response, { supabase = getSupabaseClie
     error = retry.error;
   }
   if (error) throw new Error(`Failed to save lead: ${error.message}`);
+  await recordConversion(supabase, lead).catch((analyticsError) => console.error("[leads] Conversion analytics failed", analyticsError));
   let listing = null;
   if (listingId) {
     const result = await supabase.from("listings").select("id, title").eq("id", listingId).eq("site_id", site.id).maybeSingle();

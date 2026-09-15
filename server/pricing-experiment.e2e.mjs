@@ -25,6 +25,10 @@ const fakeSupabase = createServer(async (request, response) => {
     return response.end(JSON.stringify({ id: testUserId, email: "pricing@example.com" }));
   }
 
+  if (url.pathname === "/rest/v1/rpc/claim_public_ingestion_budget" && request.method === "POST") {
+    return response.end(JSON.stringify(true));
+  }
+
   if (url.pathname === "/rest/v1/subscriptions") {
     if (request.method === "GET") return response.end(JSON.stringify(matchRows(subscriptions, url)));
     if (request.method === "POST") {

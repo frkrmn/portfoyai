@@ -63,7 +63,6 @@ import {
 } from "@/lib/pending-prompt";
 import { readApiJson } from "@/lib/api";
 import { usePageMeta } from "@/lib/page-meta";
-import { trackPublicAnalytics } from "@/lib/public-analytics";
 import { toast } from "sonner";
 import { formatDateTR, generateThemeFromPrompt } from "./mock";
 import { usePortfoyAI } from "./store";
@@ -493,11 +492,6 @@ function PublicContactForm({ siteId }: { siteId: string }) {
           const payload = await response.json();
           if (!response.ok)
             throw new Error(payload.error || "Talebiniz gönderilemedi.");
-          trackPublicAnalytics({
-            siteId,
-            eventType: "lead_conversion",
-            leadId: payload.id,
-          });
           setForm({ name: "", phone: "", message: "" });
           setIsSubmitted(true);
         } catch (error) {

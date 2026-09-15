@@ -6,7 +6,6 @@ import { SharedTeamHeaderLink, SharedTeamSection } from "../SharedTeamPage";
 import { SiteLanguageToggle } from "../site-locale";
 import { protectedLeadPayload } from "../lead-protection-payload";
 import type { TemplateConfig } from "../types";
-import { trackPublicAnalytics } from "@/lib/public-analytics";
 
 export function SharedThemeHeader({ config, headerClassName, innerClassName, brandClassName, navClassName, navBeforeTeam, navAfterTeam, actions }: {
   config: TemplateConfig;
@@ -65,8 +64,7 @@ export function useSharedLeadForm(config: TemplateConfig, listing?: Listing, opt
         })),
       });
       if (!response.ok) throw new Error("Lead could not be submitted");
-      const payload = await response.json();
-      trackPublicAnalytics({ siteId: config.siteId, eventType: "lead_conversion", listingId: listing?.id, leadId: payload.id });
+      await response.json();
       setForm({ name: "", phone: "", message: "" });
       options?.onSuccess?.();
       setStatus("success");
