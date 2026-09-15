@@ -2,6 +2,8 @@ import { GoogleGenAI } from "@google/genai";
 import { dashboardSite, getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../api-utils.mjs";
 import { buttonColorSources, fineTuneEnums, mergeThemeConfig } from "../site-theme.mjs";
 import { trackAiCall } from "../observability.mjs";
+import { idempotencyKey, runBudgetedAiCall } from "../ai-usage-budget.mjs";
+import { ensurePersonalWorkspace, requireSitePermission } from "../workspace-permissions.mjs";
 
 export const siteRefineModel = "gemini-3.5-flash-lite";
 const allowedFonts = [
@@ -42,14 +44,15 @@ const systemInstruction = [
   "Hiçbir bölüm desteklenmiyorsa değişiklik alanlarını tamamen atla ve unsupported_note yaz. Sessizce görmezden gelme.",
 ].join("\n");
 
-export async function mapRefinementRequest(requestText, apiKey = process.env.GEMINI_API_KEY) {
+export async function mapRefinementRequest(requestText, apiKey = process.env.GEMINI_API_KEY, budget = null) {
   if (!apiKey) throw new Error("GEMINI_API_KEY environment variable is not set.");
   const gemini = new GoogleGenAI({ apiKey });
-  const result = await trackAiCall({ operation: "site.refine", model: siteRefineModel, call: () => gemini.models.generateContent({
+  const call = () => trackAiCall({ operation: "site.refine", model: siteRefineModel, call: () => gemini.models.generateContent({
     model: siteRefineModel,
     contents: `İNCE AYAR İSTEĞİ:\n${requestText}`,
     config: { systemInstruction, responseMimeType: "application/json", responseSchema: siteRefineSchema },
   }) });
+  const result = budget ? await runBudgetedAiCall({ ...budget, provider: "gemini", model: siteRefineModel, operation: "site.refine", reservedTokens: 2000, call }) : await call();
   if (!result.text) throw new Error("Gemini returned an empty refinement response.");
   const mapped = JSON.parse(result.text);
   const unsupportedNote = typeof mapped.unsupported_note === "string" && mapped.unsupported_note.trim()
@@ -92,11 +95,13 @@ export default async function handler(request, response) {
     const requestText = typeof body.request === "string" ? body.request.trim() : "";
     if (requestText.length < 3 || requestText.length > 500) return sendJson(response, 400, { error: "İnce ayar isteği 3-500 karakter olmalıdır." });
     const supabase = getSupabaseClient();
-    const { data: current, error } = await supabase.from("sites").select(ownedSiteSelect).eq("id", siteId).eq("user_id", user.id).maybeSingle();
+    const access = await requireSitePermission(user.id, siteId, "site.write", supabase);
+    const { data: current, error } = await supabase.from("sites").select(ownedSiteSelect).eq("id", siteId).maybeSingle();
     if (error) throw new Error(`Failed to verify site ownership: ${error.message}`);
     if (!current) return sendJson(response, 404, { error: "Owned site not found." });
 
-    const mapped = await mapRefinementRequest(requestText);
+    const workspaceId = access.site.workspace_id || await ensurePersonalWorkspace(user.id, supabase);
+    const mapped = await mapRefinementRequest(requestText, process.env.GEMINI_API_KEY, { supabase, workspaceId, userId: user.id, key: idempotencyKey(request) });
     const { themeConfig, topLevel, appliedFields } = mergeThemeConfig(current.theme_config, mapped.patch);
     if (!appliedFields.length) {
       return sendJson(response, 200, {
@@ -111,7 +116,7 @@ export default async function handler(request, response) {
       ...topLevel,
       theme_config: themeConfig,
       previous_theme_config: current.theme_config || {},
-    }).eq("id", siteId).eq("user_id", user.id).select(ownedSiteSelect).single();
+    }).eq("id", siteId).select(ownedSiteSelect).single();
     if (saved.error) throw new Error(`Failed to save refinement: ${saved.error.message}`);
     return sendJson(response, 200, {
       site: dashboardSite(saved.data),

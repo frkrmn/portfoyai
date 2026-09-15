@@ -89,17 +89,17 @@ function evaluateAiAlerts(metric) {
   if (reasons.length) structuredLog("warn", "ai.alert.threshold_exceeded", { reasons, operation: metric.operation, model: metric.model, latency_ms: metric.latency_ms, estimated_cost_usd: metric.estimated_cost_usd, rolling_error_rate_percent: Number(errorRate.toFixed(2)), sample_size: aiWindow.length });
 }
 
-export async function trackAiCall({ operation, model, call }) {
+export async function trackAiCall({ operation, provider = "gemini", model, call }) {
   const startedAt = Date.now();
   try {
     const result = await call();
     const usage = aiUsage(result);
-    const metric = { operation, provider: "gemini", model: result?.modelVersion || model, outcome: "success", latency_ms: Date.now() - startedAt, ...usage, estimated_cost_usd: estimatedCost(usage), pricing: process.env.AI_INPUT_USD_PER_MILLION_TOKENS || process.env.AI_OUTPUT_USD_PER_MILLION_TOKENS ? "environment" : "default_estimate" };
+    const metric = { operation, provider, model: result?.modelVersion || model, outcome: "success", latency_ms: Date.now() - startedAt, ...usage, estimated_cost_usd: estimatedCost(usage), pricing: process.env.AI_INPUT_USD_PER_MILLION_TOKENS || process.env.AI_OUTPUT_USD_PER_MILLION_TOKENS ? "environment" : "default_estimate" };
     structuredLog("info", "ai.call.completed", metric);
     evaluateAiAlerts(metric);
     return result;
   } catch (error) {
-    const metric = { operation, provider: "gemini", model, outcome: "error", latency_ms: Date.now() - startedAt, input_tokens: 0, output_tokens: 0, total_tokens: 0, estimated_cost_usd: 0 };
+    const metric = { operation, provider, model, outcome: "error", latency_ms: Date.now() - startedAt, input_tokens: 0, output_tokens: 0, total_tokens: 0, estimated_cost_usd: 0 };
     structuredLog("error", "ai.call.failed", { ...metric, error });
     evaluateAiAlerts(metric);
     throw error;

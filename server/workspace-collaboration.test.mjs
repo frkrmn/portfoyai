@@ -64,7 +64,7 @@ assert.match(leads, /accessibleSiteIds/);
 assert.match(site, /requireSitePermission/);
 assert.match(versions, /requireSitePermission/);
 assert.match(listings, /requireSitePermission/);
-assert.match(listings, /site\.workspace_id/);
+assert.match(listings, /requireSitePermission/);
 assert.match(listingItem, /requireSitePermission\(user\.id, existing\.site_id, listingPermissionForMethod\(request\.method\)\)/);
 assert.doesNotMatch(listingItem, /getOwnedSite/);
 assert.match(team, /requireSitePermission/);

@@ -755,7 +755,7 @@ export function DashboardPage() {
     if (!session) throw new Error(t("dashboard.errors.copyAuth"));
     const response = await fetch("/api/listings/generate-copy", {
       method: "POST",
-      headers: { ...authHeaders, "Content-Type": "application/json" },
+      headers: { ...authHeaders, "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
       body: JSON.stringify(draft),
     });
     const payload = await readApiJson<{
@@ -1115,7 +1115,7 @@ export function DashboardPage() {
     try {
       const response = await fetch(`/api/sites/${activeSite.id}/refine`, {
         method: "POST",
-        headers: { ...authHeaders, "Content-Type": "application/json" },
+        headers: { ...authHeaders, "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify(undo ? { action: "undo" } : { request: refineRequest.trim() }),
       });
       const payload = await readApiJson<{

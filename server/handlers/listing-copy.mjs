@@ -1,7 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import { formatListingPrice, normalizeListingCurrency } from "../../src/lib/listing-price.js";
-import { getAuthenticatedUser, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
+import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson, uuidPattern } from "../api-utils.mjs";
 import { trackAiCall } from "../observability.mjs";
+import { idempotencyKey, runBudgetedAiCall } from "../ai-usage-budget.mjs";
+import { ensurePersonalWorkspace, requireSitePermission } from "../workspace-permissions.mjs";
 import { verifiedReduction, verifiedUrgency } from "../../src/lib/deal-verification.mjs";
 
 export const listingCopyModel = "gemini-3.5-flash-lite";
@@ -61,10 +63,10 @@ export const listingFactsFromBody = (body) => {
   };
 };
 
-export async function generateListingCopy(facts, apiKey = process.env.GEMINI_API_KEY) {
+export async function generateListingCopy(facts, apiKey = process.env.GEMINI_API_KEY, budget = null) {
   if (!apiKey) throw new Error("GEMINI_API_KEY environment variable is not set.");
   const gemini = new GoogleGenAI({ apiKey });
-  const response = await trackAiCall({ operation: "listing.generate_copy", model: listingCopyModel, call: () => gemini.models.generateContent({
+  const call = () => trackAiCall({ operation: "listing.generate_copy", model: listingCopyModel, call: () => gemini.models.generateContent({
     model: listingCopyModel,
     contents: `İLAN VERİLERİ:\n${JSON.stringify(facts, null, 2)}`,
     config: {
@@ -80,6 +82,7 @@ export async function generateListingCopy(facts, apiKey = process.env.GEMINI_API
       responseSchema: listingCopySchema,
     },
   }) });
+  const response = budget ? await runBudgetedAiCall({ ...budget, provider: "gemini", model: listingCopyModel, operation: "listing.generate_copy", reservedTokens: 4000, call }) : await call();
   if (!response.text) throw new Error("Gemini returned an empty response.");
   const result = JSON.parse(response.text);
   if (!cleanText(result.platform_style) || !cleanText(result.seo_style)) throw new Error("Gemini did not return both copy variants.");
@@ -89,10 +92,21 @@ export async function generateListingCopy(facts, apiKey = process.env.GEMINI_API
 export default async function handler(request, response) {
   if (request.method !== "POST") return methodNotAllowed(response, ["POST"]);
   try {
-    await getAuthenticatedUser(request);
+    const user = await getAuthenticatedUser(request);
     const body = await readJsonBody(request);
+    const siteId = typeof body.site_id === "string" ? body.site_id : "";
+    if (!uuidPattern.test(siteId)) return sendJson(response, 400, { error: "A valid site_id is required." });
+    const supabase = getSupabaseClient();
+    const access = await requireSitePermission(user.id, siteId, "listing.write", supabase);
+    if (body.id) {
+      if (!uuidPattern.test(String(body.id))) return sendJson(response, 400, { error: "Invalid listing id." });
+      const listing = await supabase.from("listings").select("id").eq("id", body.id).eq("site_id", siteId).maybeSingle();
+      if (listing.error) throw listing.error;
+      if (!listing.data) return sendJson(response, 404, { error: "Listing not found." });
+    }
+    const workspaceId = access.site.workspace_id || await ensurePersonalWorkspace(user.id, supabase);
     const facts = listingFactsFromBody(body);
-    const copy = await generateListingCopy(facts);
+    const copy = await generateListingCopy(facts, process.env.GEMINI_API_KEY, { supabase, workspaceId, userId: user.id, key: idempotencyKey(request) });
     return sendJson(response, 200, { ...copy, meta: { provider: "gemini", model: listingCopyModel } });
   } catch (error) {
     return handleKnownError(response, error, "[listing-copy] Generation failed");

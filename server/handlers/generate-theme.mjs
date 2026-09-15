@@ -6,6 +6,8 @@ import { insertGeneratedSite } from "../site-persistence.mjs";
 import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, readJsonBody, sendJson } from "../api-utils.mjs";
 import { CURRENT_THEME_SCHEMA_VERSION, validateGeneratedSiteConfig } from "../theme-config.mjs";
 import { buildThemeSelectionContext } from "../../src/lib/theme-selection.mjs";
+import { idempotencyKey, runBudgetedAiCall } from "../ai-usage-budget.mjs";
+import { ensurePersonalWorkspace } from "../workspace-permissions.mjs";
 
 export const siteConfigSchema = JSON.parse(readFileSync(new URL("../site-config.schema.json", import.meta.url), "utf8"));
 export const siteConfigModel = "gemini-3.5-flash-lite";
@@ -95,12 +97,14 @@ export default async function handler(request, response) {
     }
     if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY environment variable is not set.");
 
+    const supabase = getSupabaseClient();
+    const workspaceId = await ensurePersonalWorkspace(user.id, supabase);
     const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const result = await trackAiCall({ operation: "site.generate_theme", model: siteConfigModel, call: () => gemini.models.generateContent({
+    const result = await runBudgetedAiCall({ supabase, workspaceId, userId: user.id, key: idempotencyKey(request), provider: "gemini", model: siteConfigModel, operation: "site.generate_theme", reservedTokens: 12000, call: () => trackAiCall({ operation: "site.generate_theme", model: siteConfigModel, call: () => gemini.models.generateContent({
       model: siteConfigModel,
       contents: `USER BUSINESS DESCRIPTION:\n${prompt}`,
       config: { systemInstruction: siteConfigSystemPrompt, responseMimeType: "application/json", responseSchema: siteConfigSchema },
-    }) });
+    }) }) });
     if (!result.text) throw new Error("Gemini returned an empty response.");
     const generated = validateGeneratedSiteConfig(ensureLandPlotsContent(JSON.parse(result.text)));
     const selectionContext = buildThemeSelectionContext(prompt, generated.template_id, body.preferences);

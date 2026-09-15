@@ -83,8 +83,8 @@ try {
 
   const copy = await json(await fetch(`${baseUrl}/api/listings/generate-copy`, {
     method: "POST",
-    headers: authenticatedJson,
-    body: JSON.stringify({ room_count: "3+1", m2: 140, listing_type: "sale", district: "Kadıköy", price: 14_750_000, features: ["Deniz manzaralı"] }),
+    headers: { ...authenticatedJson, "X-Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify({ site_id: siteId, room_count: "3+1", m2: 140, listing_type: "sale", district: "Kadıköy", price: 14_750_000, features: ["Deniz manzaralı"] }),
   }));
   assert.ok(copy.platform_style && copy.seo_style && copy.platform_style !== copy.seo_style);
 

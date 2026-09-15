@@ -2370,6 +2370,7 @@ export function AuthPage() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
+          "X-Idempotency-Key": crypto.randomUUID(),
         },
         body: JSON.stringify({
           prompt,

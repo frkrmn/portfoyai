@@ -688,6 +688,10 @@ export const handleKnownError = (response, error, scope) => {
       limit: 5,
       plan: "free",
     });
+  if (error instanceof Error && ["AI_DAILY_BUDGET", "AI_CONCURRENCY_LIMIT", "AI_RATE_LIMIT"].includes(error.message))
+    return sendJson(response, 429, { error: "AI kullanım limiti doldu. Lütfen daha sonra tekrar deneyin.", code: error.message, request_id: requestId });
+  if (error instanceof Error && error.message === "AI_REQUEST_IN_PROGRESS")
+    return sendJson(response, 409, { error: "Aynı AI isteği halen işleniyor.", code: error.message, request_id: requestId });
   structuredLog("error", "api.error", {
     scope,
     error,
