@@ -20,8 +20,9 @@ assert.equal(listingPermissionForMethod("PATCH"), "listing.write");
 assert.equal(listingPermissionForMethod("DELETE"), "listing.write");
 assert.equal(listingPermissionForMethod("OPTIONS"), null);
 
-const [migration, handler, router, sites, leads, site, versions, listings, listingItem, team, inviteUi, memberUi] = await Promise.all([
+const [migration, hardening, handler, router, sites, leads, site, versions, listings, listingItem, team, inviteUi, memberUi] = await Promise.all([
   readFile(new URL("../supabase/migrations/20260914000300_workspace_collaboration.sql", import.meta.url), "utf8"),
+  readFile(new URL("../supabase/migrations/20260915000200_workspace_ownership_hardening.sql", import.meta.url), "utf8"),
   readFile(new URL("./handlers/workspaces.mjs", import.meta.url), "utf8"),
   readFile(new URL("./api-router.mjs", import.meta.url), "utf8"),
   readFile(new URL("./handlers/sites.mjs", import.meta.url), "utf8"),
@@ -40,12 +41,24 @@ assert.match(migration, /token_hash text not null unique/);
 assert.match(migration, /for update/);
 assert.match(migration, /workspace_id = target_workspace and user_id = auth\.uid\(\)/, "RLS helper must isolate workspaces");
 assert.match(migration, /Rollback: disable WORKSPACE_COLLABORATION_ENABLED/);
+assert.match(hardening, /has_column_privilege\('authenticated', 'public\.sites', 'user_id', 'UPDATE'\)/, "deployed grants must be audited before hardening");
+assert.match(hardening, /SITE_IDENTITY_IMMUTABLE/);
+assert.match(hardening, /current_user not in \('postgres', 'service_role', 'supabase_admin'\)/);
+assert.match(hardening, /set user_id = owner_membership\.user_id/, "stale legacy ownership must be repaired from the canonical owner membership");
+assert.match(hardening, /workspace_id is null and user_id = \(select auth\.uid\(\)\)/, "unmigrated legacy sites need an explicit fallback");
+assert.match(hardening, /drop policy if exists "Site owners can read own sites"/);
+assert.match(hardening, /drop policy if exists workspace_site_write/);
+assert.match(hardening, /workspace\.ownership_transferred/);
+assert.match(hardening, /revoke all on function public\.transfer_workspace_ownership.*anon, authenticated/i);
+assert.match(hardening, /Rollback plan:/);
 for (const flow of ["invitation.created", "invitation.accepted", "invitation.canceled", "member.role_changed", "member.removed"]) assert.ok(migration.includes(flow) || handler.includes(flow), `${flow} must be audited`);
 assert.match(handler, /randomBytes\(32\)/);
 assert.match(handler, /createHash\("sha256"\)/);
 assert.match(handler, /normalizeEmail\(user\.email\) !== normalizeEmail\(invitation\.email\)/);
 assert.match(handler, /Transfer ownership before changing or removing the owner/);
-for (const route of ["members", "invitations", "resend", "invitation-token"]) assert.ok(router.includes(route));
+for (const route of ["members", "ownership", "invitations", "resend", "invitation-token"]) assert.ok(router.includes(route));
+assert.match(handler, /Only the workspace owner can transfer ownership/);
+assert.match(handler, /transfer_workspace_ownership/);
 assert.match(sites, /accessibleSiteIds/);
 assert.match(leads, /accessibleSiteIds/);
 assert.match(site, /requireSitePermission/);

@@ -46,6 +46,7 @@ export const apiRouteInventory = [
   { pattern: /^\/api\/lead-notifications$/, methods: ["GET", "PATCH", "POST"], handler: leadNotifications },
   { pattern: /^\/api\/support-requests$/, methods: ["POST"], handler: supportRequests },
   { pattern: new RegExp(`^/api/workspaces/${uuidSource}/members$`, "i"), methods: ["GET"], params: ["workspaceId"], fixedParams: { workspaceAction: "members" }, handler: workspaces },
+  { pattern: new RegExp(`^/api/workspaces/${uuidSource}/ownership$`, "i"), methods: ["POST"], params: ["workspaceId"], fixedParams: { workspaceAction: "ownership" }, handler: workspaces },
   { pattern: new RegExp(`^/api/workspaces/${uuidSource}/members/${uuidSource}$`, "i"), methods: ["PATCH", "DELETE"], params: ["workspaceId", "userId"], fixedParams: { workspaceAction: "member" }, handler: workspaces },
   { pattern: new RegExp(`^/api/workspaces/${uuidSource}/invitations$`, "i"), methods: ["GET", "POST"], params: ["workspaceId"], fixedParams: { workspaceAction: "invitations" }, handler: workspaces },
   { pattern: new RegExp(`^/api/workspaces/${uuidSource}/invitations/${uuidSource}/resend$`, "i"), methods: ["POST"], params: ["workspaceId", "invitationId"], fixedParams: { workspaceAction: "resend" }, handler: workspaces },

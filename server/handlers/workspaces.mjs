@@ -69,6 +69,17 @@ export default async function handler(request, response) {
     const workspaceId = request.query?.workspaceId;
     if (!uuidPattern.test(workspaceId || "")) return sendJson(response, 400, { error: "A valid workspace id is required." });
     const supabase = getSupabaseClient();
+    if (action === "ownership" && request.method === "POST") {
+      const membership = await supabase.from("workspace_memberships").select("role").eq("workspace_id", workspaceId).eq("user_id", user.id).maybeSingle();
+      if (membership.error) throw membership.error;
+      if (membership.data?.role !== "owner") return sendJson(response, 403, { error: "Only the workspace owner can transfer ownership." });
+      const body = await readJsonBody(request);
+      const newOwnerId = String(body.user_id || "");
+      if (!uuidPattern.test(newOwnerId)) return sendJson(response, 400, { error: "A valid new owner user id is required." });
+      const transferred = await supabase.rpc("transfer_workspace_ownership", { p_workspace_id: workspaceId, p_new_owner_id: newOwnerId, p_actor_user_id: user.id, p_request_id: requestId(request) });
+      if (transferred.error) throw transferred.error;
+      return sendJson(response, 200, { ownership: transferred.data });
+    }
     if (action === "members" && request.method === "GET") {
       await requireWorkspacePermission(user.id, workspaceId, "member.read", supabase);
       const result = await supabase.from("workspace_memberships").select("user_id,role,joined_at,invited_by").eq("workspace_id", workspaceId).order("joined_at");
