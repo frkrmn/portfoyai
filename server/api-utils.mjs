@@ -283,28 +283,6 @@ export const getUserPlan = async (userId, workspaceId = null) => {
     : "free";
 };
 
-export const countActiveListingsForUser = async (userId) => {
-  const { data: sites, error: sitesError } = await getSupabaseClient()
-    .from("sites")
-    .select("id")
-    .eq("user_id", userId);
-  if (sitesError)
-    throw new Error(
-      `Failed to load owned sites for listing limit: ${sitesError.message}`,
-    );
-  const siteIds = (sites || []).map((site) => site.id);
-  if (!siteIds.length) return 0;
-  const { count, error } = await getSupabaseClient()
-    .from("listings")
-    .select("id", { count: "exact", head: true })
-    .in("site_id", siteIds)
-    .eq("status", "active")
-    .eq("listing_status", "active");
-  if (error)
-    throw new Error(`Failed to count active listings: ${error.message}`);
-  return count || 0;
-};
-
 export const routeParam = (request, name) => {
   const queryValue = request.query?.[name];
   if (Array.isArray(queryValue)) return queryValue[0];

@@ -1,4 +1,4 @@
-import { countActiveListingsForUser, getAuthenticatedUser, getOwnedSite, getSupabaseClient, getUserPlan, handleKnownError, listingPayload, listingSelect, methodNotAllowed, readJsonBody, routeParam, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
+import { getAuthenticatedUser, getOwnedSite, getSupabaseClient, handleKnownError, listingPayload, listingSelect, methodNotAllowed, readJsonBody, routeParam, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
 import { listingPermissionForMethod, requireSitePermission } from "../workspace-permissions.mjs";
 
 export const config = { api: { bodyParser: { sizeLimit: "8mb" } } };
@@ -20,16 +20,6 @@ export default async function handler(request, response) {
     const body = await readJsonBody(request, 8 * 1024 * 1024);
     const payload = listingPayload(body, siteId);
     if (payload.urgent_sale) { const now = new Date(); payload.urgent_verified_by = user.id; payload.urgent_verified_at = now.toISOString(); payload.urgent_expires_at = new Date(now.getTime() + 30 * 86_400_000).toISOString(); }
-    const plan = await getUserPlan(user.id, site.workspace_id);
-    if (plan === "free" && payload.status === "active" && await countActiveListingsForUser(user.id) >= 5) {
-      return sendJson(response, 402, {
-        error: "Ücretsiz planda en fazla 5 aktif ilan yayınlayabilirsiniz.",
-        code: "FREE_LISTING_LIMIT",
-        context: "listing_limit",
-        limit: 5,
-        plan,
-      });
-    }
     const { data, error } = await getSupabaseClient().from("listings").insert(payload).select(listingSelect).single();
     if (error) throw new Error(`Failed to create listing: ${error.message}`);
     return sendJson(response, 201, { listing: serializeListing(data) });
