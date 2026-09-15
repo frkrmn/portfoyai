@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { roleHasPermission, rolePermissions } from "./workspace-permissions.mjs";
+import { listingPermissionForMethod, listingPermissionsByMethod, roleHasPermission, rolePermissions } from "./workspace-permissions.mjs";
 
 assert.equal(roleHasPermission("owner", "member.manage"), true);
 assert.equal(roleHasPermission("editor", "member.manage"), false);
@@ -10,8 +10,17 @@ assert.equal(roleHasPermission("agent", "site.write"), false);
 assert.equal(roleHasPermission("viewer", "lead.read"), true);
 assert.equal(roleHasPermission("viewer", "lead.write"), false);
 assert.deepEqual(Object.keys(rolePermissions), ["owner", "editor", "agent", "viewer"]);
+assert.deepEqual(listingPermissionsByMethod, {
+  GET: "listing.read",
+  POST: "listing.write",
+  PATCH: "listing.write",
+  DELETE: "listing.write",
+});
+assert.equal(listingPermissionForMethod("PATCH"), "listing.write");
+assert.equal(listingPermissionForMethod("DELETE"), "listing.write");
+assert.equal(listingPermissionForMethod("OPTIONS"), null);
 
-const [migration, handler, router, sites, leads, site, versions, listings, team, inviteUi, memberUi] = await Promise.all([
+const [migration, handler, router, sites, leads, site, versions, listings, listingItem, team, inviteUi, memberUi] = await Promise.all([
   readFile(new URL("../supabase/migrations/20260914000300_workspace_collaboration.sql", import.meta.url), "utf8"),
   readFile(new URL("./handlers/workspaces.mjs", import.meta.url), "utf8"),
   readFile(new URL("./api-router.mjs", import.meta.url), "utf8"),
@@ -20,6 +29,7 @@ const [migration, handler, router, sites, leads, site, versions, listings, team,
   readFile(new URL("./handlers/site.mjs", import.meta.url), "utf8"),
   readFile(new URL("./handlers/site-versions.mjs", import.meta.url), "utf8"),
   readFile(new URL("./handlers/site-listings.mjs", import.meta.url), "utf8"),
+  readFile(new URL("./handlers/listing.mjs", import.meta.url), "utf8"),
   readFile(new URL("./handlers/team-members.mjs", import.meta.url), "utf8"),
   readFile(new URL("../src/portfoyai/invite.tsx", import.meta.url), "utf8"),
   readFile(new URL("../src/portfoyai/dashboard/WorkspaceMembers.tsx", import.meta.url), "utf8"),
@@ -42,6 +52,8 @@ assert.match(site, /requireSitePermission/);
 assert.match(versions, /requireSitePermission/);
 assert.match(listings, /requireSitePermission/);
 assert.match(listings, /site\.workspace_id/);
+assert.match(listingItem, /requireSitePermission\(user\.id, existing\.site_id, listingPermissionForMethod\(request\.method\)\)/);
+assert.doesNotMatch(listingItem, /getOwnedSite/);
 assert.match(team, /requireSitePermission/);
 assert.match(inviteUi, /\/api\/invitations\/\$\{token\}/);
 for (const action of ["Davet et", "Yeniden gönder", "İptal", "Çıkar"]) assert.ok(memberUi.includes(action));

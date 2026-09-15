@@ -1,5 +1,5 @@
 import { countActiveListingsForUser, getAuthenticatedUser, getOwnedSite, getSupabaseClient, getUserPlan, handleKnownError, listingPayload, listingSelect, methodNotAllowed, readJsonBody, routeParam, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
-import { requireSitePermission } from "../workspace-permissions.mjs";
+import { listingPermissionForMethod, requireSitePermission } from "../workspace-permissions.mjs";
 
 export const config = { api: { bodyParser: { sizeLimit: "8mb" } } };
 
@@ -9,7 +9,7 @@ export default async function handler(request, response) {
   if (!uuidPattern.test(siteId)) return sendJson(response, 400, { error: "A valid site id is required." });
   try {
     const user = await getAuthenticatedUser(request);
-    await requireSitePermission(user.id, siteId, request.method === "GET" ? "listing.read" : "listing.write");
+    await requireSitePermission(user.id, siteId, listingPermissionForMethod(request.method));
     const site = await getOwnedSite(user.id, siteId);
     if (!site) return sendJson(response, 404, { error: "Owned site not found." });
     if (request.method === "GET") {

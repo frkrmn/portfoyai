@@ -1,7 +1,8 @@
-import { getAuthenticatedUser, getOwnedSite, getSupabaseClient, handleKnownError, listingPayload, listingSelect, methodNotAllowed, readJsonBody, routeParam, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
+import { getAuthenticatedUser, getSupabaseClient, handleKnownError, listingPayload, listingSelect, methodNotAllowed, readJsonBody, routeParam, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
 import { removeReplacedMedia } from "../media-storage.mjs";
 import { appendPriceChange } from "../../src/lib/deal-verification.mjs";
 import { removeLandDocuments } from "../land-documents.mjs";
+import { listingPermissionForMethod, requireSitePermission } from "../workspace-permissions.mjs";
 
 export const config = { api: { bodyParser: { sizeLimit: "8mb" } } };
 
@@ -13,7 +14,8 @@ export default async function handler(request, response) {
     const user = await getAuthenticatedUser(request);
     const { data: existing, error: listingError } = await getSupabaseClient().from("listings").select("*").eq("id", listingId).maybeSingle();
     if (listingError) throw new Error(`Failed to load listing: ${listingError.message}`);
-    if (!existing || !(await getOwnedSite(user.id, existing.site_id))) return sendJson(response, 404, { error: "Owned listing not found." });
+    if (!existing) return sendJson(response, 404, { error: "Owned listing not found." });
+    await requireSitePermission(user.id, existing.site_id, listingPermissionForMethod(request.method));
     if (request.method === "DELETE") {
       const { error } = await getSupabaseClient().from("listings").delete().eq("id", listingId).eq("site_id", existing.site_id);
       if (error) throw new Error(`Failed to delete listing: ${error.message}`);

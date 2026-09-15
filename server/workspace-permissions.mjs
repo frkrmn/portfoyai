@@ -12,6 +12,15 @@ export const rolePermissions = Object.freeze({
 
 export const roleHasPermission = (role, permission) => Boolean(rolePermissions[role]?.includes(permission));
 
+export const listingPermissionsByMethod = Object.freeze({
+  GET: "listing.read",
+  POST: "listing.write",
+  PATCH: "listing.write",
+  DELETE: "listing.write",
+});
+
+export const listingPermissionForMethod = (method) => listingPermissionsByMethod[method] || null;
+
 export async function ensurePersonalWorkspace(userId, supabase = getSupabaseClient()) {
   const existing = await supabase.from("workspace_memberships").select("workspace_id").eq("user_id", userId).eq("role", "owner").limit(1).maybeSingle();
   if (existing.error) throw existing.error;
