@@ -126,7 +126,7 @@ const updateSite = async (request, response, siteId) => {
   const { data: site, error } = await query.select(siteSelect).maybeSingle();
   if (error) throw new Error(`Failed to update site: ${error.message}`);
   if (!site) return sendJson(response, 409, { error: "Draft changed in another session.", code: "REVISION_CONFLICT" });
-  await removeReplacedMedia(current.theme_config?.media, site.theme_config?.media);
+  await removeReplacedMedia(current.theme_config?.media, site.theme_config?.media, { siteId });
   return sendJson(response, 200, { site: dashboardSite(site) });
 };
 

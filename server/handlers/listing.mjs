@@ -19,7 +19,7 @@ export default async function handler(request, response) {
     if (request.method === "DELETE") {
       const { error } = await getSupabaseClient().from("listings").delete().eq("id", listingId).eq("site_id", existing.site_id);
       if (error) throw new Error(`Failed to delete listing: ${error.message}`);
-      await removeReplacedMedia(existing.media, []);
+      await removeReplacedMedia(existing.media, [], { siteId: existing.site_id });
       await removeLandDocuments(existing);
       return sendJson(response, 200, { deleted: true, id: listingId });
     }
@@ -35,7 +35,7 @@ export default async function handler(request, response) {
     } else { payload.urgent_verified_by = null; payload.urgent_verified_at = null; payload.urgent_expires_at = null; }
     const { data, error } = await getSupabaseClient().from("listings").update(payload).eq("id", listingId).eq("site_id", existing.site_id).select(listingSelect).single();
     if (error) throw new Error(`Failed to update listing: ${error.message}`);
-    await removeReplacedMedia(existing.media, data.media);
+    await removeReplacedMedia(existing.media, data.media, { siteId: existing.site_id });
     await removeLandDocuments(existing, data);
     return sendJson(response, 200, { listing: serializeListing(data) });
   } catch (error) {

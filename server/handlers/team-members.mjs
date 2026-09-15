@@ -57,7 +57,7 @@ export default async function handler(request, response) {
     if (request.method === "DELETE") {
       const { error } = await supabase.from("team_members").delete().eq("id", memberId);
       if (error) throw new Error(`Failed to delete team member: ${error.message}`);
-      await removeReplacedMedia(current.photo_url, "");
+      await removeReplacedMedia(current.photo_url, "", { siteId: current.site_id });
       return sendJson(response, 200, { deleted: true });
     }
     const body = await readJsonBody(request, 3 * 1024 * 1024);
@@ -65,7 +65,7 @@ export default async function handler(request, response) {
     if (!Object.keys(payload).length) return sendJson(response, 400, { error: "No team member changes supplied." });
     const { data, error } = await supabase.from("team_members").update(payload).eq("id", memberId).select().single();
     if (error) throw new Error(`Failed to update team member: ${error.message}`);
-    await removeReplacedMedia(current.photo_url, data.photo_url);
+    await removeReplacedMedia(current.photo_url, data.photo_url, { siteId: current.site_id });
     return sendJson(response, 200, { team_member: cleanMember(data) });
   } catch (error) {
     if (error instanceof Error && error.message === "Request body is too large") return sendJson(response, 413, { error: "Fotoğraf dahil istek boyutu en fazla 3 MB olabilir." });
