@@ -14,8 +14,10 @@ const timestamp = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-export async function backfillSiteContent({ siteId, userId, supabase = getSupabaseClient(), generate, now = () => new Date() }) {
-  const result = await supabase.from("sites").select("id, theme_config").eq("id", siteId).eq("user_id", userId).maybeSingle();
+export async function backfillSiteContent({ siteId, userId, supabase = getSupabaseClient(), generate, now = () => new Date(), authorized = false }) {
+  let query = supabase.from("sites").select("id, theme_config, draft_revision").eq("id", siteId);
+  if (!authorized) query = query.eq("user_id", userId);
+  const result = await query.maybeSingle();
   if (result.error) throw new Error(`Failed to load site for content translation: ${result.error.message}`);
   const site = result.data;
   if (!site) return { status: 404, body: { error: "Owned site not found." } };
@@ -42,7 +44,7 @@ export async function backfillSiteContent({ siteId, userId, supabase = getSupaba
   const startedAt = currentTime.toISOString();
   const translation = { version, status: "translating", attempts: attempts + 1, window_started_at: sameWindow ? metadata.window_started_at : startedAt, started_at: startedAt, last_error: null };
   const translatingTheme = { ...site.theme_config, site_content_i18n: translation };
-  const claim = await supabase.from("sites").update({ theme_config: translatingTheme }).eq("id", site.id).eq("theme_config", site.theme_config).select("id").maybeSingle();
+  const claim = await supabase.from("sites").update({ theme_config: translatingTheme, draft_revision: Number(site.draft_revision || 1) + 1 }).eq("id", site.id).eq("theme_config", site.theme_config).select("id").maybeSingle();
   if (claim.error) throw new Error(`Failed to claim content translation: ${claim.error.message}`);
   if (!claim.data) return { status: 202, body: { backfilled: false, cached: false, pending: true, retry_after_seconds: 2 } };
   structuredLog("info", "ai.backfill.started", { site_id: site.id, attempt: translation.attempts, quota: contentBackfillDailyQuota });

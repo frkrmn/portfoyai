@@ -9,6 +9,7 @@ import { AuthProvider } from "./portfoyai/auth";
 import { useAuth } from "./portfoyai/auth";
 import { useTranslation } from "react-i18next";
 import { dashboardQueryClientConfig } from "@/lib/dashboard-query";
+import { isLoopbackHostname } from "@/lib/platform-host.mjs";
 
 const queryClient = new QueryClient(dashboardQueryClientConfig);
 const LandingPage = lazy(() => import("./portfoyai/views/landing").then((module) => ({ default: module.LandingPage })));
@@ -25,7 +26,7 @@ const SiteRenderer = lazy(() => import("./templates/SiteRenderer").then((module)
 const customDomainHost = () => {
   const hostname = window.location.hostname.toLowerCase();
   const platformHosts = String(import.meta.env.VITE_PLATFORM_HOSTS || "").split(",").map((item) => item.trim()).filter(Boolean);
-  if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname.endsWith(".vercel.app") || platformHosts.includes(hostname)) return "";
+  if (isLoopbackHostname(hostname) || hostname.endsWith(".vercel.app") || platformHosts.includes(hostname)) return "";
   return hostname;
 };
 const RootRoute = ({ view }: { view: "home" | "listings" | "detail" | "team" }) => {

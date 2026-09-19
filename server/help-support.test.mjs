@@ -16,6 +16,6 @@ const [ui, handler, router, migration] = await Promise.all([
 ]);
 assert.match(ui, /role="dialog"/); assert.match(ui, /aria-modal="true"/); assert.match(ui, /sm:place-items-center/); assert.match(ui, /role="alert"/);
 assert.match(ui, /fastate_onboarding_guide_v/); assert.match(ui, /HELP_CONTENT_VERSION/); assert.match(ui, /Do not share passwords/);
-assert.match(handler, /allowedSections/); assert.match(handler, /app_version/); assert.match(handler, /randomUUID/); assert.match(handler, /eq\("user_id", user\.id\)/);
+assert.match(handler, /allowedSections/); assert.match(handler, /app_version/); assert.match(handler, /randomUUID/); assert.match(handler, /requireSitePermission/);
 assert.match(router, /support-requests/); assert.match(migration, /enable row level security/i); assert.match(migration, /support_requests_select_own/);
 console.log("Help center and support flow contract passed.");

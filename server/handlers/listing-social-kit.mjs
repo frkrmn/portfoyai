@@ -1,5 +1,6 @@
 import { ImageResponse } from "@vercel/og";
 import { createElement as h } from "react";
+import { readFile } from "node:fs/promises";
 import { formatListingPrice } from "../../src/lib/listing-price.js";
 import { getAuthenticatedUser, getOwnedSite, getSupabaseClient, handleKnownError, listingSelect, methodNotAllowed, sendJson, serializeListing, uuidPattern } from "../api-utils.mjs";
 
@@ -29,10 +30,21 @@ const listingIdFrom = (request) => {
   return segments[segments.indexOf("listings") + 1] || "";
 };
 
-const imageUrlFor = (listing, request) => {
+const localStaticImage = async (relative, request) => {
+  const host = requestUrl(request).hostname;
+  if (!["localhost", "127.0.0.1", "::1"].includes(host) || !/^\/images\/listings\/[a-z0-9-]+\.(?:jpe?g|png|webp)$/i.test(relative)) return null;
+  const bytes = await readFile(new URL(`../../public${relative}`, import.meta.url));
+  const extension = relative.split(".").pop()?.toLowerCase();
+  const mime = extension === "png" ? "image/png" : extension === "webp" ? "image/webp" : "image/jpeg";
+  return `data:${mime};base64,${bytes.toString("base64")}`;
+};
+
+const imageUrlFor = async (listing, request) => {
   const uploaded = Array.isArray(listing.media) ? listing.media.map((item) => item?.url || item?.thumbUrl).find(Boolean) : null;
   if (uploaded?.startsWith("data:") || uploaded?.startsWith("http://") || uploaded?.startsWith("https://")) return uploaded;
   const relative = uploaded || placeholderImages[stableHash(listing.id) % placeholderImages.length];
+  const local = await localStaticImage(relative.startsWith("/") ? relative : `/${relative}`, request);
+  if (local) return local;
   return new URL(relative.startsWith("/") ? relative : `/${relative}`, requestUrl(request).origin).toString();
 };
 
@@ -120,7 +132,7 @@ export default async function handler(request, response) {
     const listing = serializeListing(rawListing);
     const site = await getOwnedSite(user.id, listing.site_id);
     if (!site) return sendJson(response, 404, { error: "Owned listing not found." });
-    const image = buildSocialKitImage({ listing, site, background: imageUrlFor(listing, request), format });
+    const image = buildSocialKitImage({ listing, site, background: await imageUrlFor(listing, request), format });
     const png = Buffer.from(await image.arrayBuffer());
     response.statusCode = 200;
     response.setHeader("Content-Type", "image/png");

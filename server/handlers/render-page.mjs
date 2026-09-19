@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { loadPublicSite } from "./public-site.mjs";
 import { platformPageMetadata, publicSitePageMetadata } from "../../src/lib/site-metadata.js";
 import { methodNotAllowed } from "../api-utils.mjs";
+import { isLoopbackHostname } from "../../src/lib/platform-host.mjs";
 
 const htmlPath = join(process.cwd(), "dist", "index.html");
 const sitePathPattern = /^\/site\/([a-z0-9]+(?:-[a-z0-9]+)*)(?:\/listings(?:\/([0-9a-f-]{36}))?)?\/?$/i;
@@ -82,7 +83,7 @@ const resolveCustomDomain = (request) => {
   const hostname = String(request.headers["x-forwarded-host"] || request.headers.host || "").split(":")[0].toLowerCase();
   const baseDomain = process.env.SITE_BASE_DOMAIN?.toLowerCase().replace(/^\.+|\.+$/g, "");
   const platformDomains = String(process.env.PLATFORM_DOMAINS || process.env.VERCEL_URL || "").split(",").map((item) => item.trim().toLowerCase()).filter(Boolean);
-  if (!hostname || hostname === "localhost" || hostname.endsWith(".localhost") || hostname.endsWith(".vercel.app") || hostname === baseDomain || platformDomains.includes(hostname) || (baseDomain && hostname.endsWith(`.${baseDomain}`))) return null;
+  if (!hostname || isLoopbackHostname(hostname) || hostname.endsWith(".vercel.app") || hostname === baseDomain || platformDomains.includes(hostname) || (baseDomain && hostname.endsWith(`.${baseDomain}`))) return null;
   return hostname;
 };
 const requestOrigin = (request) => {

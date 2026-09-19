@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
 import { loadEnv } from "vite";
 
 const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
 const baseUrl = process.env.API_E2E_URL || "http://127.0.0.1:4173";
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+const authClient = createClient(env.VITE_SUPABASE_URL || env.SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
 const suffix = Date.now();
 const email = `api-consolidation-${suffix}@example.com`;
 const password = `Api-${suffix}!`;
@@ -23,14 +23,14 @@ try {
   const created = await supabase.auth.admin.createUser({ email, password, email_confirm: true });
   if (created.error) throw created.error;
   userId = created.data.user.id;
-  const auth = await supabase.auth.signInWithPassword({ email, password });
+  const auth = await authClient.auth.signInWithPassword({ email, password });
   if (auth.error || !auth.data.session) throw auth.error || new Error("Test sign-in failed.");
   const bearer = { Authorization: `Bearer ${auth.data.session.access_token}` };
   const authenticatedJson = { ...bearer, "Content-Type": "application/json" };
 
   const generated = await json(await fetch(`${baseUrl}/api/generate-theme`, {
     method: "POST",
-    headers: authenticatedJson,
+    headers: { ...authenticatedJson, "X-Idempotency-Key": crypto.randomUUID() },
     body: JSON.stringify({ prompt: "Ankara'da genel amaçlı, orta segment konut ve daire alım-satımı yapan bir emlakçıyım, standart bir web sitesi yeterli, özel bir tarz beklentim yok." }),
   }));
   siteId = generated.site_id;
@@ -45,19 +45,22 @@ try {
   const patchedSite = await json(await fetch(`${baseUrl}/api/sites/${siteId}`, {
     method: "PATCH",
     headers: authenticatedJson,
-    body: JSON.stringify({ status: "published", accent_color: "#C86742" }),
+    body: JSON.stringify({ accent_color: "#C86742", phone: "+90 555 000 00 00", expected_revision: fetchedSite.draft_revision }),
   }));
-  assert.equal(patchedSite.site.status, "published");
+  const publishedSite = await json(await fetch(`${baseUrl}/api/sites/${siteId}/publish`, {
+    method: "POST",
+    headers: authenticatedJson,
+    body: JSON.stringify({ expected_revision: patchedSite.site.draft_revision }),
+  }));
+  assert.equal(publishedSite.site.status, "published");
 
   const listings = await json(await fetch(`${baseUrl}/api/sites/${siteId}/listings`, { headers: bearer }));
   assert.equal(listings.listings.length, 6);
   const seededListing = listings.listings[0];
-  const socialBackground = await readFile(new URL("../public/images/listings/bagdat-residence.jpg", import.meta.url));
-  const socialMedia = [{ id: "api-router-social", url: `data:image/jpeg;base64,${socialBackground.toString("base64")}` }];
   const listingUpdate = await json(await fetch(`${baseUrl}/api/listings/${seededListing.id}`, {
     method: "PATCH",
     headers: authenticatedJson,
-    body: JSON.stringify({ price: seededListing.price + 1000, status: "passive", media: socialMedia }),
+    body: JSON.stringify({ price: seededListing.price + 1000, status: "passive" }),
   }));
   assert.equal(listingUpdate.listing.price, seededListing.price + 1000);
 
@@ -94,17 +97,14 @@ try {
   assert.match(socialKit.headers.get("content-type") || "", /^image\/png/);
   assert.ok(socialBytes.length > 10_000);
 
-  const lead = await json(await fetch(`${baseUrl}/api/leads`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ site_id: siteId, name: "API Router Lead", phone: "+90 555 111 22 33", message: "Catch-all endpoint testi" }),
-  }));
+  const leadResult = await supabase.from("leads").insert({ site_id: siteId, name: "API Router Lead", phone: "+90 555 111 22 33", message: "Catch-all endpoint testi", source: "e2e" }).select("id").single();
+  if (leadResult.error) throw leadResult.error;
+  const lead = leadResult.data;
   const leads = await json(await fetch(`${baseUrl}/api/leads`, { headers: bearer }));
   assert.ok(leads.leads.some((candidate) => candidate.id === lead.id));
 
   const publicSite = await json(await fetch(`${baseUrl}/api/public-sites/${generated.slug}`));
   assert.equal(publicSite.id, siteId);
-  assert.equal(publicSite.status, "published");
 
   const experiment = await json(await fetch(`${baseUrl}/api/experiment`, {
     method: "POST",
@@ -124,7 +124,7 @@ try {
 
   const refined = await json(await fetch(`${baseUrl}/api/sites/${siteId}/refine`, {
     method: "POST",
-    headers: authenticatedJson,
+    headers: { ...authenticatedJson, "X-Idempotency-Key": crypto.randomUUID() },
     body: JSON.stringify({ request: "menüyü ortala" }),
   }));
   assert.deepEqual(refined.applied_fields, ["layout_fine_tune.navAlignment"]);

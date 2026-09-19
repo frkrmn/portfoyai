@@ -4,6 +4,7 @@ import { buttonColorSources, fineTuneEnums, mergeThemeConfig } from "../site-the
 import { trackAiCall } from "../observability.mjs";
 import { idempotencyKey, runBudgetedAiCall } from "../ai-usage-budget.mjs";
 import { ensurePersonalWorkspace, requireSitePermission } from "../workspace-permissions.mjs";
+import { siteSelect } from "../site-source-of-truth.mjs";
 
 export const siteRefineModel = "gemini-3.5-flash-lite";
 const allowedFonts = [
@@ -66,19 +67,18 @@ export async function mapRefinementRequest(requestText, apiKey = process.env.GEM
   return { patch, unsupported_note: unsupportedNote, model: result.modelVersion || siteRefineModel };
 }
 
-const ownedSiteSelect = "id, slug, business_name, tone, primary_color, accent_color, headline, theme_config, previous_theme_config, status, created_at";
+const ownedSiteSelect = siteSelect;
 
-const undoRefinement = async (response, siteId, userId) => {
-  const supabase = getSupabaseClient();
-  const { data: current, error } = await supabase.from("sites").select(ownedSiteSelect).eq("id", siteId).eq("user_id", userId).maybeSingle();
+const undoRefinement = async (response, siteId, supabase) => {
+  const { data: current, error } = await supabase.from("sites").select(ownedSiteSelect).eq("id", siteId).maybeSingle();
   if (error) throw new Error(`Failed to load site for undo: ${error.message}`);
   if (!current) return sendJson(response, 404, { error: "Owned site not found." });
   if (!current.previous_theme_config) return sendJson(response, 409, { error: "Geri alınabilecek bir ince ayar bulunmuyor." });
   const restored = current.previous_theme_config;
-  const updates = { theme_config: restored, previous_theme_config: null };
+  const updates = { theme_config: restored, previous_theme_config: null, draft_revision: Number(current.draft_revision || 1) + 1 };
   if (typeof restored.colors?.primary === "string") updates.primary_color = restored.colors.primary;
   if (typeof restored.colors?.accent === "string") updates.accent_color = restored.colors.accent;
-  const saved = await supabase.from("sites").update(updates).eq("id", siteId).eq("user_id", userId).select(ownedSiteSelect).single();
+  const saved = await supabase.from("sites").update(updates).eq("id", siteId).select(ownedSiteSelect).single();
   if (saved.error) throw new Error(`Failed to undo refinement: ${saved.error.message}`);
   return sendJson(response, 200, { site: dashboardSite(saved.data), unsupported_note: null, applied_fields: ["undo"] });
 };
@@ -90,12 +90,12 @@ export default async function handler(request, response) {
     const siteId = String(request.query?.id || "");
     if (!uuidPattern.test(siteId)) return sendJson(response, 400, { error: "A valid site id is required." });
     const body = await readJsonBody(request);
-    if (body.action === "undo") return undoRefinement(response, siteId, user.id);
+    const supabase = getSupabaseClient();
+    const access = await requireSitePermission(user.id, siteId, "site.write", supabase);
+    if (body.action === "undo") return undoRefinement(response, siteId, supabase);
 
     const requestText = typeof body.request === "string" ? body.request.trim() : "";
     if (requestText.length < 3 || requestText.length > 500) return sendJson(response, 400, { error: "İnce ayar isteği 3-500 karakter olmalıdır." });
-    const supabase = getSupabaseClient();
-    const access = await requireSitePermission(user.id, siteId, "site.write", supabase);
     const { data: current, error } = await supabase.from("sites").select(ownedSiteSelect).eq("id", siteId).maybeSingle();
     if (error) throw new Error(`Failed to verify site ownership: ${error.message}`);
     if (!current) return sendJson(response, 404, { error: "Owned site not found." });
@@ -116,6 +116,7 @@ export default async function handler(request, response) {
       ...topLevel,
       theme_config: themeConfig,
       previous_theme_config: current.theme_config || {},
+      draft_revision: Number(current.draft_revision || 1) + 1,
     }).eq("id", siteId).select(ownedSiteSelect).single();
     if (saved.error) throw new Error(`Failed to save refinement: ${saved.error.message}`);
     return sendJson(response, 200, {

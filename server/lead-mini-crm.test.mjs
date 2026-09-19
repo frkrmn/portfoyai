@@ -15,5 +15,8 @@ const handler = await readFile(new URL("./handlers/leads.mjs", import.meta.url),
 assert.match(handler, /merge_owned_leads/);
 assert.match(handler, /lead_activities/);
 const migration = await readFile(new URL("../supabase/migrations/20260914000100_lead_mini_crm.sql", import.meta.url), "utf8");
+const workspaceMerge = await readFile(new URL("../supabase/migrations/20260915000600_workspace_lead_merge.sql", import.meta.url), "utf8");
 for (const status of ["new", "contacted", "appointment", "won", "lost"]) assert.match(migration, new RegExp(`'${status}'`));
+assert.match(workspaceMerge, /role in \('owner', 'editor'\)/);
+assert.match(workspaceMerge, /revoke all on function public\.merge_owned_leads.*anon, authenticated/i);
 console.log("Lead mini CRM checks passed.");

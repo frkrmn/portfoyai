@@ -1,6 +1,7 @@
 import { getAuthenticatedUser, handleKnownError, methodNotAllowed, routeParam, sendJson, uuidPattern } from "../api-utils.mjs";
 import { loadPublicSite } from "./public-site.mjs";
 import { switchTemplateConfig } from "../site-theme.mjs";
+import { requireSitePermission } from "../workspace-permissions.mjs";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") return methodNotAllowed(response, ["GET"]);
@@ -8,7 +9,8 @@ export default async function handler(request, response) {
     const user = await getAuthenticatedUser(request);
     const siteId = routeParam(request, "id");
     if (!uuidPattern.test(siteId)) return sendJson(response, 400, { error: "A valid site id is required." });
-    const payload = await loadPublicSite("", { siteId, ownerId: user.id });
+    await requireSitePermission(user.id, siteId, "site.read");
+    const payload = await loadPublicSite("", { siteId, previewAuthorized: true });
     if (!payload) return sendJson(response, 404, { error: "Owned site not found." });
     const templateId = new URL(request.url || "/", "http://localhost").searchParams.get("templateId");
     const preview = templateId ? { ...payload, config: { ...payload.config, template_id: templateId, theme_config: switchTemplateConfig(payload.config.theme_config, templateId) } } : payload;

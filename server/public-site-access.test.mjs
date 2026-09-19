@@ -27,6 +27,10 @@ assert.deepEqual(ownerQuery.filters, [
   ["user_id", "owner-1"],
 ], "Authenticated previews must be scoped to the requested owner");
 
+const workspacePreviewQuery = queryRecorder();
+assert.equal(applySiteVisibility(workspacePreviewQuery.query, { siteId: "site-1", previewAuthorized: true }), workspacePreviewQuery.query);
+assert.deepEqual(workspacePreviewQuery.filters, [["id", "site-1"]], "Workspace previews rely on the handler's site.read authorization and must not reapply legacy ownership");
+
 console.info("Public access policy: published-only public query and owner-scoped preview verified");
 
 assert.equal(apiRouteInventory.some((route) => route.pattern.test("/api/public-sites/example/content-backfill")), false, "Anonymous backfill route must not exist");

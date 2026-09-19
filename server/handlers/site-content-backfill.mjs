@@ -1,5 +1,6 @@
-import { getAuthenticatedUser, handleKnownError, methodNotAllowed, sendJson, uuidPattern } from "../api-utils.mjs";
+import { getAuthenticatedUser, getSupabaseClient, handleKnownError, methodNotAllowed, sendJson, uuidPattern } from "../api-utils.mjs";
 import { backfillSiteContent } from "../site-content-backfill.mjs";
+import { requireSitePermission } from "../workspace-permissions.mjs";
 
 export default async function handler(request, response) {
   if (request.method !== "POST") return methodNotAllowed(response, ["POST"]);
@@ -7,7 +8,9 @@ export default async function handler(request, response) {
     const user = await getAuthenticatedUser(request);
     const siteId = String(request.query?.id || "");
     if (!uuidPattern.test(siteId)) return sendJson(response, 400, { error: "A valid site id is required." });
-    const result = await backfillSiteContent({ siteId, userId: user.id });
+    const supabase = getSupabaseClient();
+    await requireSitePermission(user.id, siteId, "site.write", supabase);
+    const result = await backfillSiteContent({ siteId, userId: user.id, supabase, authorized: true });
     if (result.body.retry_after_seconds) response.setHeader("Retry-After", String(result.body.retry_after_seconds));
     return sendJson(response, result.status, result.body);
   } catch (error) {

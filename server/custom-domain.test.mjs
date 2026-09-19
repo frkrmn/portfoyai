@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { domainState, fallbackDnsRecords, normalizeCustomDomain, sslState } from "../src/lib/custom-domain.mjs";
+import { isLoopbackHostname } from "../src/lib/platform-host.mjs";
 import { addProjectDomain, inspectProjectDomain, removeProjectDomain, verifyProjectDomain } from "./vercel-domains.mjs";
 
 assert.equal(normalizeCustomDomain(" MÜNİH.example. "), "xn--mnih-0ra.example");
@@ -11,6 +12,8 @@ assert.equal(domainState({ verified: true, misconfigured: false }), "verified");
 assert.equal(domainState({ verified: true, misconfigured: true }), "pending");
 assert.equal(sslState({ verified: true, misconfigured: false }), "active");
 assert.equal(sslState({ error: true }), "error");
+for (const hostname of ["localhost", "app.localhost", "127.0.0.1", "127.12.34.56", "::1", "[::1]"]) assert.equal(isLoopbackHostname(hostname), true);
+for (const hostname of ["example.com", "128.0.0.1", "localhost.example.com"]) assert.equal(isLoopbackHostname(hostname), false);
 
 process.env.VERCEL_TOKEN = "test-token";
 process.env.VERCEL_PROJECT_ID = "project-id";
